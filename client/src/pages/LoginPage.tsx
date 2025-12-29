@@ -1,24 +1,43 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { apiClient } from "@/lib/api";
+import { toast } from "sonner";
 
 const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const { t } = useTranslation("auth");
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoading(true);
+    
     const formData = new FormData(e.currentTarget);
-    const email = formData.get("email");
-    const password = formData.get("password");
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
     
-    // TODO: Replace with actual API call
-    console.log("Login attempt:", { email, password });
-    
-    // Placeholder: Redirect to dashboard
-    // In production, this would be after successful API response
-    // window.location.href = "/client/dashboard";
+    try {
+      const response = await apiClient.login(email, password);
+      
+      localStorage.setItem('authToken', response.token);
+      localStorage.setItem('user', JSON.stringify(response.user));
+      
+      toast.success('Login successful!');
+      
+      if (response.user.role === 'admin') {
+        navigate('/admin/dashboard');
+      } else {
+        navigate('/client/dashboard');
+      }
+    } catch (error) {
+      toast.error('Login failed. Check your credentials.');
+      console.error('Login error:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -89,8 +108,8 @@ const LoginPage = () => {
               </Link>
             </div>
 
-            <button type="submit" className="w-full btn-primary py-3 rounded-lg font-semibold">
-              {t("login.submit")}
+            <button type="submit" className="w-full btn-primary py-3 rounded-lg font-semibold" disabled={loading}>
+              {loading ? 'Logging in...' : t("login.submit")}
             </button>
           </form>
 

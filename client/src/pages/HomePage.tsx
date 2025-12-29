@@ -2,13 +2,9 @@ import PublicLayout from "@/components/layouts/PublicLayout";
 import ServiceCard from "@/components/common/ServiceCard";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Shield, Zap, Headphones, Youtube, Instagram, Twitter } from "lucide-react";
-
-const dummyServices = [
-  { id: "youtube-views", title: "زيادة مشاهدات يوتيوب", titleEn: "Increase YouTube Views", price: 0, image: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=400&fit=crop", badge: "#زيادة مشاهدات", badgeColor: "success" as const },
-  { id: "youtube-subs", title: "زيادة 4000 مشترك يوتيوب للقناة", titleEn: "Increase YouTube Subscribers", price: 450, image: "https://images.unsplash.com/photo-1529539795054-3c162aab037a?w=400&h=400&fit=crop" },
-  { id: "instagram-followers", title: "زيادة متابعين انستقرام", titleEn: "Instagram Followers", price: 99, image: "https://images.unsplash.com/photo-1611262588024-d12430b98920?w=400&h=400&fit=crop", badge: "HOT", badgeColor: "primary" as const },
-  { id: "tiktok-views", title: "زيادة مشاهدات تيك توك", titleEn: "TikTok Views", price: 49, image: "https://images.unsplash.com/photo-1596558450268-9c27524ba856?w=400&h=400&fit=crop" },
-];
+import { useEffect, useState } from "react";
+import { apiClient } from "@/lib/api";
+import { toast } from "sonner";
 
 const features = [
   { icon: Shield, title: "مدفوعات آمنة 100%", description: "جميع المعاملات مشفرة ومحمية" },
@@ -23,6 +19,35 @@ const categories = [
 ];
 
 const HomePage = () => {
+  const [services, setServices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const response = await apiClient.getServices();
+        const serviceData = response.data || response;
+        setServices((Array.isArray(serviceData) ? serviceData : []).slice(0, 4));
+      } catch (error) {
+        toast.error('Failed to load services');
+        console.error('Error:', error);
+        setServices([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
+
+  const formattedServices = services.map((service: any) => ({
+    id: service.id?.toString() || service.name,
+    title: service.name,
+    titleEn: service.name,
+    price: service.price / 100,
+    image: service.imageUrl || "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=400&fit=crop",
+  }));
+
   return (
     <PublicLayout>
       {/* Hero Section */}
@@ -116,27 +141,15 @@ const HomePage = () => {
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {dummyServices.map((service) => (
-              <ServiceCard key={service.id} {...service} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-16">
-        <div className="container">
-          <div className="bg-primary rounded-2xl p-8 md:p-12 text-center text-primary-foreground">
-            <h2 className="text-3xl font-bold mb-4">اشترك في التسويق بالعمولة</h2>
-            <p className="text-primary-foreground/80 mb-8 max-w-xl mx-auto">
-              اربح معنا عمولات مجزية من خلال تسويق خدماتنا. سجل الآن وابدأ في تحقيق الأرباح.
-            </p>
-            <Link
-              to="/register"
-              className="inline-block bg-card text-foreground px-8 py-4 rounded-lg font-semibold hover:bg-card/90 transition-colors"
-            >
-              سجل الآن
-            </Link>
+            {loading ? (
+              <div className="col-span-full text-center py-8 text-muted-foreground">جاري التحميل...</div>
+            ) : formattedServices.length === 0 ? (
+              <div className="col-span-full text-center py-8 text-muted-foreground">لا توجد خدمات متاحة</div>
+            ) : (
+              formattedServices.map((service: any) => (
+                <ServiceCard key={service.id} {...service} />
+              ))
+            )}
           </div>
         </div>
       </section>

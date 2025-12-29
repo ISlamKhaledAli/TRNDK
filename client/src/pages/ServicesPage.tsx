@@ -2,19 +2,42 @@ import PublicLayout from "@/components/layouts/PublicLayout";
 import ServiceCard from "@/components/common/ServiceCard";
 import { ChevronDown, Home } from "lucide-react";
 import { Link } from "react-router-dom";
-
-const dummyServices = [
-  { id: "youtube-views", title: "زيادة مشاهدات يوتيوب", titleEn: "Increase YouTube Views", price: 0, image: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=400&fit=crop", badge: "#زيادة مشاهدات", badgeColor: "success" as const },
-  { id: "youtube-subs", title: "زيادة 4000 مشترك يوتيوب للقناة", titleEn: "Increase 4000 Subscribers", price: 450, image: "https://images.unsplash.com/photo-1529539795054-3c162aab037a?w=400&h=400&fit=crop" },
-  { id: "youtube-channel-subs", title: "زيادة مشتركين قناتك يوتيوب", titleEn: "YouTube Channel Subscribers", price: 49, image: "https://images.unsplash.com/photo-1493711662062-fa541f7f3d24?w=400&h=400&fit=crop" },
-  { id: "youtube-package", title: "بكج مشتركين ومشاهدات ولايكات للقناة", titleEn: "Full YouTube Package", price: 199, image: "https://images.unsplash.com/photo-1516321497487-e288fb19713f?w=400&h=400&fit=crop", badge: "OFFER", badgeColor: "warning" as const },
-  { id: "youtube-100k", title: "زيادة 100 ألف مشاهدة يوتيوب", titleEn: "Increase 100K YouTube Views", price: 0, image: "https://images.unsplash.com/photo-1626814026160-2237a95fc5a0?w=400&h=400&fit=crop" },
-  { id: "youtube-50k", title: "زيادة 50 ألف مشاهدة يوتيوب", titleEn: "Increase 50K YouTube Views", price: 0, image: "https://images.unsplash.com/photo-1560169897-fc0cdbdfa4d5?w=400&h=400&fit=crop" },
-  { id: "youtube-likes", title: "زيادة لايكات يوتيوب", titleEn: "Increase YouTube Likes", price: 0, image: "https://images.unsplash.com/photo-1488590528505-98d2b5aba04b?w=400&h=400&fit=crop" },
-  { id: "youtube-views-package", title: "بكج زيادة مشاهدات ولايكات", titleEn: "Views & Likes Package", price: 0, image: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=400&h=400&fit=crop" },
-];
+import { useEffect, useState } from "react";
+import { apiClient } from "@/lib/api";
+import { toast } from "sonner";
 
 const ServicesPage = () => {
+  const [services, setServices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const response = await apiClient.getServices();
+        const serviceData = response.data || response;
+        setServices(Array.isArray(serviceData) ? serviceData : []);
+      } catch (error) {
+        toast.error('Failed to load services');
+        console.error('Error fetching services:', error);
+        setServices([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchServices();
+  }, []);
+
+  const formattedServices = services.map((service: any) => ({
+    id: service.id?.toString() || service.name,
+    title: service.name,
+    titleEn: service.name,
+    price: service.price / 100, // Convert from cents
+    image: service.imageUrl || "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=400&fit=crop",
+    badge: service.category,
+    badgeColor: "success" as const,
+  }));
+
   return (
     <PublicLayout>
       {/* Breadcrumb */}
@@ -25,7 +48,7 @@ const ServicesPage = () => {
               <Home className="w-4 h-4" />
             </Link>
             <span>/</span>
-            <span className="text-foreground">خدمات يوتيوب</span>
+            <span className="text-foreground">الخدمات</span>
           </nav>
         </div>
       </div>
@@ -36,7 +59,7 @@ const ServicesPage = () => {
           <div>
             <h1 className="text-3xl font-bold mb-2">
               <span className="w-1 h-8 bg-primary inline-block ml-3 rounded-full" />
-              خدمات يوتيوب
+              جميع الخدمات
             </h1>
           </div>
           <div className="flex items-center gap-3">
@@ -48,11 +71,21 @@ const ServicesPage = () => {
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {dummyServices.map((service) => (
-            <ServiceCard key={service.id} {...service} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">جاري تحميل الخدمات...</p>
+          </div>
+        ) : formattedServices.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground">لا توجد خدمات متاحة</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {formattedServices.map((service: any) => (
+              <ServiceCard key={service.id} {...service} />
+            ))}
+          </div>
+        )}
       </div>
     </PublicLayout>
   );
