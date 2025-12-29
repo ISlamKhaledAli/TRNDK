@@ -105,7 +105,39 @@ export async function registerRoutes(
     res.json({ data: orders });
   });
 
-  // Admin Routes
+  // Admin Routes - Services
+  apiRouter.post('/admin/services', async (req, res) => {
+    try {
+      const serviceData = insertServiceSchema.parse(req.body);
+      const service = await storage.createService(serviceData);
+      res.status(201).json({ data: service });
+    } catch (e) {
+      res.status(400).json({ message: 'Validation error', errors: e });
+    }
+  });
+
+  apiRouter.put('/admin/services/:id', async (req, res) => {
+    try {
+      const updates = insertServiceSchema.partial().parse(req.body);
+      const service = await storage.updateService(Number(req.params.id), updates);
+      if (!service) {
+        return res.status(404).json({ message: 'Service not found' });
+      }
+      res.json({ data: service });
+    } catch (e) {
+      res.status(400).json({ message: 'Validation error', errors: e });
+    }
+  });
+
+  apiRouter.delete('/admin/services/:id', async (req, res) => {
+    const success = await storage.deleteService(Number(req.params.id));
+    if (!success) {
+      return res.status(404).json({ message: 'Service not found' });
+    }
+    res.json({ message: 'Service deleted' });
+  });
+
+  // Admin Routes - Orders
   apiRouter.get('/admin/orders', async (req, res) => {
     const orders = await storage.getAllOrders();
     res.json({ data: orders });

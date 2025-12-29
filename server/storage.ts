@@ -10,6 +10,8 @@ export interface IStorage {
   getServices(): Promise<Service[]>;
   getService(id: number): Promise<Service | undefined>;
   createService(service: InsertService): Promise<Service>;
+  updateService(id: number, service: Partial<InsertService>): Promise<Service | undefined>;
+  deleteService(id: number): Promise<boolean>;
   
   // Orders
   getOrders(userId: number): Promise<Order[]>;
@@ -107,6 +109,18 @@ export class MemStorage implements IStorage {
     const service: Service = { ...insertService, id, createdAt: new Date(), isActive: insertService.isActive ?? true };
     this.services.set(id, service);
     return service;
+  }
+
+  async updateService(id: number, updates: Partial<InsertService>): Promise<Service | undefined> {
+    const existing = this.services.get(id);
+    if (!existing) return undefined;
+    const updated: Service = { ...existing, ...updates };
+    this.services.set(id, updated);
+    return updated;
+  }
+
+  async deleteService(id: number): Promise<boolean> {
+    return this.services.delete(id);
   }
 
   // Orders

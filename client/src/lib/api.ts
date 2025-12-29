@@ -64,4 +64,32 @@ export const apiClient = {
     if (!res.ok) throw new Error('Failed to update order');
     return res.json();
   },
+
+  async createService(service: { name: string; description: string; price: number; category?: string; duration?: string; imageUrl?: string }) {
+    const res = await fetch(`${API_BASE}/admin/services`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(service),
+    });
+    if (!res.ok) throw new Error('Failed to create service');
+    return res.json();
+  },
+
+  async updateService(id: number, service: Partial<{ name: string; description: string; price: number; category?: string; duration?: string; imageUrl?: string; isActive?: boolean }>) {
+    const res = await fetch(`${API_BASE}/admin/services/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(service),
+    });
+    if (!res.ok) throw new Error('Failed to update service');
+    return res.json();
+  },
+
+  async deleteService(id: number) {
+    const res = await fetch(`${API_BASE}/admin/services/${id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Failed to delete service');
+    return res.json();
+  },
 };
