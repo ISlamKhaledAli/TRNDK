@@ -56,12 +56,17 @@ const ServiceDetailsPage = () => {
       return;
     }
 
+    if (!service) {
+      toast.error('Service not loaded');
+      return;
+    }
+
     navigate('/checkout', {
       state: {
         service,
         quantity,
         link,
-        totalAmount: (service?.price || 0) * (quantity / 1000)
+        totalAmount: Math.round((service.price / 100) * (quantity / 1000))
       }
     });
   };

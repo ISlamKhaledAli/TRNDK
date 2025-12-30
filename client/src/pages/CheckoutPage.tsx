@@ -1,6 +1,6 @@
 import PublicLayout from "@/components/layouts/PublicLayout";
 import Alert from "@/components/common/Alert";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, Trash2, Lock, CreditCard, Building, Smartphone } from "lucide-react";
 import { useState } from "react";
 import { apiClient } from "@/lib/api";
@@ -24,10 +24,26 @@ const paymentMethods = [
 const CheckoutPage = () => {
   const location = useLocation();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("card");
 
   const state = location.state as LocationState || {};
+  
+  // If no service, redirect back to services
+  if (!state.service && !loading) {
+    return (
+      <PublicLayout>
+        <div className="container py-12 text-center">
+          <p className="text-muted-foreground mb-4">No service selected</p>
+          <Link to="/services" className="text-primary font-medium hover:underline">
+            Back to Services
+          </Link>
+        </div>
+      </PublicLayout>
+    );
+  }
+
   const cartItems = state.service ? [{
     id: state.service.id,
     title: state.service.name,
@@ -56,7 +72,7 @@ const CheckoutPage = () => {
 
     setLoading(true);
     try {
-      await apiClient.createOrder(
+      const result = await apiClient.createOrder(
         user.id,
         state.service.id,
         Math.round(total * 100),
@@ -67,7 +83,7 @@ const CheckoutPage = () => {
         }
       );
       toast.success('Order placed successfully!');
-      setTimeout(() => window.location.href = '/client/orders', 1500);
+      setTimeout(() => navigate('/client/orders'), 1500);
     } catch (error) {
       toast.error('Failed to place order');
       console.error('Error:', error);
