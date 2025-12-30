@@ -92,4 +92,12 @@ export const apiClient = {
     if (!res.ok) throw new Error('Failed to delete service');
     return res.json();
   },
+
+  async deleteOrder(id: number) {
+    const res = await fetch(`${API_BASE}/orders/${id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) throw new Error('Failed to delete order');
+    return res.json();
+  },
 };

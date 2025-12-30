@@ -105,6 +105,14 @@ export async function registerRoutes(
     res.json({ data: orders });
   });
 
+  apiRouter.delete('/orders/:id', async (req, res) => {
+    const success = await storage.deleteOrder(Number(req.params.id));
+    if (!success) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+    res.json({ message: 'Order deleted' });
+  });
+
   // Admin Routes - Services
   apiRouter.post('/admin/services', async (req, res) => {
     try {

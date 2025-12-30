@@ -1,28 +1,45 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { User, Mail, Lock, Eye, EyeOff, Phone } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { apiClient } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
 const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const { t } = useTranslation("auth");
+  const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setLoading(true);
+
     const formData = new FormData(e.currentTarget);
-    const data = {
-      name: formData.get("name"),
-      email: formData.get("email"),
-      phone: formData.get("phone"),
-      password: formData.get("password"),
-      agreedToTerms: formData.get("terms"),
-    };
-    
-    // TODO: Replace with actual API call
-    console.log("Registration attempt:", data);
-    
-    // Placeholder: Redirect to dashboard after registration
-    // window.location.href = "/client/dashboard";
+    const name = formData.get("name") as string;
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+    const terms = formData.get("terms");
+
+    if (!terms) {
+      toast.error("Please accept the terms and conditions");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await apiClient.register(name, email, password, 'customer');
+      login(response.user, response.token);
+      toast.success("Registration successful!");
+      navigate("/client/dashboard");
+    } catch (error) {
+      toast.error("Registration failed. Please try again.");
+      console.error("Registration error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -34,7 +51,7 @@ const RegisterPage = () => {
             <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-xl">س</span>
             </div>
-            <span className="font-bold text-2xl">ستالكر</span>
+            <span className="font-bold text-2xl">STAALKER</span>
           </Link>
         </div>
 
@@ -85,7 +102,6 @@ const RegisterPage = () => {
                   placeholder="05xxxxxxxx"
                   className="input-base pr-10"
                   dir="ltr"
-                  required
                 />
               </div>
             </div>
@@ -123,26 +139,26 @@ const RegisterPage = () => {
                 {t("register.agreeToTerms")}{" "}
                 <Link to="/terms" className="text-primary hover:underline">
                   {t("register.termsOfService")}
-                </Link>{" "}
-                {t("register.and")}{" "}
-                <Link to="/privacy" className="text-primary hover:underline">
-                  {t("register.privacyPolicy")}
                 </Link>
               </span>
             </label>
 
-            <button type="submit" className="w-full btn-primary py-3 rounded-lg font-semibold">
-              {t("register.submit")}
+            <button 
+              type="submit" 
+              className="w-full btn-primary py-3 rounded-lg font-semibold" 
+              disabled={loading}
+            >
+              {loading ? 'Creating account...' : t("register.submit")}
             </button>
           </form>
 
           <div className="my-6 flex items-center gap-4">
             <div className="flex-1 h-px bg-border" />
-            <span className="text-sm text-muted-foreground">أو</span>
+            <span className="text-sm text-muted-foreground">{t("register.orContinueWith")}</span>
             <div className="flex-1 h-px bg-border" />
           </div>
 
-          <button className="w-full btn-outline py-3 rounded-lg font-medium flex items-center justify-center gap-2">
+          <button type="button" className="w-full btn-outline py-3 rounded-lg font-medium flex items-center justify-center gap-2">
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
                 fill="currentColor"
@@ -161,7 +177,7 @@ const RegisterPage = () => {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            المتابعة عبر Google
+            {t("register.googleRegister")}
           </button>
         </div>
 
@@ -169,7 +185,7 @@ const RegisterPage = () => {
         <p className="text-center mt-6 text-muted-foreground">
           {t("register.haveAccount")}{" "}
           <Link to="/login" className="text-primary font-medium hover:underline">
-            {t("register.loginLink")}
+            {t("register.login")}
           </Link>
         </p>
       </div>

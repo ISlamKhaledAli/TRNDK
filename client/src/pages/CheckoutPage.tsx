@@ -1,26 +1,18 @@
 import PublicLayout from "@/components/layouts/PublicLayout";
 import Alert from "@/components/common/Alert";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Home, Trash2, Lock, CreditCard, Building, Smartphone } from "lucide-react";
+import { useState } from "react";
+import { apiClient } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { toast } from "sonner";
 
-const cartItems = [
-  {
-    id: 1,
-    title: "زيادة متابعين انستقرام",
-    description: "جودة عالية - ضمان ذهبي",
-    quantity: 1000,
-    price: 99,
-    image: "https://images.unsplash.com/photo-1611262588024-d12430b98920?w=100&h=100&fit=crop",
-  },
-  {
-    id: 2,
-    title: "زيادة مشاهدات يوتيوب",
-    description: "حقيقي - تفعيل الربح",
-    quantity: 5000,
-    price: 150,
-    image: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=100&h=100&fit=crop",
-  },
-];
+interface LocationState {
+  service?: any;
+  quantity?: number;
+  link?: string;
+  totalAmount?: number;
+}
 
 const paymentMethods = [
   { id: "card", label: "بطاقة ائتمان / مدى", description: "دفع آمن وفوري", icon: CreditCard },
@@ -30,9 +22,59 @@ const paymentMethods = [
 ];
 
 const CheckoutPage = () => {
+  const location = useLocation();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState("card");
+
+  const state = location.state as LocationState || {};
+  const cartItems = state.service ? [{
+    id: state.service.id,
+    title: state.service.name,
+    description: state.service.description,
+    quantity: state.quantity || 1000,
+    price: state.service.price / 100,
+    image: state.service.imageUrl,
+  }] : [];
+
   const subtotal = cartItems.reduce((sum, item) => sum + item.price, 0);
   const tax = subtotal * 0.15;
   const total = subtotal + tax;
+
+  const handleSubmitOrder = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user) {
+      toast.error('Please login to place an order');
+      return;
+    }
+
+    if (!state.service) {
+      toast.error('No service selected');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await apiClient.createOrder(
+        user.id,
+        state.service.id,
+        Math.round(total * 100),
+        {
+          quantity: state.quantity,
+          link: state.link,
+          paymentMethod
+        }
+      );
+      toast.success('Order placed successfully!');
+      setTimeout(() => window.location.href = '/client/orders', 1500);
+    } catch (error) {
+      toast.error('Failed to place order');
+      console.error('Error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <PublicLayout>
@@ -54,60 +96,24 @@ const CheckoutPage = () => {
       <div className="container py-8">
         <h1 className="text-3xl font-bold mb-6">إتمام الطلب</h1>
 
-        <Alert type="info">
-          هل لديك حساب بالفعل؟{" "}
-          <Link to="/login" className="text-primary font-medium hover:underline">
-            سجل دخولك الآن
-          </Link>{" "}
-          لحفظ طلباتك وتتبعها بسهولة.
-        </Alert>
+        {!user && (
+          <Alert type="info">
+            هل لديك حساب بالفعل؟{" "}
+            <Link to="/login" className="text-primary font-medium hover:underline">
+              سجل دخولك الآن
+            </Link>{" "}
+            لحفظ طلباتك وتتبعها بسهولة.
+          </Alert>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
           {/* Main Form */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Customer Data */}
-            <div className="bg-card rounded-xl border border-border p-6">
-              <div className="flex items-center gap-2 mb-6">
-                <span className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
-                  1
-                </span>
-                <h2 className="text-xl font-bold">بيانات العميل</h2>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">رقم الجوال *</label>
-                  <div className="flex">
-                    <span className="inline-flex items-center px-4 rounded-r-lg border border-l-0 border-input bg-muted text-sm text-muted-foreground">
-                      +966
-                    </span>
-                    <input
-                      type="tel"
-                      placeholder="5xxxxxxxx"
-                      className="input-base rounded-r-none"
-                      dir="ltr"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">سيصلك رمز التحقق على هذا الرقم</p>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">البريد الإلكتروني (اختياري)</label>
-                  <input
-                    type="email"
-                    placeholder="example@domain.com"
-                    className="input-base"
-                    dir="ltr"
-                  />
-                </div>
-              </div>
-            </div>
-
             {/* Payment Method */}
             <div className="bg-card rounded-xl border border-border p-6">
               <div className="flex items-center gap-2 mb-6">
                 <span className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
-                  2
+                  1
                 </span>
                 <h2 className="text-xl font-bold">طريقة الدفع</h2>
               </div>
@@ -118,7 +124,14 @@ const CheckoutPage = () => {
                     key={method.id}
                     className="relative flex items-center gap-3 p-4 rounded-lg border border-border hover:border-primary cursor-pointer transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5"
                   >
-                    <input type="radio" name="payment" className="sr-only" defaultChecked={method.id === "card"} />
+                    <input 
+                      type="radio" 
+                      name="payment" 
+                      value={method.id}
+                      checked={paymentMethod === method.id}
+                      onChange={(e) => setPaymentMethod(e.target.value)}
+                      className="sr-only" 
+                    />
                     <method.icon className="w-5 h-5 text-muted-foreground" />
                     <div className="text-right">
                       <p className="font-medium text-sm">{method.label}</p>
@@ -127,121 +140,76 @@ const CheckoutPage = () => {
                   </label>
                 ))}
               </div>
+            </div>
 
-              {/* Card Details */}
-              <div className="space-y-4 pt-4 border-t border-border">
-                <h3 className="font-medium">بيانات البطاقة</h3>
-                <div>
-                  <label className="block text-sm font-medium mb-2">الاسم على البطاقة</label>
-                  <input
-                    type="text"
-                    placeholder="الاسم كما يظهر على البطاقة"
-                    className="input-base"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">رقم البطاقة</label>
-                  <input
-                    type="text"
-                    placeholder="0000 0000 0000 0000"
-                    className="input-base"
-                    dir="ltr"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium mb-2">تاريخ الانتهاء</label>
-                    <input
-                      type="text"
-                      placeholder="MM / YY"
-                      className="input-base"
-                      dir="ltr"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-2">رمز التحقق (CVC)</label>
-                    <input
-                      type="text"
-                      placeholder="123"
-                      className="input-base"
-                      dir="ltr"
-                    />
-                  </div>
-                </div>
+            {/* Security Info */}
+            <div className="bg-success/10 rounded-xl border border-success/20 p-6 flex items-center gap-3">
+              <Lock className="w-5 h-5 text-success shrink-0" />
+              <div>
+                <p className="font-medium text-success">عملية آمنة 100%</p>
+                <p className="text-sm text-success/80">بيانات الدفع محمية بأعلى معايير الأمان</p>
               </div>
             </div>
           </div>
 
-          {/* Order Summary */}
-          <div>
-            <div className="bg-card rounded-xl border border-border p-6 sticky top-24">
-              <h2 className="text-xl font-bold mb-6">ملخص الطلب</h2>
+          {/* Sidebar - Order Summary */}
+          <div className="space-y-6">
+            <div className="bg-card rounded-xl border border-border p-6">
+              <h3 className="font-bold mb-4">ملخص الطلب</h3>
 
-              <div className="space-y-4 mb-6">
-                {cartItems.map((item) => (
-                  <div key={item.id} className="flex gap-3">
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      className="w-16 h-16 rounded-lg object-cover"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-medium text-sm truncate">{item.title}</h4>
-                      <p className="text-xs text-muted-foreground">{item.description}</p>
-                      <p className="text-xs text-muted-foreground">الكمية: {item.quantity}</p>
+              {cartItems.length > 0 ? (
+                <div className="space-y-4 mb-4">
+                  {cartItems.map((item) => (
+                    <div key={item.id} className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{item.title}</p>
+                        <p className="text-xs text-muted-foreground">{item.quantity.toLocaleString()} وحدة</p>
+                      </div>
+                      <p className="text-sm font-semibold">${item.price.toFixed(2)}</p>
                     </div>
-                    <div className="text-left shrink-0">
-                      <p className="font-bold">{item.price} ر.س</p>
-                      <button className="text-destructive text-xs hover:underline flex items-center gap-1 mt-1">
-                        <Trash2 className="w-3 h-3" />
-                        حذف
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Coupon */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">كود الخصم</label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="أدخل كود الخصم"
-                    className="input-base flex-1"
-                  />
-                  <button className="btn-outline px-4 rounded-lg text-sm font-medium">
-                    تطبيق
-                  </button>
+                  ))}
                 </div>
-              </div>
+              ) : (
+                <p className="text-sm text-muted-foreground mb-4">لا توجد عناصر في السلة</p>
+              )}
 
-              {/* Totals */}
-              <div className="space-y-2 py-4 border-t border-border">
+              <div className="space-y-2 border-t border-border pt-4">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">المجموع الفرعي</span>
-                  <span>{subtotal} ر.س</span>
+                  <span className="text-muted-foreground">المبلغ الفرعي</span>
+                  <span className="font-medium">${subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">الضريبة (15%)</span>
-                  <span>{tax.toFixed(2)} ر.س</span>
+                  <span className="font-medium">${tax.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-lg font-bold pt-2 border-t border-border">
-                  <span>الإجمالي النهائي</span>
-                  <span className="text-primary">{total.toFixed(2)} ر.س</span>
+                <div className="flex justify-between text-lg font-bold border-t border-border pt-2">
+                  <span>الإجمالي</span>
+                  <span className="text-primary">${total.toFixed(2)}</span>
                 </div>
               </div>
 
-              {/* Submit */}
-              <button className="w-full btn-primary py-4 rounded-lg font-semibold flex items-center justify-center gap-2 mt-4">
-                <Lock className="w-5 h-5" />
-                إتمام الدفع
-              </button>
+              <form onSubmit={handleSubmitOrder} className="mt-6 space-y-3">
+                <button 
+                  type="submit"
+                  disabled={loading || !user || cartItems.length === 0}
+                  className="w-full btn-primary py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {loading ? 'جاري المعالجة...' : 'تأكيد الطلب'}
+                </button>
+                <Link to="/services" className="block w-full btn-outline py-3 rounded-lg font-semibold text-center">
+                  العودة للخدمات
+                </Link>
+              </form>
+            </div>
 
-              <p className="text-xs text-center text-muted-foreground mt-3 flex items-center justify-center gap-1">
-                <Lock className="w-3 h-3" />
-                عملية دفع آمنة ومشفرة 100%
-              </p>
+            {/* Info Box */}
+            <div className="bg-primary/10 rounded-xl border border-primary/20 p-4">
+              <p className="text-sm text-foreground font-medium mb-3">نقاط مهمة:</p>
+              <ul className="text-xs space-y-1 text-muted-foreground">
+                <li>✓ تنفيذ فوري بعد التأكيد</li>
+                <li>✓ ضمان 100%</li>
+                <li>✓ دعم عملاء 24/7</li>
+              </ul>
             </div>
           </div>
         </div>
