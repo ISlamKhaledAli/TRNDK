@@ -100,4 +100,30 @@ export const apiClient = {
     if (!res.ok) throw new Error('Failed to delete order');
     return res.json();
   },
+
+  async getAdminOrdersList() {
+    const res = await fetch(`${API_BASE}/admin/orders`);
+    if (!res.ok) throw new Error('Failed to fetch orders');
+    return res.json();
+  },
+
+  async updateServiceStatus(id: number, isActive: boolean) {
+    const res = await fetch(`${API_BASE}/admin/services/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isActive }),
+    });
+    if (!res.ok) throw new Error('Failed to update service status');
+    return res.json();
+  },
+
+  async updateOrderStatusAdmin(id: number, status: string) {
+    const res = await fetch(`${API_BASE}/admin/orders/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) throw new Error('Failed to update order status');
+    return res.json();
+  },
 };

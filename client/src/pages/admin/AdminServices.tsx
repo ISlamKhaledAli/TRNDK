@@ -139,6 +139,18 @@ const AdminServices = () => {
     }
   };
 
+  const handleToggleStatus = async (service: Service) => {
+    try {
+      const newStatus = !service.isActive;
+      await apiClient.updateServiceStatus(service.id, newStatus);
+      toast.success(newStatus ? 'Service activated' : 'Service deactivated');
+      await fetchServices();
+    } catch (error) {
+      toast.error('Failed to update service status');
+      console.error('Error:', error);
+    }
+  };
+
   const filteredServices = services.filter(s => 
     s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     s.category?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -209,7 +221,11 @@ const AdminServices = () => {
                     <td className="p-4 text-sm text-foreground">${(service.price / 100).toFixed(2)}</td>
                     <td className="p-4 text-sm text-foreground">{service.duration || '-'}</td>
                     <td className="p-4">
-                      <button className="flex items-center">
+                      <button 
+                        onClick={() => handleToggleStatus(service)}
+                        className="flex items-center hover:opacity-70 transition-opacity cursor-pointer"
+                        title={service.isActive ? 'Click to deactivate' : 'Click to activate'}
+                      >
                         {service.isActive !== false ? (
                           <ToggleRight className="w-8 h-8 text-success" />
                         ) : (
