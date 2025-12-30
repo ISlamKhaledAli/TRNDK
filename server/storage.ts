@@ -1,24 +1,30 @@
 import { users, services, orders, type User, type InsertUser, type Service, type InsertService, type Order, type InsertOrder } from "@shared/schema";
 
+export interface StorageResult<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
 export interface IStorage {
   // Users
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  createUser(user: InsertUser): Promise<StorageResult<User>>;
   
   // Services
   getServices(): Promise<Service[]>;
   getService(id: number): Promise<Service | undefined>;
-  createService(service: InsertService): Promise<Service>;
-  updateService(id: number, service: Partial<InsertService>): Promise<Service | undefined>;
-  deleteService(id: number): Promise<boolean>;
+  createService(service: InsertService): Promise<StorageResult<Service>>;
+  updateService(id: number, service: Partial<InsertService>): Promise<StorageResult<Service>>;
+  deleteService(id: number): Promise<StorageResult<void>>;
   
   // Orders
   getOrders(userId: number): Promise<Order[]>;
   getAllOrders(): Promise<Order[]>;
-  createOrder(order: InsertOrder): Promise<Order>;
-  updateOrderStatus(id: number, status: string): Promise<Order | undefined>;
-  deleteOrder(id: number): Promise<boolean>;
+  createOrder(order: InsertOrder): Promise<StorageResult<Order>>;
+  updateOrderStatus(id: number, status: string): Promise<StorageResult<Order>>;
+  deleteOrder(id: number, userId: number): Promise<StorageResult<void>>;
 }
 
 export class MemStorage implements IStorage {
@@ -89,11 +95,20 @@ export class MemStorage implements IStorage {
     );
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
+  async createUser(insertUser: InsertUser): Promise<StorageResult<User>> {
+    if (!insertUser.email || !insertUser.name || !insertUser.password) {
+      return { success: false, error: 'Email, name, and password are required' };
+    }
+    
     const id = this.currentUserId++;
-    const user: User = { ...insertUser, id, createdAt: new Date() };
+    const user: User = { 
+      ...insertUser, 
+      id, 
+      createdAt: new Date(),
+      role: insertUser.role || 'customer'
+    };
     this.users.set(id, user);
-    return user;
+    return { success: true, data: user };
   }
 
   // Services
@@ -105,23 +120,45 @@ export class MemStorage implements IStorage {
     return this.services.get(id);
   }
 
-  async createService(insertService: InsertService): Promise<Service> {
+  async createService(insertService: InsertService): Promise<StorageResult<Service>> {
+    if (!insertService.name || !insertService.description || insertService.price === undefined) {
+      return { success: false, error: 'Name, description, and price are required' };
+    }
+    
     const id = this.currentServiceId++;
-    const service: Service = { ...insertService, id, createdAt: new Date(), isActive: insertService.isActive ?? true };
+    const now = new Date();
+    const service: Service = { 
+      ...insertService, 
+      id, 
+      createdAt: now, 
+      updatedAt: now,
+      isActive: insertService.isActive ?? true,
+      imageUrl: insertService.imageUrl ?? null,
+      category: insertService.category ?? null,
+      duration: insertService.duration ?? null
+    };
     this.services.set(id, service);
-    return service;
+    return { success: true, data: service };
   }
 
-  async updateService(id: number, updates: Partial<InsertService>): Promise<Service | undefined> {
+  async updateService(id: number, updates: Partial<InsertService>): Promise<StorageResult<Service>> {
     const existing = this.services.get(id);
-    if (!existing) return undefined;
-    const updated: Service = { ...existing, ...updates };
+    if (!existing) {
+      return { success: false, error: 'Service not found' };
+    }
+    
+    const updated: Service = { ...existing, ...updates, updatedAt: new Date() };
     this.services.set(id, updated);
-    return updated;
+    return { success: true, data: updated };
   }
 
-  async deleteService(id: number): Promise<boolean> {
-    return this.services.delete(id);
+  async deleteService(id: number): Promise<StorageResult<void>> {
+    const exists = this.services.has(id);
+    if (!exists) {
+      return { success: false, error: 'Service not found' };
+    }
+    this.services.delete(id);
+    return { success: true };
   }
 
   // Orders
@@ -133,23 +170,54 @@ export class MemStorage implements IStorage {
     return Array.from(this.orders.values());
   }
 
-  async createOrder(insertOrder: InsertOrder): Promise<Order> {
+  async createOrder(insertOrder: InsertOrder): Promise<StorageResult<Order>> {
+    if (!insertOrder.userId || !insertOrder.serviceId || insertOrder.totalAmount === undefined) {
+      return { success: false, error: 'UserId, serviceId, and totalAmount are required' };
+    }
+    
     const id = this.currentOrderId++;
-    const order: Order = { ...insertOrder, id, createdAt: new Date() };
+    const now = new Date();
+    const order: Order = { 
+      ...insertOrder, 
+      id, 
+      createdAt: now, 
+      updatedAt: now,
+      status: insertOrder.status || 'pending',
+      details: insertOrder.details ?? null
+    };
     this.orders.set(id, order);
-    return order;
+    return { success: true, data: order };
   }
 
-  async updateOrderStatus(id: number, status: string): Promise<Order | undefined> {
+  async updateOrderStatus(id: number, status: string): Promise<StorageResult<Order>> {
     const order = this.orders.get(id);
-    if (!order) return undefined;
-    const updatedOrder = { ...order, status };
+    if (!order) {
+      return { success: false, error: 'Order not found' };
+    }
+    
+    const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled'];
+    if (!validStatuses.includes(status)) {
+      return { success: false, error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` };
+    }
+    
+    const updatedOrder = { ...order, status, updatedAt: new Date() };
     this.orders.set(id, updatedOrder);
-    return updatedOrder;
+    return { success: true, data: updatedOrder };
   }
 
-  async deleteOrder(id: number): Promise<boolean> {
-    return this.orders.delete(id);
+  async deleteOrder(id: number, userId: number): Promise<StorageResult<void>> {
+    const order = this.orders.get(id);
+    if (!order) {
+      return { success: false, error: 'Order not found' };
+    }
+    
+    // Ownership check - users can only delete their own orders
+    if (order.userId !== userId) {
+      return { success: false, error: 'Unauthorized: You can only delete your own orders' };
+    }
+    
+    this.orders.delete(id);
+    return { success: true };
   }
 }
 

@@ -31,6 +31,7 @@ export const services = pgTable("services", {
   duration: text("duration"),
   isActive: boolean("is_active").default(true),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const orders = pgTable("orders", {
@@ -41,6 +42,7 @@ export const orders = pgTable("orders", {
   totalAmount: integer("total_amount").notNull(),
   details: jsonb("details"),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 // === SCHEMAS ===

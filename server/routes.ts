@@ -61,16 +61,20 @@ export async function registerRoutes(
         return res.status(400).json({ message: 'Email already exists' });
       }
 
-      const user = await storage.createUser(userData);
-      const token = `mock-token-${user.id}`;
+      const result = await storage.createUser(userData);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error });
+      }
+
+      const token = `mock-token-${result.data!.id}`;
       
       res.status(201).json({
         token,
         user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          role: user.role
+          id: result.data!.id,
+          name: result.data!.name,
+          email: result.data!.email,
+          role: result.data!.role
         }
       });
     } catch (e) {
@@ -92,8 +96,11 @@ export async function registerRoutes(
   apiRouter.post('/orders', async (req, res) => {
     try {
       const orderData = insertOrderSchema.parse(req.body);
-      const order = await storage.createOrder(orderData);
-      res.status(201).json({ data: order });
+      const result = await storage.createOrder(orderData);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error });
+      }
+      res.status(201).json({ data: result.data });
     } catch (e) {
       res.status(400).json({ message: 'Validation error', errors: e });
     }
@@ -106,9 +113,11 @@ export async function registerRoutes(
   });
 
   apiRouter.delete('/orders/:id', async (req, res) => {
-    const success = await storage.deleteOrder(Number(req.params.id));
-    if (!success) {
-      return res.status(404).json({ message: 'Order not found' });
+    // Mock user ID 1 - in production, extract from auth token
+    const userId = 1;
+    const result = await storage.deleteOrder(Number(req.params.id), userId);
+    if (!result.success) {
+      return res.status(result.error?.includes('Unauthorized') ? 403 : 404).json({ message: result.error });
     }
     res.json({ message: 'Order deleted' });
   });
@@ -117,8 +126,11 @@ export async function registerRoutes(
   apiRouter.post('/admin/services', async (req, res) => {
     try {
       const serviceData = insertServiceSchema.parse(req.body);
-      const service = await storage.createService(serviceData);
-      res.status(201).json({ data: service });
+      const result = await storage.createService(serviceData);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error });
+      }
+      res.status(201).json({ data: result.data });
     } catch (e) {
       res.status(400).json({ message: 'Validation error', errors: e });
     }
@@ -127,20 +139,20 @@ export async function registerRoutes(
   apiRouter.put('/admin/services/:id', async (req, res) => {
     try {
       const updates = insertServiceSchema.partial().parse(req.body);
-      const service = await storage.updateService(Number(req.params.id), updates);
-      if (!service) {
-        return res.status(404).json({ message: 'Service not found' });
+      const result = await storage.updateService(Number(req.params.id), updates);
+      if (!result.success) {
+        return res.status(404).json({ message: result.error });
       }
-      res.json({ data: service });
+      res.json({ data: result.data });
     } catch (e) {
       res.status(400).json({ message: 'Validation error', errors: e });
     }
   });
 
   apiRouter.delete('/admin/services/:id', async (req, res) => {
-    const success = await storage.deleteService(Number(req.params.id));
-    if (!success) {
-      return res.status(404).json({ message: 'Service not found' });
+    const result = await storage.deleteService(Number(req.params.id));
+    if (!result.success) {
+      return res.status(404).json({ message: result.error });
     }
     res.json({ message: 'Service deleted' });
   });
@@ -153,11 +165,11 @@ export async function registerRoutes(
 
   apiRouter.patch('/admin/orders/:id/status', async (req, res) => {
     const { status } = req.body;
-    const order = await storage.updateOrderStatus(Number(req.params.id), status);
-    if (!order) {
-      return res.status(404).json({ message: 'Order not found' });
+    const result = await storage.updateOrderStatus(Number(req.params.id), status);
+    if (!result.success) {
+      return res.status(400).json({ message: result.error });
     }
-    res.json({ data: order });
+    res.json({ data: result.data });
   });
 
   app.use('/api/v1', apiRouter);
