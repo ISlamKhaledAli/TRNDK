@@ -1,5 +1,5 @@
 import AdminLayout from "@/components/layouts/AdminLayout";
-import { Search, UserPlus, Eye, Edit, Ban, ChevronLeft, ChevronRight, Crown } from "lucide-react";
+import { Search, UserPlus, Eye, Edit, Ban, ChevronLeft, ChevronRight, Crown, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiClient } from "@/lib/api";
 import { toast } from "sonner";
@@ -21,6 +21,7 @@ const AdminUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [vipFilter, setVipFilter] = useState('all');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   const fetchUsers = async () => {
     try {
@@ -213,7 +214,11 @@ const AdminUsers = () => {
                         >
                           <Crown className={`w-4 h-4 ${user.isVip ? 'text-warning' : 'text-muted-foreground'}`} />
                         </button>
-                        <button className="p-2 rounded-lg hover:bg-secondary transition-colors" title="عرض">
+                        <button 
+                          onClick={() => setSelectedUser(user)}
+                          className="p-2 rounded-lg hover:bg-secondary transition-colors" 
+                          title="عرض التفاصيل"
+                        >
                           <Eye className="w-4 h-4 text-muted-foreground" />
                         </button>
                       </div>
@@ -239,6 +244,130 @@ const AdminUsers = () => {
           </div>
         </div>
       </div>
+
+      {/* User Details Modal */}
+      {selectedUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-foreground">تفاصيل المستخدم</h2>
+              <button 
+                onClick={() => setSelectedUser(null)}
+                className="p-1 hover:bg-secondary rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-muted-foreground" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* User Avatar */}
+              <div className="flex justify-center mb-4">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <span className="text-2xl font-medium text-primary">{selectedUser.name[0]}</span>
+                </div>
+              </div>
+
+              {/* Basic Info */}
+              <div className="bg-secondary/50 rounded-lg p-4 space-y-3">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">الاسم</p>
+                  <p className="text-sm font-medium text-foreground">{selectedUser.name}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">البريد الإلكتروني</p>
+                  <p className="text-sm text-foreground">{selectedUser.email}</p>
+                </div>
+                {selectedUser.phone && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">رقم الجوال</p>
+                    <p className="text-sm text-foreground" dir="ltr">{selectedUser.phone}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Account Status */}
+              <div className="bg-secondary/50 rounded-lg p-4 space-y-3">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">حالة الحساب</p>
+                  <span className={`inline-flex px-2 py-1 text-xs rounded-full ${
+                    selectedUser.status === "active" 
+                      ? "bg-success/10 text-success" 
+                      : "bg-destructive/10 text-destructive"
+                  }`}>
+                    {selectedUser.status === "active" ? "نشط" : "موقوف"}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">مستوى العضوية</p>
+                  <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full ${
+                    selectedUser.isVip 
+                      ? "bg-warning/10 text-warning" 
+                      : "bg-secondary text-muted-foreground"
+                  }`}>
+                    {selectedUser.isVip ? (
+                      <>
+                        <Crown className="w-3 h-3" />
+                        VIP
+                      </>
+                    ) : (
+                      "عادي"
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              {/* Balance Info */}
+              <div className="bg-secondary/50 rounded-lg p-4 space-y-3">
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">الرصيد</p>
+                  <p className="text-sm font-medium text-foreground">${(selectedUser.balance / 100).toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-1">تاريخ التسجيل</p>
+                  <p className="text-sm text-foreground">{new Date(selectedUser.createdAt).toLocaleDateString('ar-SA')}</p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-2 pt-2">
+                <button 
+                  onClick={() => {
+                    handleStatusChange(selectedUser.id, selectedUser.status === 'active' ? 'suspended' : 'active');
+                    setSelectedUser(null);
+                  }}
+                  className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    selectedUser.status === 'active'
+                      ? 'bg-destructive/10 text-destructive hover:bg-destructive/20'
+                      : 'bg-success/10 text-success hover:bg-success/20'
+                  }`}
+                >
+                  {selectedUser.status === 'active' ? 'إيقاف الحساب' : 'تفعيل الحساب'}
+                </button>
+                <button 
+                  onClick={() => {
+                    handleVipToggle(selectedUser.id, selectedUser.isVip);
+                    setSelectedUser(null);
+                  }}
+                  className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    selectedUser.isVip
+                      ? 'bg-warning/10 text-warning hover:bg-warning/20'
+                      : 'bg-primary/10 text-primary hover:bg-primary/20'
+                  }`}
+                >
+                  {selectedUser.isVip ? 'إلغاء VIP' : 'ترقية VIP'}
+                </button>
+              </div>
+
+              <button 
+                onClick={() => setSelectedUser(null)}
+                className="w-full px-4 py-2 rounded-lg border border-border text-foreground hover:bg-secondary transition-colors text-sm font-medium"
+              >
+                إغلاق
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </AdminLayout>
   );
 };
