@@ -102,6 +102,31 @@
   }
 }
 
+/* Scrollbar styling for both light and dark modes */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--secondary));
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground));
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--foreground) / 0.5);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-color: hsl(var(--muted-foreground)) hsl(var(--secondary));
+  scrollbar-width: thin;
+}
+
 @layer utilities {
   .text-gradient {
     @apply bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent;
