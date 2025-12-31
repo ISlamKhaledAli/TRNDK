@@ -172,6 +172,30 @@ export async function registerRoutes(
     res.json({ data: result.data });
   });
 
+  // Admin Routes - Users
+  apiRouter.get('/admin/users', async (req, res) => {
+    const users = await storage.getAllUsers();
+    res.json({ data: users });
+  });
+
+  apiRouter.patch('/admin/users/:id/status', async (req, res) => {
+    const { status } = req.body;
+    const result = await storage.updateUserStatus(Number(req.params.id), status);
+    if (!result.success) {
+      return res.status(400).json({ message: result.error });
+    }
+    res.json({ data: result.data });
+  });
+
+  apiRouter.patch('/admin/users/:id/vip', async (req, res) => {
+    const { isVip } = req.body;
+    const result = await storage.updateUserVipStatus(Number(req.params.id), isVip);
+    if (!result.success) {
+      return res.status(400).json({ message: result.error });
+    }
+    res.json({ data: result.data });
+  });
+
   app.use('/api/v1', apiRouter);
 
   return httpServer;

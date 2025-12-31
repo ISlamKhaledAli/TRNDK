@@ -126,4 +126,30 @@ export const apiClient = {
     if (!res.ok) throw new Error('Failed to update order status');
     return res.json();
   },
+
+  async getAdminUsersList() {
+    const res = await fetch(`${API_BASE}/admin/users`);
+    if (!res.ok) throw new Error('Failed to fetch users');
+    return res.json();
+  },
+
+  async updateUserStatus(id: number, status: string) {
+    const res = await fetch(`${API_BASE}/admin/users/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) throw new Error('Failed to update user status');
+    return res.json();
+  },
+
+  async updateUserVipStatus(id: number, isVip: boolean) {
+    const res = await fetch(`${API_BASE}/admin/users/${id}/vip`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isVip }),
+    });
+    if (!res.ok) throw new Error('Failed to update user VIP status');
+    return res.json();
+  },
 };

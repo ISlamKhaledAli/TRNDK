@@ -10,7 +10,10 @@ export interface IStorage {
   // Users
   getUser(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getAllUsers(): Promise<User[]>;
   createUser(user: InsertUser): Promise<StorageResult<User>>;
+  updateUserStatus(id: number, status: string): Promise<StorageResult<User>>;
+  updateUserVipStatus(id: number, isVip: boolean): Promise<StorageResult<User>>;
   
   // Services
   getServices(): Promise<Service[]>;
@@ -56,13 +59,19 @@ export class MemStorage implements IStorage {
       role: "admin",
     });
 
-    // Seed Customer
-    this.createUser({
-      name: "Customer User",
-      email: "customer@example.com",
-      password: "password",
-      role: "customer",
-    });
+    // Seed Customers with extended data
+    for (let i = 1; i <= 5; i++) {
+      this.createUser({
+        name: `Customer ${i}`,
+        email: `customer${i}@example.com`,
+        password: "password",
+        role: "customer",
+        phone: `+966501234${500 + i}`,
+        status: i === 3 ? 'suspended' : 'active',
+        isVip: i % 2 === 1,
+        balance: Math.floor(Math.random() * 50000),
+      });
+    }
 
     // Seed Services
     this.createService({
@@ -95,6 +104,10 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getAllUsers(): Promise<User[]> {
+    return Array.from(this.users.values());
+  }
+
   async createUser(insertUser: InsertUser): Promise<StorageResult<User>> {
     if (!insertUser.email || !insertUser.name || !insertUser.password) {
       return { success: false, error: 'Email, name, and password are required' };
@@ -105,10 +118,41 @@ export class MemStorage implements IStorage {
       ...insertUser, 
       id, 
       createdAt: new Date(),
-      role: insertUser.role || 'customer'
+      role: insertUser.role || 'customer',
+      status: 'active',
+      isVip: false,
+      balance: 0,
+      phone: null
     };
     this.users.set(id, user);
     return { success: true, data: user };
+  }
+
+  async updateUserStatus(id: number, status: string): Promise<StorageResult<User>> {
+    const user = this.users.get(id);
+    if (!user) {
+      return { success: false, error: 'User not found' };
+    }
+    
+    const validStatuses = ['active', 'suspended'];
+    if (!validStatuses.includes(status)) {
+      return { success: false, error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` };
+    }
+    
+    const updated = { ...user, status };
+    this.users.set(id, updated);
+    return { success: true, data: updated };
+  }
+
+  async updateUserVipStatus(id: number, isVip: boolean): Promise<StorageResult<User>> {
+    const user = this.users.get(id);
+    if (!user) {
+      return { success: false, error: 'User not found' };
+    }
+    
+    const updated = { ...user, isVip };
+    this.users.set(id, updated);
+    return { success: true, data: updated };
   }
 
   // Services

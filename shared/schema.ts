@@ -18,6 +18,10 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   password: text("password").notNull(),
   role: text("role").default("customer").notNull(), // 'admin' | 'customer'
+  phone: text("phone"),
+  status: text("status").default("active").notNull(), // 'active' | 'suspended'
+  isVip: boolean("is_vip").default(false),
+  balance: integer("balance").default(0), // in cents
   createdAt: timestamp("created_at").defaultNow(),
 });
 
