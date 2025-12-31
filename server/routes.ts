@@ -196,6 +196,21 @@ export async function registerRoutes(
     res.json({ data: result.data });
   });
 
+  // Admin Routes - Payments
+  apiRouter.get('/admin/payments', async (req, res) => {
+    const payments = await storage.getAllPayments();
+    res.json({ data: payments });
+  });
+
+  apiRouter.patch('/admin/payments/:id/status', async (req, res) => {
+    const { status } = req.body;
+    const result = await storage.updatePaymentStatus(Number(req.params.id), status);
+    if (!result.success) {
+      return res.status(400).json({ message: result.error });
+    }
+    res.json({ data: result.data });
+  });
+
   app.use('/api/v1', apiRouter);
 
   return httpServer;

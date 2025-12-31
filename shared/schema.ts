@@ -49,6 +49,18 @@ export const orders = pgTable("orders", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+export const payments = pgTable("payments", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(), // references users.id
+  orderId: integer("order_id"), // references orders.id
+  amount: integer("amount").notNull(), // in cents
+  method: text("method").notNull(), // 'card', 'apple', 'stc', 'bank'
+  status: text("status").default("pending").notNull(), // 'pending', 'completed', 'failed'
+  transactionId: text("transaction_id"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // === SCHEMAS ===
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
@@ -63,6 +75,11 @@ export const insertOrderSchema = createInsertSchema(orders).omit({
   createdAt: true,
 });
 
+export const insertPaymentSchema = createInsertSchema(payments).omit({
+  id: true,
+  createdAt: true,
+});
+
 // === TYPES ===
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -72,6 +89,9 @@ export type InsertService = z.infer<typeof insertServiceSchema>;
 
 export type Order = typeof orders.$inferSelect;
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
+
+export type Payment = typeof payments.$inferSelect;
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;
 
 // API Types
 export type LoginRequest = {

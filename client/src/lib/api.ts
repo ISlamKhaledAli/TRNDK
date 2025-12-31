@@ -152,4 +152,20 @@ export const apiClient = {
     if (!res.ok) throw new Error('Failed to update user VIP status');
     return res.json();
   },
+
+  async getAdminPaymentsList() {
+    const res = await fetch(`${API_BASE}/admin/payments`);
+    if (!res.ok) throw new Error('Failed to fetch payments');
+    return res.json();
+  },
+
+  async updatePaymentStatus(id: number, status: string) {
+    const res = await fetch(`${API_BASE}/admin/payments/${id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status }),
+    });
+    if (!res.ok) throw new Error('Failed to update payment status');
+    return res.json();
+  },
 };

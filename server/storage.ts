@@ -1,4 +1,4 @@
-import { users, services, orders, type User, type InsertUser, type Service, type InsertService, type Order, type InsertOrder } from "@shared/schema";
+import { users, services, orders, payments, type User, type InsertUser, type Service, type InsertService, type Order, type InsertOrder, type Payment, type InsertPayment } from "@shared/schema";
 
 export interface StorageResult<T> {
   success: boolean;
@@ -34,17 +34,21 @@ export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private services: Map<number, Service>;
   private orders: Map<number, Order>;
+  private payments: Map<number, Payment>;
   private currentUserId: number;
   private currentServiceId: number;
   private currentOrderId: number;
+  private currentPaymentId: number;
 
   constructor() {
     this.users = new Map();
     this.services = new Map();
     this.orders = new Map();
+    this.payments = new Map();
     this.currentUserId = 1;
     this.currentServiceId = 1;
     this.currentOrderId = 1;
+    this.currentPaymentId = 1;
 
     // Seed mock data
     this.seedData();
@@ -91,6 +95,26 @@ export class MemStorage implements IStorage {
       duration: "2 hours",
       imageUrl: "https://images.unsplash.com/photo-1557429287-b2e26467fc2b?w=800&auto=format&fit=crop&q=60&ixlib=rb-4.0.3",
     });
+
+    // Seed Payments
+    const paymentMethods = ['card', 'apple', 'stc', 'bank'];
+    const paymentStatuses = ['completed', 'pending', 'failed'];
+    for (let i = 1; i <= 8; i++) {
+      const now = new Date();
+      const paymentId = this.currentPaymentId++;
+      const payment: Payment = {
+        id: paymentId,
+        userId: Math.min(i, 5) + 1,
+        orderId: Math.min(i, 3),
+        amount: Math.floor(Math.random() * 10000) + 2500,
+        method: paymentMethods[i % 4],
+        status: paymentStatuses[i % 3],
+        transactionId: `TXN-${Date.now()}-${i}`,
+        createdAt: new Date(now.getTime() - i * 3600000),
+        updatedAt: new Date(now.getTime() - i * 3600000),
+      };
+      this.payments.set(paymentId, payment);
+    }
   }
 
   // Users
@@ -212,6 +236,27 @@ export class MemStorage implements IStorage {
 
   async getAllOrders(): Promise<Order[]> {
     return Array.from(this.orders.values());
+  }
+
+  // Payments
+  async getAllPayments(): Promise<Payment[]> {
+    return Array.from(this.payments.values());
+  }
+
+  async updatePaymentStatus(id: number, status: string): Promise<StorageResult<Payment>> {
+    const payment = this.payments.get(id);
+    if (!payment) {
+      return { success: false, error: 'Payment not found' };
+    }
+    
+    const validStatuses = ['pending', 'completed', 'failed'];
+    if (!validStatuses.includes(status)) {
+      return { success: false, error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` };
+    }
+    
+    const updated = { ...payment, status, updatedAt: new Date() };
+    this.payments.set(id, updated);
+    return { success: true, data: updated };
   }
 
   async createOrder(insertOrder: InsertOrder): Promise<StorageResult<Order>> {
