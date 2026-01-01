@@ -14,7 +14,11 @@ const AdminSidebar = () => {
   const { t } = useTranslation("admin");
 
   const menuItems = [
-    { icon: LayoutDashboard, label: t("sidebar.dashboard"), href: "/admin/dashboard" },
+    {
+      icon: LayoutDashboard,
+      label: t("sidebar.dashboard"),
+      href: "/admin/dashboard",
+    },
     { icon: ClipboardList, label: t("sidebar.orders"), href: "/admin/orders" },
     { icon: Package, label: t("sidebar.services"), href: "/admin/services" },
     { icon: Users, label: t("sidebar.users"), href: "/admin/users" },
@@ -22,15 +26,15 @@ const AdminSidebar = () => {
   ];
 
   return (
-    <aside className="w-64 bg-sidebar border-l border-sidebar-border flex flex-col">
+    <aside className="w-64 bg-sidebar border-l border-slate-200/60 dark:border-slate-800 flex flex-col">
       {/* Logo */}
-      <div className="p-6 border-b border-sidebar-border">
+      <div className="p-6 border-b border-slate-200/60 dark:border-slate-800">
         <Link to="/admin/dashboard" className="flex items-center gap-2">
           <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
             <span className="text-primary-foreground font-bold text-lg">A</span>
           </div>
           <div>
-            <span className="font-bold text-lg text-sidebar-foreground">STAALKER</span>
+            <span className="font-bold text-lg">STAALKER</span>
             <p className="text-xs text-sidebar-muted">{t("brand.subtitle")}</p>
           </div>
         </Link>
@@ -58,11 +62,11 @@ const AdminSidebar = () => {
 
       {/* Logout */}
       <div className="p-4 border-t border-sidebar-border">
-        <button 
+        <button
           onClick={() => {
             // TODO: Clear auth token/session
-            localStorage.removeItem('token');
-            window.location.href = '/login';
+            localStorage.removeItem("token");
+            window.location.href = "/login";
           }}
           className="sidebar-item w-full text-destructive hover:bg-destructive/10"
         >

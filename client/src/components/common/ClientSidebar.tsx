@@ -13,21 +13,25 @@ const ClientSidebar = () => {
   const { t } = useTranslation("client");
 
   const menuItems = [
-    { icon: LayoutDashboard, label: t("sidebar.dashboard"), href: "/client/dashboard" },
+    {
+      icon: LayoutDashboard,
+      label: t("sidebar.dashboard"),
+      href: "/client/dashboard",
+    },
     { icon: ClipboardList, label: t("sidebar.orders"), href: "/client/orders" },
     { icon: Diamond, label: t("sidebar.services"), href: "/services" },
     { icon: Settings, label: t("sidebar.profile"), href: "/client/profile" },
   ];
 
   return (
-    <aside className="w-64 bg-sidebar border-l border-sidebar-border flex flex-col">
+    <aside className="w-64 bg-sidebar border-l border-slate-200/60 dark:border-slate-800 flex flex-col">
       {/* Logo */}
-      <div className="p-6 border-b border-sidebar-border">
+      <div className="p-6 border-b border-slate-200/60 dark:border-slate-800">
         <Link to="/" className="flex items-center gap-2">
           <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
             <span className="text-primary-foreground font-bold text-lg">س</span>
           </div>
-          <span className="font-bold text-xl text-sidebar-foreground">STAALKR</span>
+          <span className="font-bold text-xl">STAALKR</span>
         </Link>
       </div>
 
@@ -53,11 +57,11 @@ const ClientSidebar = () => {
 
       {/* Logout */}
       <div className="p-4 border-t border-sidebar-border">
-        <button 
+        <button
           onClick={() => {
             // TODO: Clear auth token/session
-            localStorage.removeItem('token');
-            window.location.href = '/login';
+            localStorage.removeItem("token");
+            window.location.href = "/login";
           }}
           className="sidebar-item w-full text-destructive hover:bg-destructive/10"
         >

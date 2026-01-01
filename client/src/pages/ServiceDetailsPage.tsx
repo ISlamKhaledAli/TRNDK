@@ -26,9 +26,12 @@ const reviews = [
   { name: "سارة علي", rating: 5, date: "منذ أسبوع", comment: "تعامل راقي وسرعة في الإنجاز. سأتعامل معكم مرة أخرى بالتأكيد لزيادة اللايكات." },
 ];
 
+import { useCart } from "@/contexts/CartContext";
+
 const ServiceDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { addItem } = useCart();
   const [service, setService] = useState<Service | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1000);
@@ -61,14 +64,17 @@ const ServiceDetailsPage = () => {
       return;
     }
 
-    navigate('/checkout', {
-      state: {
-        service,
-        quantity,
-        link,
-        totalAmount: Math.round((service.price / 100) * (quantity / 1000))
-      }
+    addItem({
+      id: Date.now(),
+      serviceId: service.id,
+      name: service.name,
+      price: service.price,
+      quantity,
+      link,
+      imageUrl: service.imageUrl
     });
+
+    toast.success('تمت الإضافة للسلة');
   };
 
   if (loading) {

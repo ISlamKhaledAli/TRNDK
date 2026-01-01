@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { LanguageProvider } from "./contexts/LanguageContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { CartProvider } from "./contexts/CartContext";
 
 // Public Pages
 import HomePage from "./pages/HomePage";
@@ -37,37 +38,39 @@ const App = () => (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <LanguageProvider>
         <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={<HomePage />} />
-                <Route path="/services" element={<ServicesPage />} />
-                <Route path="/services/:id" element={<ServiceDetailsPage />} />
-                <Route path="/checkout" element={<CheckoutPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
+          <CartProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/services" element={<ServicesPage />} />
+                  <Route path="/services/:id" element={<ServiceDetailsPage />} />
+                  <Route path="/checkout" element={<CheckoutPage />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
 
-                {/* Client Dashboard Routes */}
-                <Route path="/client/dashboard" element={<ClientDashboard />} />
-                <Route path="/client/orders" element={<ClientOrders />} />
-                <Route path="/client/new-order" element={<ClientNewOrder />} />
-                <Route path="/client/profile" element={<ClientProfile />} />
+                  {/* Client Dashboard Routes */}
+                  <Route path="/client/dashboard" element={<ClientDashboard />} />
+                  <Route path="/client/orders" element={<ClientOrders />} />
+                  <Route path="/client/new-order" element={<ClientNewOrder />} />
+                  <Route path="/client/profile" element={<ClientProfile />} />
 
-                {/* Admin Dashboard Routes */}
-                <Route path="/admin/dashboard" element={<AdminDashboard />} />
-                <Route path="/admin/orders" element={<AdminOrders />} />
-                <Route path="/admin/services" element={<AdminServices />} />
-                <Route path="/admin/users" element={<AdminUsers />} />
-                <Route path="/admin/payments" element={<AdminPayments />} />
+                  {/* Admin Dashboard Routes */}
+                  <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                  <Route path="/admin/orders" element={<AdminOrders />} />
+                  <Route path="/admin/services" element={<AdminServices />} />
+                  <Route path="/admin/users" element={<AdminUsers />} />
+                  <Route path="/admin/payments" element={<AdminPayments />} />
 
-                {/* Catch-all */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
+                  {/* Catch-all */}
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
+          </CartProvider>
         </AuthProvider>
       </LanguageProvider>
     </ThemeProvider>

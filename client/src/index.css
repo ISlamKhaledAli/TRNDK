@@ -175,8 +175,10 @@
   }
 
   .sidebar-item {
-    @apply flex items-center gap-3 px-4 py-3 rounded-lg text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground transition-all duration-200;
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-foreground transition-all duration-200;
   }
+
+
 
   .sidebar-item-active {
     @apply bg-primary text-primary-foreground hover:bg-primary/90;
