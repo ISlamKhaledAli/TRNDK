@@ -4,12 +4,14 @@ import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "next-themes";
+import { useCart } from "@/contexts/CartContext";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { language, setLanguage } = useLanguage();
   const { t } = useTranslation("common");
   const { theme, setTheme } = useTheme();
+  const { totalItems } = useCart();
   const [mounted, setMounted] = useState(false);
 
   // Prevent hydration mismatch
@@ -88,9 +90,11 @@ const Navbar = () => {
             {/* Cart */}
             <Link to="/checkout" className="p-2 rounded-lg hover:bg-accent transition-colors relative">
               <ShoppingCart className="w-5 h-5 text-muted-foreground" />
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
-                2
-              </span>
+              {totalItems > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
+                  {totalItems}
+                </span>
+              )}
             </Link>
 
             {/* User / Login */}
