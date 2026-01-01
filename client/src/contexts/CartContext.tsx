@@ -12,10 +12,13 @@ export interface CartItem {
 
 interface CartContextType {
   items: CartItem[];
+  wishlist: number[];
   addItem: (item: CartItem) => void;
   removeItem: (id: number) => void;
   updateQuantity: (id: number, quantity: number) => void;
   clearCart: () => void;
+  toggleWishlist: (serviceId: number) => void;
+  isInWishlist: (serviceId: number) => boolean;
   totalItems: number;
   totalPrice: number;
 }
@@ -28,9 +31,18 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     return savedCart ? JSON.parse(savedCart) : [];
   });
 
+  const [wishlist, setWishlist] = useState<number[]>(() => {
+    const savedWishlist = localStorage.getItem("wishlist");
+    return savedWishlist ? JSON.parse(savedWishlist) : [];
+  });
+
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(items));
   }, [items]);
+
+  useEffect(() => {
+    localStorage.setItem("wishlist", JSON.stringify(wishlist));
+  }, [wishlist]);
 
   const addItem = (newItem: CartItem) => {
     setItems((prev) => {
@@ -58,6 +70,16 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const clearCart = () => setItems([]);
 
+  const toggleWishlist = (serviceId: number) => {
+    setWishlist((prev) =>
+      prev.includes(serviceId)
+        ? prev.filter((id) => id !== serviceId)
+        : [...prev, serviceId]
+    );
+  };
+
+  const isInWishlist = (serviceId: number) => wishlist.includes(serviceId);
+
   const totalItems = items.reduce((sum, item) => sum + 1, 0);
   const totalPrice = items.reduce((sum, item) => sum + (item.price / 100) * (item.quantity / 1000), 0);
 
@@ -65,10 +87,13 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     <CartContext.Provider
       value={ {
         items,
+        wishlist,
         addItem,
         removeItem,
         updateQuantity,
         clearCart,
+        toggleWishlist,
+        isInWishlist,
         totalItems,
         totalPrice,
       } }

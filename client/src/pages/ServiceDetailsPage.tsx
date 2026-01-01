@@ -31,18 +31,21 @@ import { useCart } from "@/contexts/CartContext";
 const ServiceDetailsPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addItem } = useCart();
+  const { addItem, isInWishlist, toggleWishlist } = useCart();
   const [service, setService] = useState<Service | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1000);
   const [link, setLink] = useState('');
 
+  const serviceId = Number(id);
+  const isLoved = isInWishlist(serviceId);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [serviceRes, servicesRes] = await Promise.all([
-          apiClient.getService(Number(id)),
+          apiClient.getService(serviceId),
           apiClient.getServices()
         ]);
         
@@ -58,10 +61,10 @@ const ServiceDetailsPage = () => {
     };
 
     if (id) fetchData();
-  }, [id]);
+  }, [id, serviceId]);
 
   const relatedServices = services
-    .filter(s => s.id !== Number(id) && s.category === service?.category)
+    .filter(s => s.id !== serviceId && s.category === service?.category)
     .slice(0, 3);
 
   const handleAddToCart = () => {
@@ -86,6 +89,11 @@ const ServiceDetailsPage = () => {
     });
 
     toast.success('تمت الإضافة للسلة');
+  };
+
+  const handleToggleWishlist = () => {
+    toggleWishlist(serviceId);
+    toast.success(isLoved ? 'تمت الإزالة من المفضلة' : 'تمت الإضافة للمفضلة');
   };
 
   if (loading) {
@@ -206,8 +214,12 @@ const ServiceDetailsPage = () => {
                     </div>
 
                     <div className="flex gap-3">
-                      <button className="p-3 rounded-lg border border-border hover:bg-accent transition-colors">
-                        <Heart className="w-5 h-5" />
+                      <button 
+                        onClick={handleToggleWishlist}
+                        className="p-3 rounded-lg border border-border hover:bg-accent transition-colors group/heart"
+                        title={isLoved ? "Remove from wishlist" : "Add to wishlist"}
+                      >
+                        <Heart className={`w-5 h-5 transition-colors ${isLoved ? 'fill-destructive text-destructive' : 'text-muted-foreground group-hover/heart:text-destructive'}`} />
                       </button>
                       <button onClick={handleAddToCart} className="flex-1 btn-primary py-3 rounded-lg font-semibold flex items-center justify-center gap-2">
                         <ShoppingCart className="w-5 h-5" />
