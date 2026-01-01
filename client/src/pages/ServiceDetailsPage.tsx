@@ -33,25 +33,36 @@ const ServiceDetailsPage = () => {
   const navigate = useNavigate();
   const { addItem } = useCart();
   const [service, setService] = useState<Service | null>(null);
+  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1000);
   const [link, setLink] = useState('');
 
   useEffect(() => {
-    const fetchService = async () => {
+    const fetchData = async () => {
       try {
-        const response = await apiClient.getService(Number(id));
-        setService(response.data || response);
+        const [serviceRes, servicesRes] = await Promise.all([
+          apiClient.getService(Number(id)),
+          apiClient.getServices()
+        ]);
+        
+        setService(serviceRes.data || serviceRes);
+        const allServices = servicesRes.data || servicesRes;
+        setServices(Array.isArray(allServices) ? allServices : []);
       } catch (error) {
-        toast.error('Failed to load service');
+        toast.error('Failed to load service details');
         console.error('Error:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    if (id) fetchService();
+    if (id) fetchData();
   }, [id]);
+
+  const relatedServices = services
+    .filter(s => s.id !== Number(id) && s.category === service?.category)
+    .slice(0, 3);
 
   const handleAddToCart = () => {
     if (!link.trim()) {
@@ -254,16 +265,23 @@ const ServiceDetailsPage = () => {
                 {relatedServices.map((svc) => (
                   <Link
                     key={svc.id}
-                    to={`/services/1/${svc.id}`}
+                    to={`/services/${svc.id}`}
                     className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary transition-colors"
                   >
-                    <img src={svc.image} alt={svc.title} className="w-12 h-12 rounded object-cover" />
+                    <img 
+                      src={svc.imageUrl || "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=100&h=100&fit=crop"} 
+                      alt={svc.name} 
+                      className="w-12 h-12 rounded object-cover" 
+                    />
                     <div className="flex-1 text-right">
-                      <p className="text-sm font-medium line-clamp-2">{svc.title}</p>
-                      <p className="text-xs text-primary font-bold">${svc.price}</p>
+                      <p className="text-sm font-medium line-clamp-2">{svc.name}</p>
+                      <p className="text-xs text-primary font-bold">${(svc.price / 100).toFixed(2)}</p>
                     </div>
                   </Link>
                 ))}
+                {relatedServices.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">لا توجد خدمات مشابهة حالياً</p>
+                )}
               </div>
             </div>
 
