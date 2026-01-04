@@ -2,17 +2,17 @@ import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { apiClient } from "@/services/api";
 
 // Layouts and Guards
-import PrivateRoute from "@/components/PrivateRoute";
-import PublicRoute from "@/components/PublicRoute";
+import PrivateRoute from "@/components/auth/PrivateRoute";
+import PublicRoute from "@/components/auth/PublicRoute";
 
 // Public Pages
-import HomePage from "@/pages/HomePage";
-import ServicesPage from "@/pages/ServicesPage";
-import ServiceDetailsPage from "@/pages/ServiceDetailsPage";
-import CheckoutPage from "@/pages/CheckoutPage";
-import LoginPage from "@/pages/LoginPage";
-import RegisterPage from "@/pages/RegisterPage";
-import NotFound from "@/pages/NotFound";
+import HomePage from "@/pages/common/HomePage";
+import ServicesPage from "@/pages/services/ServicesPage";
+import ServiceDetailsPage from "@/pages/services/ServiceDetailsPage";
+import CheckoutPage from "@/pages/common/CheckoutPage";
+import LoginPage from "@/pages/auth/LoginPage";
+import RegisterPage from "@/pages/auth/RegisterPage";
+import NotFound from "@/pages/common/NotFound";
 
 // Client Pages
 import ClientDashboard from "@/pages/client/ClientDashboard";

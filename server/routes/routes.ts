@@ -1,12 +1,12 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage } from "../storage/storage";
 import { z } from "zod";
 import { insertUserSchema, insertServiceSchema, insertOrderSchema, insertReviewSchema, SERVICE_CATEGORIES } from "@shared/schema";
 import { Router } from "express";
-import { signToken, hashPassword, comparePassword, authMiddleware, adminMiddleware } from "./auth";
-import { NotificationService } from "./notification.service";
-import { emitNewOrder, emitNewUser } from "./socket";
+import { signToken, hashPassword, comparePassword, authMiddleware, adminMiddleware } from "../middleware/auth";
+import { NotificationService } from "../services/notification.service";
+import { emitNewOrder, emitNewUser } from "../services/socket";
 import passport from "passport";
 
 export async function registerRoutes(

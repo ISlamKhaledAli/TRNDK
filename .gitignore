@@ -9,6 +9,7 @@ vite.config.ts.*
 # Secrets and environment variables
 .env
 .env.*
+!.env.example
 
 # Prisma
 prisma/schema.temp.prisma

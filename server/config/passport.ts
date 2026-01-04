@@ -1,6 +1,6 @@
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
-import { storage } from "./storage";
+import { storage } from "../storage/storage";
 import { hashSync } from "bcryptjs";
 
 export function setupPassport() {

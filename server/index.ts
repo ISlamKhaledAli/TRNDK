@@ -1,21 +1,47 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 // Trigger reload
-import { registerRoutes } from "./routes";
+import { registerRoutes } from "./routes/routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import cookieParser from "cookie-parser";
 import passport from "passport";
-import { setupPassport } from "./passport";
-import { setupSocket } from "./socket";
+import { setupPassport } from "./config/passport";
+import { setupSocket } from "./services/socket";
 import { ensureAdminExists } from "./utils/admin-init";
+import helmet from "helmet";
+import compression from "compression";
+import cors from "cors";
+import rateLimit from "express-rate-limit";
 
 const app = express();
+
+// Security Hardening
+app.use(helmet({
+  contentSecurityPolicy: false, // Disabled to allow external assets if needed, or configure strictly
+}));
+app.use(cors());
+app.use(compression());
 app.use(cookieParser());
+
+// Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use("/api", limiter);
+
 setupPassport();
 app.use(passport.initialize());
 const httpServer = createServer(app);
 setupSocket(httpServer);
+
+// Health Check
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok", timestamp: new Date().toISOString() });
+});
 
 declare module "http" {
   interface IncomingMessage {
@@ -74,7 +100,7 @@ app.use((req, res, next) => {
   await registerRoutes(httpServer, app);
 
   try {
-    await import("./db");
+    await import("./config/db");
     log("Database connected successfully", "db");
     await ensureAdminExists();
   } catch (err) {

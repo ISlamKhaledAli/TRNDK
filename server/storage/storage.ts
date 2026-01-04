@@ -1,6 +1,6 @@
 import { type User, type InsertUser, type Service, type InsertService, type Order, type InsertOrder, type Payment, type InsertPayment, type Notification, type InsertNotification, type Review, type InsertReview, type Setting, type InsertSetting } from "@shared/schema";
 import { hashSync } from "bcryptjs";
-import { db } from "./db";
+import { db } from "../config/db";
 import { Prisma } from "@prisma/client";
 
 export interface StorageResult<T> {
@@ -830,7 +830,6 @@ export class DatabaseStorage implements IStorage {
         isActive: insertService.isActive ?? undefined,
         imageUrl: insertService.imageUrl ?? undefined,
         duration: insertService.duration ?? undefined,
-        updatedAt: insertService.updatedAt ?? undefined,
       };
       const service = await db.service.create({ data });
       return { success: true, data: service as unknown as Service };
@@ -933,7 +932,6 @@ export class DatabaseStorage implements IStorage {
     try {
       const data = {
         ...insertPayment,
-        updatedAt: insertPayment.updatedAt ?? undefined,
         orderId: insertPayment.orderId ?? undefined,
         transactionId: insertPayment.transactionId ?? undefined,
       };

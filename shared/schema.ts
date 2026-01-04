@@ -1,154 +1,160 @@
-import {
-  pgTable,
-  text,
-  serial,
-  integer,
-  boolean,
-  timestamp,
-  varchar,
-  jsonb,
-} from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 // === CONSTANTS ===
 export const SERVICE_CATEGORIES = ["Instagram", "Facebook", "TikTok", "YouTube"] as const;
 export type ServiceCategory = (typeof SERVICE_CATEGORIES)[number];
 
-// === TABLE DEFINITIONS ===
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  email: text("email").notNull().unique(),
-  password: text("password").notNull(),
-  role: text("role").default("customer").notNull(), // 'admin' | 'customer'
-  phone: text("phone"),
-  status: text("status").default("active").notNull(), // 'active' | 'suspended'
-  isVip: boolean("is_vip").default(false),
-  googleId: text("google_id").unique(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
+// === TYPE DEFINITIONS ===
+// Matching Prisma schema and application needs
 
-export const services = pgTable("services", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  nameEn: text("name_en"),
-  description: text("description").notNull(),
-  descriptionEn: text("description_en"),
-  price: integer("price").notNull(), // stored in cents or smallest unit
-  imageUrl: text("image_url"),
-  category: text("category").notNull(),
-  duration: text("duration"),
-  isActive: boolean("is_active").default(true),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  password: string;
+  role: string;
+  phone?: string | null;
+  status: string;
+  isVip?: boolean | null;
+  googleId?: string | null;
+  createdAt?: Date | null;
+}
 
-export const orders = pgTable("orders", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(), // references users.id
-  serviceId: integer("service_id").notNull(), // references services.id
-  status: text("status").default("pending").notNull(), // 'pending', 'confirmed', 'completed', 'cancelled'
-  totalAmount: integer("total_amount").notNull(),
-  details: jsonb("details"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
+export interface Service {
+  id: number;
+  name: string;
+  nameEn?: string | null;
+  description: string;
+  descriptionEn?: string | null;
+  price: number;
+  imageUrl?: string | null;
+  category: string;
+  duration?: string | null;
+  isActive?: boolean | null;
+  createdAt?: Date | null;
+  updatedAt?: Date | null;
+}
 
-export const payments = pgTable("payments", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(), // references users.id
-  orderId: integer("order_id"), // references orders.id
-  amount: integer("amount").notNull(), // in cents
-  method: text("method").notNull(), // 'card', 'apple', 'stc', 'bank'
-  status: text("status").default("pending").notNull(), // 'pending', 'completed', 'failed'
-  transactionId: text("transaction_id"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
+export interface Order {
+  id: number;
+  userId: number;
+  serviceId: number;
+  status: string;
+  totalAmount: number;
+  details?: any | null;
+  createdAt?: Date | null;
+  updatedAt?: Date | null;
+}
 
-export const notifications = pgTable("notifications", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(), // references users.id
-  orderId: integer("order_id"), // references orders.id (optional)
-  title: text("title").notNull(),
-  message: text("message").notNull(),
-  isRead: boolean("is_read").default(false).notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
-});
+export interface Payment {
+  id: number;
+  userId: number;
+  orderId?: number | null;
+  amount: number;
+  method: string;
+  status: string;
+  transactionId?: string | null;
+  createdAt?: Date | null;
+  updatedAt?: Date | null;
+}
 
-export const settings = pgTable("settings", {
-  key: text("key").primaryKey(),
-  value: text("value").notNull(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
+export interface Notification {
+  id: number;
+  userId: number;
+  orderId?: number | null;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt?: Date | null;
+}
+
+export interface Setting {
+  key: string;
+  value: string;
+  updatedAt?: Date | null;
+}
+
+export interface Review {
+  id: number;
+  userId: number;
+  serviceId: number;
+  rating: number;
+  comment?: string | null;
+  createdAt?: Date | null;
+}
 
 // === SCHEMAS ===
-export const reviews = pgTable("reviews", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(), // references users.id
-  serviceId: integer("service_id").notNull(), // references services.id
-  rating: integer("rating").notNull(), // 1-5
-  comment: text("comment"),
-  createdAt: timestamp("created_at").defaultNow(),
+
+export const insertUserSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+  role: z.string().optional().default("customer"),
+  phone: z.string().optional().nullable(),
+  googleId: z.string().optional().nullable(),
+  status: z.string().optional().default("active"),
+  isVip: z.boolean().optional().default(false),
 });
 
-export const insertUserSchema = createInsertSchema(users).omit({
-  id: true,
-  createdAt: true,
-});
-export const insertServiceSchema = createInsertSchema(services).extend({
+export const insertServiceSchema = z.object({
+  name: z.string().min(1, "Service name is required"),
+  nameEn: z.string().optional().nullable(),
+  description: z.string().min(1, "Description is required"),
+  descriptionEn: z.string().optional().nullable(),
+  price: z.number().int().positive("Price must be a positive integer"),
+  imageUrl: z.string().optional().nullable(),
   category: z.enum(SERVICE_CATEGORIES, {
     required_error: "Category is required",
     invalid_type_error: "Invalid category",
   }),
-}).omit({
-  id: true,
-  createdAt: true,
-});
-export const insertOrderSchema = createInsertSchema(orders).omit({
-  id: true,
-  createdAt: true,
+  duration: z.string().optional().nullable(),
+  isActive: z.boolean().optional().default(true),
 });
 
-export const insertPaymentSchema = createInsertSchema(payments).omit({
-  id: true,
-  createdAt: true,
+export const insertOrderSchema = z.object({
+  userId: z.number().int(),
+  serviceId: z.number().int(),
+  status: z.string().optional().default("pending"),
+  totalAmount: z.number().int(),
+  details: z.any().optional().nullable(),
 });
 
-export const insertNotificationSchema = createInsertSchema(notifications).omit({
-  id: true,
-  createdAt: true,
-  isRead: true,
+export const insertPaymentSchema = z.object({
+  userId: z.number().int(),
+  orderId: z.number().int().optional().nullable(),
+  amount: z.number().int(),
+  method: z.string(),
+  status: z.string().optional().default("pending"),
+  transactionId: z.string().optional().nullable(),
 });
 
-export const insertReviewSchema = createInsertSchema(reviews).omit({
-  id: true,
-  createdAt: true,
+export const insertNotificationSchema = z.object({
+  userId: z.number().int(),
+  orderId: z.number().int().optional().nullable(),
+  title: z.string(),
+  message: z.string(),
 });
 
-// === TYPES ===
-export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
+export const insertReviewSchema = z.object({
+  userId: z.number().int(),
+  serviceId: z.number().int(),
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().optional().nullable(),
+});
 
-export type Service = typeof services.$inferSelect;
-export type InsertService = z.infer<typeof insertServiceSchema>;
+export const insertSettingSchema = z.object({
+  key: z.string(),
+  value: z.string(),
+});
 
-export type Order = typeof orders.$inferSelect;
-export type InsertOrder = z.infer<typeof insertOrderSchema>;
-
-export type Payment = typeof payments.$inferSelect;
-export type InsertPayment = z.infer<typeof insertPaymentSchema>;
-
-export type Notification = typeof notifications.$inferSelect;
-export type InsertNotification = z.infer<typeof insertNotificationSchema>;
-
-export type Review = typeof reviews.$inferSelect;
-export type InsertReview = z.infer<typeof insertReviewSchema>;
-
-export type Setting = typeof settings.$inferSelect;
-export const insertSettingSchema = createInsertSchema(settings);
-export type InsertSetting = z.infer<typeof insertSettingSchema>;
+// === TYPE INFERENCE ===
+export type InsertUser = z.input<typeof insertUserSchema>;
+export type InsertService = z.input<typeof insertServiceSchema>;
+export type InsertOrder = z.input<typeof insertOrderSchema>;
+export type InsertPayment = z.input<typeof insertPaymentSchema>;
+export type InsertNotification = z.input<typeof insertNotificationSchema>;
+export type InsertReview = z.input<typeof insertReviewSchema>;
+export type InsertSetting = z.input<typeof insertSettingSchema>;
 
 // API Types
 export type LoginRequest = {
