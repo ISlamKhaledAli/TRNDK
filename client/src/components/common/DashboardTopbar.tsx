@@ -1,7 +1,19 @@
-import { Bell, Search, Sun, Moon, Menu } from "lucide-react";
+import { Sun, Moon, User, Settings, LogOut, LayoutDashboard } from "lucide-react";
+import NotificationsMenu from "./NotificationsMenu";
+import LanguageSwitcher from "./LanguageSwitcher";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Link } from "react-router-dom";
 
 interface DashboardTopbarProps {
   isAdmin?: boolean;
@@ -11,6 +23,7 @@ const DashboardTopbar = ({ isAdmin = false }: DashboardTopbarProps) => {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const { t } = useTranslation("common");
+  const { user, logout } = useAuth();
 
   // Prevent hydration mismatch
   useEffect(() => {
@@ -19,17 +32,7 @@ const DashboardTopbar = ({ isAdmin = false }: DashboardTopbarProps) => {
 
   return (
     <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6">
-      {/* Search */}
-      <div className="flex-1 max-w-md">
-        <div className="relative">
-          <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder={t("search.placeholder")}
-            className="w-full bg-secondary text-foreground placeholder:text-muted-foreground rounded-lg pr-10 pl-4 py-2 text-sm border border-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-          />
-        </div>
-      </div>
+      <div className="flex-1" />
 
       {/* Actions */}
       <div className="flex items-center gap-3">
@@ -40,34 +43,62 @@ const DashboardTopbar = ({ isAdmin = false }: DashboardTopbarProps) => {
           title={theme === "dark" ? t("theme.switchToLight") : t("theme.switchToDark")}
         >
           {mounted && theme === "dark" ? (
-            <Sun className="w-5 h-5 text-muted-foreground" />
+            <Sun className="w-5 h-5 text-red-500 hover:text-red-600 transition-colors" />
           ) : (
-            <Moon className="w-5 h-5 text-muted-foreground" />
+            <Moon className="w-5 h-5 text-red-500 hover:text-red-600 transition-colors" />
           )}
         </button>
 
-        {/* Notifications */}
-        <button className="p-2 rounded-lg hover:bg-secondary transition-colors relative">
-          <Bell className="w-5 h-5 text-muted-foreground" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
-        </button>
+        {/* Language Switcher */}
+        <LanguageSwitcher />
 
-        {/* User */}
-        <div className="flex items-center gap-3 pr-3 border-r border-border">
-          <div className="text-left">
-            <p className="text-sm font-medium text-foreground">
-              {isAdmin ? "المدير" : "يوسف أحمد"}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {isAdmin ? "Admin" : "عضو مميز"}
-            </p>
-          </div>
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <span className="text-sm font-medium text-primary">
-              {isAdmin ? "A" : "ي"}
-            </span>
-          </div>
-        </div>
+        {/* Notifications */}
+        <NotificationsMenu />
+
+        {/* User Dropdown */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="flex items-center gap-3 pe-3 border-s border-border hover:bg-secondary/50 transition-colors rounded-lg p-1 outline-none">
+              <div className="text-start hidden sm:block">
+                <p className="text-sm font-medium text-foreground leading-none mb-1">
+                  {user?.name || (isAdmin ? t("userMenu.admin") : t("userMenu.user"))}
+                </p>
+                <p className="text-xs text-muted-foreground leading-none text-start">
+                  {user?.role === 'admin' ? t("userMenu.admin") : (user?.isVip ? t("userMenu.vip") : t("userMenu.user"))}
+                </p>
+              </div>
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <span className="text-sm font-medium text-primary uppercase">
+                  {user?.name?.charAt(0) || (isAdmin ? "A" : "U")}
+                </span>
+              </div>
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuLabel className="text-start">{t("userMenu.title")}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild className="cursor-pointer justify-start gap-2 text-start">
+              <Link to="/admin/dashboard">
+                <LayoutDashboard className="w-4 h-4" />
+                <span>{t("userMenu.adminDashboard")}</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild className="cursor-pointer justify-start gap-2 text-start">
+              <Link to={isAdmin ? "/client/profile" : "/client/profile"}>
+                <Settings className="w-4 h-4" />
+                <span>{t("userMenu.settings")}</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem 
+              onClick={() => logout()}
+              className="cursor-pointer justify-start gap-2 text-destructive focus:text-destructive text-start"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>{t("userMenu.logout")}</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

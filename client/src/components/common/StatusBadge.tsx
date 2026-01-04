@@ -1,23 +1,33 @@
-type Status = "pending" | "processing" | "completed" | "cancelled";
+import { useTranslation } from "react-i18next";
+
+type Status = "pending" | "confirmed" | "processing" | "shipped" | "delivered" | "completed" | "cancelled" | "failed";
 
 interface StatusBadgeProps {
-  status: Status;
+  status: string;
 }
 
-const statusConfig: Record<Status, { label: string; className: string }> = {
-  pending: { label: "قيد الانتظار", className: "badge-pending" },
-  processing: { label: "قيد التنفيذ", className: "badge-processing" },
-  completed: { label: "مكتمل", className: "badge-completed" },
-  cancelled: { label: "ملغي", className: "badge-cancelled" },
+const statusClasses: Record<string, string> = {
+  pending: "badge-pending",
+  confirmed: "badge-info",
+  processing: "badge-processing",
+  shipped: "badge-processing",
+  delivered: "badge-completed",
+  completed: "badge-completed",
+  cancelled: "badge-cancelled",
+  failed: "badge-cancelled",
 };
 
 const StatusBadge = ({ status }: StatusBadgeProps) => {
-  const config = statusConfig[status];
+  const { t, i18n } = useTranslation("common");
+  const isRtl = i18n.language === "ar";
+  
+  const className = statusClasses[status] || "badge-default";
+  const label = t(`statusLabels.${status}`, { defaultValue: status });
 
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${config.className}`}>
-      <span className="w-1.5 h-1.5 rounded-full bg-current ml-1.5" />
-      {config.label}
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${className}`}>
+      <span className={`w-1.5 h-1.5 rounded-full bg-current ${isRtl ? 'ml-1.5' : 'mr-1.5'}`} />
+      {label}
     </span>
   );
 };

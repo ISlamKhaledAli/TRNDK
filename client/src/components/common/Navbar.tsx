@@ -1,18 +1,39 @@
-import { Link, NavLink } from "react-router-dom";
-import { ShoppingCart, User, Globe, Menu, X, Sun, Moon } from "lucide-react";
+import { Link, NavLink, useNavigate } from "react-router-dom";
+import { ShoppingCart, User, Globe, Menu, X, Sun, Moon, LogOut, LayoutDashboard } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "react-i18next";
+import Brand from "./Brand";
 import { useTheme } from "next-themes";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/contexts/AuthContext";
+import NotificationsMenu from "./NotificationsMenu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Settings } from "lucide-react";
+import LanguageSwitcher from "./LanguageSwitcher";
+import CurrencySelector from "./CurrencySelector";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { language, setLanguage } = useLanguage();
   const { t } = useTranslation("common");
   const { theme, setTheme } = useTheme();
   const { totalItems } = useCart();
+  const { user, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    setIsMobileMenuOpen(false);
+    navigate('/');
+  };
 
   // Prevent hydration mismatch
   useEffect(() => {
@@ -22,9 +43,6 @@ const Navbar = () => {
   const navLinks = [
     { href: "/", label: t("nav.home") },
     { href: "/services", label: t("nav.services") },
-    { href: "/services/youtube", label: t("nav.youtubeServices") },
-    { href: "/services/instagram", label: t("nav.instagramServices") },
-    { href: "/services/tiktok", label: t("nav.tiktokServices") },
   ];
 
   return (
@@ -32,15 +50,9 @@ const Navbar = () => {
       <div className="container">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">س</span>
-            </div>
-            <div className="hidden sm:block">
-              <h1 className="font-bold text-lg text-foreground">{t("brand.name")}</h1>
-              <p className="text-xs text-muted-foreground">{t("brand.subtitle")}</p>
-            </div>
-          </Link>
+          <div className="flex items-center">
+            <Brand scale={3} />
+          </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-1">
@@ -65,31 +77,27 @@ const Navbar = () => {
           {/* Actions */}
           <div className="flex items-center gap-2">
             {/* Language Switcher */}
-            <button 
-              onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
-              className="p-2 rounded-lg hover:bg-accent transition-colors" 
-              title={language === "ar" ? "Switch to English" : "التبديل إلى العربية"}
-            >
-              <Globe className="w-5 h-5 text-muted-foreground" />
-              <span className="sr-only">{language === "ar" ? "EN" : "AR"}</span>
-            </button>
+            <LanguageSwitcher />
+
+            {/* Currency Selector */}
+            <CurrencySelector />
 
             {/* Theme Toggle */}
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="p-2 rounded-lg hover:bg-accent transition-colors"
+              className="p-2 rounded-lg hover:bg-accent transition-colors "
               title={theme === "dark" ? t("theme.switchToLight") : t("theme.switchToDark")}
             >
               {mounted && theme === "dark" ? (
-                <Sun className="w-5 h-5 text-muted-foreground" />
+                <Sun className="w-5 h-5 text-red-500 hover:text-red-600 transition-colors" />
               ) : (
-                <Moon className="w-5 h-5 text-muted-foreground" />
+                <Moon className="w-5 h-5 text-red-500 hover:text-red-600 transition-colors" />
               )}
             </button>
 
             {/* Cart */}
             <Link to="/checkout" className="p-2 rounded-lg hover:bg-accent transition-colors relative">
-              <ShoppingCart className="w-5 h-5 text-muted-foreground" />
+              <ShoppingCart className="w-5 h-5 text-red-500 hover:text-red-600 transition-colors" />
               {totalItems > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-primary-foreground text-xs rounded-full flex items-center justify-center">
                   {totalItems}
@@ -97,14 +105,65 @@ const Navbar = () => {
               )}
             </Link>
 
+            {/* Notifications */}
+            {user && <NotificationsMenu />}
+
             {/* User / Login */}
-            <Link
-              to="/login"
-              className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <User className="w-5 h-5" />
-              <span>{t("nav.login")}</span>
-            </Link>
+            {user ? (
+              <div className="hidden sm:block">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-3 pe-3 border-s border-border hover:bg-accent/50 transition-colors rounded-lg p-1 outline-none">
+                      <div className="text-start hidden sm:block">
+                        <p className="text-sm font-medium text-foreground leading-none mb-1">
+                          {user.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground leading-none text-start">
+                          {user.role === 'admin' ? t("userMenu.admin") : (user.isVip ? t("userMenu.vip") : t("userMenu.user"))}
+                        </p>
+                      </div>
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                        <span className="text-sm font-medium text-primary uppercase">
+                          {user.name?.charAt(0)}
+                        </span>
+                      </div>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel className="text-start">{t("userMenu.title")}</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem asChild className="cursor-pointer justify-start gap-2 text-start">
+                      <Link to={user.role === 'admin' ? "/admin/dashboard" : "/client/dashboard"}>
+                        <LayoutDashboard className="w-4 h-4" />
+                        <span>{user.role === 'admin' ? t("userMenu.adminDashboard") : t("client:sidebar.dashboard")}</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild className="cursor-pointer justify-start gap-2 text-start">
+                      <Link to={user.role === 'admin' ? "/admin/profile" : "/client/profile"}>
+                        <Settings className="w-4 h-4" />
+                        <span>{t("userMenu.settings")}</span>
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem 
+                      onClick={handleLogout}
+                      className="cursor-pointer justify-start gap-2 text-destructive focus:text-destructive text-start"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      <span>{t("userMenu.logout")}</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-500 hover:text-red-600 transition-colors"
+              >
+                <User className="w-5 h-5" />
+                <span>{t("nav.login")}</span>
+              </Link>
+            )}
 
             {/* Mobile Menu Toggle */}
             <button
@@ -140,14 +199,53 @@ const Navbar = () => {
                 {link.label}
               </NavLink>
             ))}
-            <Link
-              to="/login"
-              className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors sm:hidden"
-              onClick={() => setIsMobileMenuOpen(false)}
-            >
-              <User className="w-5 h-5" />
-              <span>{t("nav.login")}</span>
-            </Link>
+            {user ? (
+              <div className="sm:hidden border-t border-border mt-2 pt-2">
+                <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 mb-1">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="text-sm font-medium text-primary uppercase">
+                      {user.name?.charAt(0)}
+                    </span>
+                  </div>
+                  <div className="text-start">
+                    <p className="text-sm font-medium text-foreground">{user.name}</p>
+                    <p className="text-xs text-muted-foreground">{user.role === 'admin' ? t("userMenu.admin") : (user.isVip ? t("userMenu.vip") : t("userMenu.user"))}</p>
+                  </div>
+                </div>
+                <Link
+                  to={user.role === 'admin' ? "/admin/dashboard" : "/client/dashboard"}
+                  className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-foreground/70 hover:text-foreground hover:bg-accent/50"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <LayoutDashboard className="w-5 h-5" />
+                  <span>{user.role === 'admin' ? t("userMenu.adminDashboard") : t("client:sidebar.dashboard")}</span>
+                </Link>
+                <Link
+                  to={user.role === 'admin' ? "/admin/profile" : "/client/profile"}
+                  className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-foreground/70 hover:text-foreground hover:bg-accent/50"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <Settings className="w-5 h-5" />
+                  <span>{t("userMenu.settings")}</span>
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="flex w-full items-center gap-2 px-4 py-3 text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"
+                >
+                  <LogOut className="w-5 h-5" />
+                  <span>{t("userMenu.logout")}</span>
+                </button>
+              </div>
+            ) : (
+              <Link
+                to="/login"
+                className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors sm:hidden"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <User className="w-5 h-5" />
+                <span>{t("nav.login")}</span>
+              </Link>
+            )}
           </nav>
         )}
       </div>

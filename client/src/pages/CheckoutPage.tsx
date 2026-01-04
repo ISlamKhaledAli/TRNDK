@@ -2,64 +2,82 @@ import PublicLayout from "@/components/layouts/PublicLayout";
 import Alert from "@/components/common/Alert";
 import { Link, useNavigate } from "react-router-dom";
 import { Home, Trash2, Lock, CreditCard, Building, Smartphone, Plus, Minus } from "lucide-react";
-import { useState } from "react";
-import { apiClient } from "@/lib/api";
+import { useState, useEffect } from "react";
+import { apiClient } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
+import { useNotifications } from "@/contexts/NotificationsContext";
 import { toast } from "sonner";
-
-const paymentMethods = [
-  { id: "card", label: "بطاقة ائتمان / مدى", description: "دفع آمن وفوري", icon: CreditCard },
-  { id: "apple", label: "Apple Pay", description: "أسرع وأسهل", icon: Smartphone },
-  { id: "stc", label: "STC Pay", description: "محفظة رقمية", icon: Smartphone },
-  { id: "bank", label: "تحويل بنكي", description: "إرفاق الإيصال", icon: Building },
-];
+import { useTranslation, Trans } from "react-i18next";
+import PriceDisplay from "@/components/common/PriceDisplay";
 
 const CheckoutPage = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const { items, removeItem, updateQuantity, totalPrice, clearCart } = useCart();
+  const { refreshNotifications } = useNotifications();
+  const { t, i18n } = useTranslation(["checkout", "common"]);
+  const isRtl = i18n.language === "ar";
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("card");
+  const [taxRate, setTaxRate] = useState<number>(15);
+
+  const paymentMethodsList = [
+    { id: "card", label: t("payment.methods.card.label"), description: t("payment.methods.card.description"), icon: CreditCard },
+    { id: "apple", label: t("payment.methods.apple.label"), description: t("payment.methods.apple.description"), icon: Smartphone },
+    { id: "stc", label: t("payment.methods.stc.label"), description: t("payment.methods.stc.description"), icon: Smartphone },
+    { id: "bank", label: t("payment.methods.bank.label"), description: t("payment.methods.bank.description"), icon: Building },
+  ];
+
+  useEffect(() => {
+    const fetchTaxRate = async () => {
+      try {
+        const { data } = await apiClient.getSetting('taxRate');
+        setTaxRate(parseFloat(data.value));
+      } catch (error) {
+        console.error('Failed to fetch tax rate:', error);
+      }
+    };
+    fetchTaxRate();
+  }, []);
 
   const subtotal = totalPrice;
-  const tax = subtotal * 0.15;
+  const tax = subtotal * (taxRate / 100);
   const total = subtotal + tax;
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!user) {
-      toast.error('Please login to place an order');
+      toast.error(t("messages.loginRequired"));
       return;
     }
 
     if (items.length === 0) {
-      toast.error('Cart is empty');
+      toast.error(t("messages.cartEmpty"));
       return;
     }
 
     setLoading(true);
     try {
-      // For now, we'll process the first item as a single order to match the current backend
-      // In a real app, you'd send all items or support multi-item orders
       const item = items[0];
-      const result = await apiClient.createOrder(
-        user.id,
-        item.serviceId,
-        Math.round(total * 100),
-        {
+      const result = await apiClient.createOrder({
+        serviceId: item.serviceId,
+        status: 'pending',
+        totalAmount: Math.round(total * 100),
+        details: {
           quantity: item.quantity,
           link: item.link,
           paymentMethod,
-          cartItems: items // Send all items for backend support in future
+          cartItems: items
         }
-      );
-      toast.success('Order placed successfully!');
+      });
+      refreshNotifications();
+      toast.success(t("messages.success"));
       clearCart();
       setTimeout(() => navigate('/client/orders'), 1500);
     } catch (error) {
-      toast.error('Failed to place order');
+      toast.error(t("messages.error"));
       console.error('Error:', error);
     } finally {
       setLoading(false);
@@ -76,23 +94,25 @@ const CheckoutPage = () => {
               <Home className="w-4 h-4" />
             </Link>
             <span>/</span>
-            <span>سلة المشتريات</span>
+            <span>{t("breadcrumb.cart")}</span>
             <span>/</span>
-            <span className="text-primary">إتمام الطلب</span>
+            <span className="text-primary">{t("breadcrumb.checkout")}</span>
           </nav>
         </div>
       </div>
 
       <div className="container py-8">
-        <h1 className="text-3xl font-bold mb-6">إتمام الطلب</h1>
+        <h1 className="text-3xl font-bold mb-6">{t("title")}</h1>
 
         {!user && (
           <Alert type="info">
-            هل لديك حساب بالفعل؟{" "}
-            <Link to="/login" className="text-primary font-medium hover:underline">
-              سجل دخولك الآن
-            </Link>{" "}
-            لحفظ طلباتك وتتبعها بسهولة.
+            <Trans
+              i18nKey="loginAlert"
+              ns="checkout"
+              components={{
+                link: <Link to="/login" className="text-primary font-medium hover:underline" />
+              }}
+            />
           </Alert>
         )}
 
@@ -102,7 +122,7 @@ const CheckoutPage = () => {
             {/* Cart Items */}
             <div className="bg-card rounded-xl border border-border overflow-hidden">
               <div className="p-4 bg-secondary/30 border-b border-border">
-                <h2 className="font-bold">العناصر المختارة</h2>
+                <h2 className="font-bold">{t("cart.title")}</h2>
               </div>
               <div className="divide-y divide-border">
                 {items.length > 0 ? (
@@ -111,10 +131,10 @@ const CheckoutPage = () => {
                       <div className="w-20 h-20 rounded-lg bg-muted overflow-hidden shrink-0">
                         <img src={item.imageUrl} alt={item.name} className="w-full h-full object-cover" />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-start mb-1">
+                      <div className="flex-1 min-w-0 text-start">
+                        <div className="flex justify-between items-start mb-1 gap-2">
                           <h3 className="font-semibold text-sm line-clamp-1">{item.name}</h3>
-                          <button onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-destructive">
+                          <button onClick={() => removeItem(item.id)} className="text-muted-foreground hover:text-destructive shrink-0">
                             <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
@@ -135,15 +155,19 @@ const CheckoutPage = () => {
                               <Plus className="w-3 h-3" />
                             </button>
                           </div>
-                          <p className="font-bold text-primary">${((item.price / 100) * (item.quantity / 1000)).toFixed(2)}</p>
+                          <PriceDisplay 
+                            amount={(item.price / 100) * (item.quantity / 1000)} 
+                            isBold 
+                            className="items-end"
+                          />
                         </div>
                       </div>
                     </div>
                   ))
                 ) : (
                   <div className="p-12 text-center space-y-4">
-                    <p className="text-muted-foreground">السلة فارغة</p>
-                    <Link to="/services" className="btn-primary px-6 py-2 rounded-lg inline-block">تصفح الخدمات</Link>
+                    <p className="text-muted-foreground">{t("cart.empty")}</p>
+                    <Link to="/services" className="px-6 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors inline-block">{t("cart.browse")}</Link>
                   </div>
                 )}
               </div>
@@ -155,11 +179,11 @@ const CheckoutPage = () => {
                 <span className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
                   2
                 </span>
-                <h2 className="text-xl font-bold">طريقة الدفع</h2>
+                <h2 className="text-xl font-bold">{t("payment.title")}</h2>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
-                {paymentMethods.map((method) => (
+                {paymentMethodsList.map((method) => (
                   <label
                     key={method.id}
                     className="relative flex items-center gap-3 p-4 rounded-lg border border-border hover:border-primary cursor-pointer transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5"
@@ -172,8 +196,8 @@ const CheckoutPage = () => {
                       onChange={(e) => setPaymentMethod(e.target.value)}
                       className="sr-only" 
                     />
-                    <method.icon className="w-5 h-5 text-muted-foreground" />
-                    <div className="text-right">
+                    <method.icon className="w-5 h-5 text-muted-foreground shrink-0" />
+                    <div className="text-start">
                       <p className="font-medium text-sm">{method.label}</p>
                       <p className="text-xs text-muted-foreground">{method.description}</p>
                     </div>
@@ -183,11 +207,11 @@ const CheckoutPage = () => {
             </div>
 
             {/* Security Info */}
-            <div className="bg-success/10 rounded-xl border border-success/20 p-6 flex items-center gap-3">
+            <div className="bg-success/5 rounded-xl border border-success/20 p-6 flex items-center gap-3">
               <Lock className="w-5 h-5 text-success shrink-0" />
-              <div>
-                <p className="font-medium text-success">عملية آمنة 100%</p>
-                <p className="text-sm text-success/80">بيانات الدفع محمية بأعلى معايير الأمان</p>
+              <div className="text-start">
+                <p className="font-medium text-success">{t("security.title")}</p>
+                <p className="text-sm text-success/80">{t("security.description")}</p>
               </div>
             </div>
           </div>
@@ -195,20 +219,20 @@ const CheckoutPage = () => {
           {/* Sidebar - Order Summary */}
           <div className="space-y-6">
             <div className="bg-card rounded-xl border border-border p-6 sticky top-24">
-              <h3 className="font-bold mb-4">ملخص الطلب</h3>
+              <h3 className="font-bold mb-4">{t("summary.title")}</h3>
 
               <div className="space-y-2 border-t border-border pt-4">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">المبلغ الفرعي</span>
-                  <span className="font-medium">${subtotal.toFixed(2)}</span>
+                  <span className="text-muted-foreground">{t("summary.subtotal")}</span>
+                  <PriceDisplay amount={subtotal} className="items-end" />
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">الضريبة (15%)</span>
-                  <span className="font-medium">${tax.toFixed(2)}</span>
+                  <span className="text-muted-foreground">{t("summary.tax")} ({taxRate}%)</span>
+                  <PriceDisplay amount={tax} className="items-end" />
                 </div>
                 <div className="flex justify-between text-lg font-bold border-t border-border pt-2">
-                  <span>الإجمالي</span>
-                  <span className="text-primary">${total.toFixed(2)}</span>
+                  <span>{t("summary.total")}</span>
+                  <PriceDisplay amount={total} isBold className="items-end text-lg" />
                 </div>
               </div>
 
@@ -216,12 +240,12 @@ const CheckoutPage = () => {
                 <button 
                   type="submit"
                   disabled={loading || !user || items.length === 0}
-                  className="w-full btn-primary py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  {loading ? 'جاري المعالجة...' : 'تأكيد الطلب'}
+                  {loading ? t("summary.processing") : t("summary.placeOrder")}
                 </button>
-                <Link to="/services" className="block w-full btn-outline py-3 rounded-lg font-semibold text-center">
-                  مواصلة التسوق
+                <Link to="/services" className="block w-full border border-primary text-primary hover:bg-primary/5 py-3 rounded-lg font-semibold text-center transition-colors">
+                  {t("summary.continueShopping")}
                 </Link>
               </form>
             </div>

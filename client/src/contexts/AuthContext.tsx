@@ -1,18 +1,23 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { apiClient } from "@/services/api";
+import { useQuery } from "@tanstack/react-query";
 
 export interface User {
   id: number;
   name: string;
   email: string;
   role: 'admin' | 'customer';
+  isVip?: boolean;
+  phone?: string;
+  createdAt?: string;
 }
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
   isLoading: boolean;
-  login: (user: User, token: string) => void;
-  logout: () => void;
+  login: (user: User) => void;
+  updateUser: (user: User) => void;
+  logout: () => Promise<void>;
   isAuthenticated: () => boolean;
   isAdmin: () => boolean;
 }
@@ -21,38 +26,42 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('authToken');
-    const storedUser = localStorage.getItem('user');
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+    const checkAuth = async () => {
+      try {
+        const { data } = await apiClient.getProfile();
+        setUser(data);
+      } catch (error) {
+        // Not authenticated
+        setUser(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    checkAuth();
   }, []);
 
-  const login = (newUser: User, newToken: string) => {
+  const login = (newUser: User) => {
     setUser(newUser);
-    setToken(newToken);
-    localStorage.setItem('authToken', newToken);
-    localStorage.setItem('user', JSON.stringify(newUser));
   };
 
-  const logout = () => {
+  const updateUser = (updatedUser: User) => {
+    setUser(updatedUser);
+  };
+
+  const logout = async () => {
+    await apiClient.logout();
     setUser(null);
-    setToken(null);
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
+    window.location.href = "/"; // Force full reload to clear any client state if needed
   };
 
-  const isAuthenticated = () => !!user && !!token;
+  const isAuthenticated = () => !!user;
   const isAdmin = () => user?.role === 'admin';
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, logout, isAuthenticated, isAdmin }}>
+    <AuthContext.Provider value={{ user, isLoading, login, updateUser, logout, isAuthenticated, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );

@@ -19,6 +19,7 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem("language", lang);
+    localStorage.setItem("i18nextLng", lang);
     
     // Sync with i18next
     i18n.changeLanguage(lang);

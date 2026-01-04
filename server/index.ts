@@ -1,10 +1,21 @@
+import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
+// Trigger reload
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import cookieParser from "cookie-parser";
+import passport from "passport";
+import { setupPassport } from "./passport";
+import { setupSocket } from "./socket";
+import { ensureAdminExists } from "./utils/admin-init";
 
 const app = express();
+app.use(cookieParser());
+setupPassport();
+app.use(passport.initialize());
 const httpServer = createServer(app);
+setupSocket(httpServer);
 
 declare module "http" {
   interface IncomingMessage {
@@ -62,6 +73,16 @@ app.use((req, res, next) => {
 (async () => {
   await registerRoutes(httpServer, app);
 
+  try {
+    await import("./db");
+    log("Database connected successfully", "db");
+    await ensureAdminExists();
+  } catch (err) {
+    log("Failed to connect to database", "db");
+    console.error(err);
+    process.exit(1);
+  }
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -89,7 +110,6 @@ app.use((req, res, next) => {
     {
       port,
       host: "0.0.0.0",
-      reusePort: true,
     },
     () => {
       log(`serving on port ${port}`);

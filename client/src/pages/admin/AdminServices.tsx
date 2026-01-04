@@ -1,13 +1,17 @@
 import AdminLayout from "@/components/layouts/AdminLayout";
-import { Search, Plus, Edit, Trash2, ToggleLeft, ToggleRight, X } from "lucide-react";
+import { Plus, Edit, Trash2, ToggleLeft, ToggleRight, X, Percent } from "lucide-react";
 import { useEffect, useState } from "react";
-import { apiClient } from "@/lib/api";
+import { apiClient } from "@/services/api";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { useLoaderData, useRevalidator } from "react-router-dom";
 
 interface Service {
   id: number;
   name: string;
+  nameEn?: string;
   description: string;
+  descriptionEn?: string;
   price: number;
   category?: string;
   duration?: string;
@@ -17,7 +21,9 @@ interface Service {
 
 interface FormData {
   name: string;
+  nameEn?: string;
   description: string;
+  descriptionEn?: string;
   price: string;
   category?: string;
   duration?: string;
@@ -25,43 +31,72 @@ interface FormData {
 }
 
 const AdminServices = () => {
-  const [services, setServices] = useState<Service[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { services: initialServices } = useLoaderData() as { services: Service[] };
+  const { revalidate } = useRevalidator();
+  const [services, setServices] = useState<Service[]>(initialServices);
+  const [taxRate, setTaxRate] = useState<string>('15');
+  const [savingTax, setSavingTax] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [categories, setCategories] = useState<string[]>([]);
+  const { t, i18n } = useTranslation(["admin", "common"]);
   const [formData, setFormData] = useState<FormData>({
     name: '',
+    nameEn: '',
     description: '',
+    descriptionEn: '',
     price: '',
     category: '',
     duration: '',
     imageUrl: '',
   });
-  const [searchTerm, setSearchTerm] = useState('');
 
-  const fetchServices = async () => {
+  // Fetch categories and sync state if loader data changes
+  useEffect(() => {
+    setServices(initialServices);
+    
+    const fetchCategories = async () => {
+      try {
+        const { data } = await apiClient.getServiceCategories();
+        setCategories(data);
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+      }
+    };
+    fetchCategories();
+
+    const fetchTaxRate = async () => {
+      try {
+        const { data } = await apiClient.getSetting('taxRate');
+        setTaxRate(data.value);
+      } catch (error) {
+        console.error('Failed to fetch tax rate:', error);
+      }
+    };
+    fetchTaxRate();
+  }, [initialServices]);
+
+  const handleUpdateTax = async () => {
     try {
-      const response = await apiClient.getServices();
-      const serviceData = response.data || response;
-      setServices(Array.isArray(serviceData) ? serviceData : []);
+      setSavingTax(true);
+      await apiClient.updateSetting('taxRate', taxRate);
+      toast.success(t("services.tax.updateSuccess"));
     } catch (error) {
-      toast.error('Failed to load services');
-      console.error('Error:', error);
+      toast.error(t("services.tax.updateError"));
     } finally {
-      setLoading(false);
+      setSavingTax(false);
     }
   };
-
-  useEffect(() => {
-    fetchServices();
-  }, []);
 
   const handleOpenModal = (service?: Service) => {
     if (service) {
       setEditingId(service.id);
       setFormData({
         name: service.name,
+        nameEn: service.nameEn || '',
         description: service.description,
+        descriptionEn: service.descriptionEn || '',
         price: (service.price / 100).toString(),
         category: service.category || '',
         duration: service.duration || '',
@@ -71,9 +106,11 @@ const AdminServices = () => {
       setEditingId(null);
       setFormData({
         name: '',
+        nameEn: '',
         description: '',
+        descriptionEn: '',
         price: '',
-        category: '',
+        category: categories[0] || '', // Default to first category
         duration: '',
         imageUrl: '',
       });
@@ -96,45 +133,52 @@ const AdminServices = () => {
     }
 
     try {
+      setLoading(true);
       if (editingId) {
         await apiClient.updateService(editingId, { 
           name: formData.name,
+          nameEn: formData.nameEn,
           description: formData.description,
+          descriptionEn: formData.descriptionEn,
           price,
           category: formData.category,
           duration: formData.duration,
           imageUrl: formData.imageUrl,
         });
-        toast.success('Service updated successfully');
+        toast.success(t("services.updateSuccess"));
       } else {
         await apiClient.createService({
           name: formData.name,
+          nameEn: formData.nameEn,
           description: formData.description,
+          descriptionEn: formData.descriptionEn,
           price,
           category: formData.category,
           duration: formData.duration,
           imageUrl: formData.imageUrl,
         });
-        toast.success('Service created successfully');
+        toast.success(t("services.createSuccess"));
       }
       
+      revalidate();
       handleCloseModal();
-      await fetchServices();
     } catch (error) {
-      toast.error(editingId ? 'Failed to update service' : 'Failed to create service');
+      toast.error(editingId ? t("services.updateError") : t("services.createError"));
       console.error('Error:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('Are you sure you want to delete this service?')) return;
+    if (!confirm(t("services.deleteConfirm"))) return;
 
     try {
       await apiClient.deleteService(id);
-      toast.success('Service deleted successfully');
-      await fetchServices();
+      toast.success(t("services.deleteSuccess"));
+      revalidate();
     } catch (error) {
-      toast.error('Failed to delete service');
+      toast.error(t("services.deleteError"));
       console.error('Error:', error);
     }
   };
@@ -143,88 +187,97 @@ const AdminServices = () => {
     try {
       const newStatus = !service.isActive;
       await apiClient.updateServiceStatus(service.id, newStatus);
-      toast.success(newStatus ? 'Service activated' : 'Service deactivated');
-      await fetchServices();
+      toast.success(t("services.statusSuccess"));
+      revalidate();
     } catch (error) {
-      toast.error('Failed to update service status');
+      toast.error(t("services.statusError"));
       console.error('Error:', error);
     }
   };
 
-  const filteredServices = services.filter(s => 
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    s.category?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredServices = services;
 
   return (
     <AdminLayout>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">إدارة الخدمات</h1>
-          <p className="text-muted-foreground">إضافة وتعديل الخدمات المتاحة</p>
+          <h1 className="text-2xl font-bold text-foreground mb-2">{t("services.title")}</h1>
+          <p className="text-muted-foreground">{t("services.subtitle")}</p>
         </div>
         <button 
           onClick={() => handleOpenModal()}
           className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          إضافة خدمة
+          {t("services.addService")}
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="bg-card rounded-xl border border-border p-4 mb-6 card-shadow">
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="ابحث عن خدمة..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-secondary text-foreground placeholder:text-muted-foreground rounded-lg pr-10 pl-4 py-2 text-sm border border-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-            />
+      {/* Tax Rate Setting */}
+      <div className="bg-card rounded-xl border border-border p-4 mb-6 card-shadow flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Percent className="w-5 h-5 text-primary" />
+          </div>
+          <div className="text-start">
+            <h3 className="font-bold text-foreground">{t("services.tax.title")}</h3>
+            <p className="text-xs text-muted-foreground">{t("services.tax.description")}</p>
           </div>
         </div>
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <input
+            type="number"
+            value={taxRate}
+            onChange={(e) => setTaxRate(e.target.value)}
+            className="w-24 bg-secondary text-foreground rounded-lg px-3 py-2 text-sm border border-border focus:outline-none focus:border-primary"
+            placeholder="15"
+          />
+          <button
+            onClick={handleUpdateTax}
+            disabled={savingTax}
+            className="bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+          >
+            {savingTax ? t("common:loading") : t("common:buttons.save")}
+          </button>
+        </div>
       </div>
+
 
       {/* Services Table */}
       <div className="bg-card rounded-xl border border-border overflow-hidden card-shadow">
         <div className="overflow-x-auto">
-          {loading ? (
-            <div className="p-8 text-center text-muted-foreground">جاري التحميل...</div>
-          ) : filteredServices.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">لا توجد خدمات</div>
+          {filteredServices.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">{t("services.noServices")}</div>
           ) : (
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-secondary/50">
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">#</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">اسم الخدمة</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">الفئة</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">السعر</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">المدة</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">الحالة</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">إجراءات</th>
+                  <th className="text-start text-xs font-medium text-muted-foreground p-4">#</th>
+                  <th className="text-start text-xs font-medium text-muted-foreground p-4">{t("services.fields.name")}</th>
+                  <th className="text-start text-xs font-medium text-muted-foreground p-4">{t("services.fields.category")}</th>
+                  <th className="text-start text-xs font-medium text-muted-foreground p-4">{t("services.fields.price")}</th>
+                  <th className="text-start text-xs font-medium text-muted-foreground p-4">{t("services.fields.duration")}</th>
+                  <th className="text-start text-xs font-medium text-muted-foreground p-4">{t("common:status")}</th>
+                  <th className="text-start text-xs font-medium text-muted-foreground p-4">{t("common:actions")}</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredServices.map((service) => (
                   <tr key={service.id} className="border-b border-border last:border-0 hover:bg-secondary/30">
                     <td className="p-4 text-sm text-muted-foreground">{service.id}</td>
-                    <td className="p-4 text-sm font-medium text-foreground">{service.name}</td>
-                    <td className="p-4">
+                    <td className="p-4 text-sm font-medium text-foreground text-start">{service.name}</td>
+                    <td className="p-4 text-start">
                       <span className="px-2 py-1 text-xs rounded-full bg-secondary text-foreground">
-                        {service.category || 'بدون فئة'}
+                        {service.category || t("services.fields.noCategory")}
                       </span>
                     </td>
-                    <td className="p-4 text-sm text-foreground">${(service.price / 100).toFixed(2)}</td>
-                    <td className="p-4 text-sm text-foreground">{service.duration || '-'}</td>
-                    <td className="p-4">
+                    <td className="p-4 text-sm text-foreground text-start">${(service.price / 100).toFixed(2)}</td>
+                    <td className="p-4 text-sm text-foreground text-start">{service.duration || '-'}</td>
+                    <td className="p-4 text-start">
                       <button 
                         onClick={() => handleToggleStatus(service)}
                         className="flex items-center hover:opacity-70 transition-opacity cursor-pointer"
-                        title={service.isActive ? 'Click to deactivate' : 'Click to activate'}
+                        title={service.isActive !== false ? t("services.deactivate") : t("services.activate")}
                       >
                         {service.isActive !== false ? (
                           <ToggleRight className="w-8 h-8 text-success" />
@@ -233,19 +286,19 @@ const AdminServices = () => {
                         )}
                       </button>
                     </td>
-                    <td className="p-4">
+                    <td className="p-4 text-start">
                       <div className="flex items-center gap-2">
                         <button 
                           onClick={() => handleOpenModal(service)}
                           className="p-2 rounded-lg hover:bg-secondary transition-colors" 
-                          title="تعديل"
+                          title={t("common:edit")}
                         >
                           <Edit className="w-4 h-4 text-muted-foreground" />
                         </button>
                         <button 
                           onClick={() => handleDelete(service.id)}
                           className="p-2 rounded-lg hover:bg-destructive/10 transition-colors" 
-                          title="حذف"
+                          title={t("common:delete")}
                         >
                           <Trash2 className="w-4 h-4 text-destructive" />
                         </button>
@@ -262,44 +315,69 @@ const AdminServices = () => {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-md">
+          <div className="bg-card rounded-xl border border-border p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-foreground">
-                {editingId ? 'تعديل الخدمة' : 'إضافة خدمة جديدة'}
+                {editingId ? t("services.modal.editTitle") : t("services.modal.addTitle")}
               </h2>
               <button 
                 onClick={handleCloseModal}
                 className="p-1 hover:bg-secondary rounded-lg transition-colors"
+                type="button"
               >
                 <X className="w-5 h-5 text-muted-foreground" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">اسم الخدمة</label>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="text-start">
+                <label className="block text-sm font-medium text-foreground mb-1">{t("services.fields.name")} (Arabic)</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                   required
+                  dir="rtl"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">الوصف</label>
+              <div className="text-start">
+                <label className="block text-sm font-medium text-foreground mb-1">{t("services.fields.name")} (English)</label>
+                <input
+                  type="text"
+                  value={formData.nameEn || ''}
+                  onChange={(e) => setFormData({ ...formData, nameEn: e.target.value })}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  dir="ltr"
+                />
+              </div>
+
+              <div className="text-start">
+                <label className="block text-sm font-medium text-foreground mb-1">{t("services.fields.description")} (Arabic)</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                   rows={3}
                   required
+                  dir="rtl"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">السعر ($)</label>
+              <div className="text-start">
+                <label className="block text-sm font-medium text-foreground mb-1">{t("services.fields.description")} (English)</label>
+                <textarea
+                  value={formData.descriptionEn || ''}
+                  onChange={(e) => setFormData({ ...formData, descriptionEn: e.target.value })}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  rows={3}
+                  dir="ltr"
+                />
+              </div>
+
+              <div className="text-start">
+                <label className="block text-sm font-medium text-foreground mb-1">{t("services.fields.price")}</label>
                 <input
                   type="number"
                   step="0.01"
@@ -310,30 +388,34 @@ const AdminServices = () => {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">الفئة</label>
-                <input
-                  type="text"
+              <div className="text-start">
+                <label className="block text-sm font-medium text-foreground mb-1">{t("services.fields.category")}</label>
+                <select
                   value={formData.category}
                   onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                  placeholder="مثل: يوتيوب، انستقرام"
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
+                  required
+                >
+                  <option value="" disabled>{t("services.fields.selectCategory")}</option>
+                  {categories.map((cat) => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">المدة</label>
+              <div className="text-start">
+                <label className="block text-sm font-medium text-foreground mb-1">{t("services.fields.duration")}</label>
                 <input
                   type="text"
                   value={formData.duration}
                   onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                  placeholder="مثل: 2 ساعات"
+                  placeholder={t("services.fields.durationPlaceholder")}
                   className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">رابط الصورة</label>
+              <div className="text-start">
+                <label className="block text-sm font-medium text-foreground mb-1">{t("services.fields.imageUrl")}</label>
                 <input
                   type="url"
                   value={formData.imageUrl}
@@ -343,19 +425,19 @@ const AdminServices = () => {
                 />
               </div>
 
-              <div className="flex gap-2 pt-4">
+              <div className="flex gap-2 pt-4 col-span-1 md:col-span-2">
                 <button
                   type="submit"
                   className="flex-1 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors"
                 >
-                  {editingId ? 'تحديث' : 'إضافة'}
+                  {editingId ? t("services.modal.update") : t("services.modal.add")}
                 </button>
                 <button
                   type="button"
                   onClick={handleCloseModal}
                   className="flex-1 bg-secondary text-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-secondary/80 transition-colors"
                 >
-                  إلغاء
+                  {t("common.cancel")}
                 </button>
               </div>
             </form>

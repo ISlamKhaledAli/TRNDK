@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { Heart } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
+import { useTranslation } from "react-i18next";
+import PriceDisplay from "./PriceDisplay";
 
 interface ServiceCardProps {
   id: string;
@@ -20,8 +22,11 @@ const ServiceCard = ({
   image,
   badge,
   badgeColor = "primary",
-}: ServiceCardProps) => {
+  isAvailable = true,
+}: ServiceCardProps & { isAvailable?: boolean }) => {
   const { isInWishlist, toggleWishlist } = useCart();
+  const { t, i18n } = useTranslation("common");
+  const isRtl = i18n.language === "ar";
   const serviceId = Number(id);
   const isLoved = isInWishlist(serviceId);
 
@@ -29,19 +34,24 @@ const ServiceCard = ({
     primary: "bg-primary text-primary-foreground",
     success: "bg-success text-success-foreground",
     warning: "bg-warning text-warning-foreground",
+    destructive: "bg-destructive text-destructive-foreground",
   };
 
   return (
-    <div className="service-card group bg-card rounded-xl border border-border overflow-hidden hover-elevate transition-all duration-300">
-      <Link to={`/services/${id}`} className="block">
+    <div className={`service-card group bg-card rounded-xl border border-border overflow-hidden hover-elevate transition-all duration-300 ${!isAvailable ? 'opacity-75' : ''}`}>
+      <Link to={isAvailable ? `/services/${id}` : '#'} className={`block ${!isAvailable ? 'cursor-not-allowed pointer-events-none' : ''}`}>
         {/* Image */}
         <div className="relative aspect-square overflow-hidden bg-muted">
           <img
             src={image}
             alt={title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            className={`w-full h-full object-cover transition-transform duration-300 ${isAvailable ? 'group-hover:scale-105' : 'grayscale'}`}
           />
-          {badge && (
+          {!isAvailable ? (
+             <span className={`absolute top-3 right-3 px-2 py-1 text-xs font-medium rounded ${badgeStyles.destructive}`}>
+               {t("status.unavailable", { defaultValue: "Unavailable" })}
+             </span>
+          ) : badge && (
             <span
               className={`absolute top-3 right-3 px-2 py-1 text-xs font-medium rounded ${badgeStyles[badgeColor]}`}
             >
@@ -53,8 +63,8 @@ const ServiceCard = ({
         {/* Content */}
         <div className="p-4">
           <h3 className="font-semibold text-foreground mb-1 line-clamp-2">{title}</h3>
-          {titleEn && (
-            <p className="text-sm text-muted-foreground mb-3">{titleEn}</p>
+          {isRtl && titleEn && (
+            <p className="text-sm text-muted-foreground mb-3 text-start" dir="ltr">{titleEn}</p>
           )}
         </div>
       </Link>
@@ -64,16 +74,20 @@ const ServiceCard = ({
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            toggleWishlist(serviceId);
+            if (isAvailable) toggleWishlist(serviceId);
           }}
-          className="p-2 rounded-lg hover:bg-accent transition-colors group/heart"
+          disabled={!isAvailable}
+          className={`p-2 rounded-lg hover:bg-accent transition-colors group/heart ${!isAvailable ? 'opacity-50 cursor-not-allowed' : ''}`}
           aria-label="Toggle Wishlist"
         >
           <Heart className={`w-5 h-5 transition-colors ${isLoved ? 'fill-destructive text-destructive' : 'text-muted-foreground group-hover/heart:text-destructive'}`} />
         </button>
-        <div className="text-left">
-          <span className="text-lg font-bold text-primary">{price}</span>
-          <span className="text-sm text-muted-foreground mr-1">ر.س</span>
+        <div className="text-start">
+             {isAvailable ? (
+                <PriceDisplay amount={price} isBold />
+             ) : (
+                <span className="text-sm font-medium text-muted-foreground">{t("status.unavailable", { defaultValue: "Unavailable" })}</span>
+             )}
         </div>
       </div>
     </div>

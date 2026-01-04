@@ -1,45 +1,86 @@
 import DashboardLayout from "@/components/layouts/DashboardLayout";
-import { Search, ShoppingCart } from "lucide-react";
-import { Link } from "react-router-dom";
+import { ShoppingCart } from "lucide-react";
+import { Link, useNavigate, useLoaderData } from "react-router-dom";
+import { useState } from "react";
+import { apiClient } from "@/services/api";
+import { toast } from "sonner";
+import { useNotifications } from "@/contexts/NotificationsContext";
+import { useTranslation } from "react-i18next";
 
-const services = [
-  { id: 1, name: "زيادة مشاهدات يوتيوب", category: "يوتيوب", price: "$0.025", minOrder: 100, maxOrder: 100000 },
-  { id: 2, name: "زيادة مشتركين يوتيوب", category: "يوتيوب", price: "$0.15", minOrder: 50, maxOrder: 10000 },
-  { id: 3, name: "زيادة متابعين انستقرام", category: "انستقرام", price: "$0.02", minOrder: 100, maxOrder: 50000 },
-  { id: 4, name: "زيادة لايكات انستقرام", category: "انستقرام", price: "$0.01", minOrder: 50, maxOrder: 100000 },
-  { id: 5, name: "زيادة متابعين تويتر", category: "تويتر", price: "$0.03", minOrder: 100, maxOrder: 20000 },
-  { id: 6, name: "زيادة مشاهدات تيك توك", category: "تيك توك", price: "$0.005", minOrder: 500, maxOrder: 500000 },
-];
+interface Service {
+  id: number;
+  name: string;
+  category: string;
+  price: number;
+  minOrder: number;
+  maxOrder: number;
+}
 
 const ClientNewOrder = () => {
+  const { services } = useLoaderData() as { services: Service[] };
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [link, setLink] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { refreshNotifications } = useNotifications();
+  const { t, i18n } = useTranslation(["client", "common"]);
+
+  const totalAmount = selectedService && quantity 
+    ? (Number(quantity) / 1000) * (selectedService.price / 100) 
+    : 0;
+
+  const handleSubmit = async () => {
+    if (!selectedService || !link || !quantity) {
+      toast.error(t("newOrder.fillAllFields"));
+      return;
+    }
+
+    if (Number(quantity) < selectedService.minOrder || Number(quantity) > selectedService.maxOrder) {
+      toast.error(t("newOrder.quantityRangeError", { min: selectedService.minOrder, max: selectedService.maxOrder }));
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await apiClient.createOrder({
+        serviceId: selectedService.id,
+        status: 'pending',
+        totalAmount: Math.round(totalAmount * 100), // Convert to cents
+        details: { link, quantity: Number(quantity) }
+      });
+      refreshNotifications(); // Trigger immediate notification update
+      toast.success(t("newOrder.success"));
+      navigate('/client/orders');
+    } catch (error: any) {
+      toast.error(error.message || t("newOrder.error"));
+      console.error("Full Error Details:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground mb-2">طلب جديد</h1>
-        <p className="text-muted-foreground">اختر الخدمة المطلوبة وأدخل تفاصيل الطلب</p>
+        <h1 className="text-2xl font-bold text-foreground mb-2">{t("newOrder.title")}</h1>
+        <p className="text-muted-foreground">{t("newOrder.subtitle")}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Service Selection */}
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-card rounded-xl border border-border p-6 card-shadow">
-            <h2 className="text-lg font-bold text-foreground mb-4">اختر الخدمة</h2>
+            <h2 className="text-lg font-bold text-foreground mb-4 text-start">{t("newOrder.selectService")}</h2>
             
             <div className="flex gap-4 mb-4">
-              <div className="flex-1 relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="ابحث عن خدمة..."
-                  className="w-full bg-secondary text-foreground placeholder:text-muted-foreground rounded-lg pr-10 pl-4 py-2 text-sm border border-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
+              <div className="flex-1" />
               <select className="bg-secondary text-foreground rounded-lg px-4 py-2 text-sm border border-border focus:outline-none focus:border-primary">
-                <option>جميع المنصات</option>
-                <option>يوتيوب</option>
-                <option>انستقرام</option>
-                <option>تويتر</option>
-                <option>تيك توك</option>
+                <option>{t("newOrder.allPlatforms")}</option>
+                <option>{t("newOrder.youtube")}</option>
+                <option>{t("newOrder.instagram")}</option>
+                <option>{t("newOrder.twitter")}</option>
+                <option>{t("newOrder.tiktok")}</option>
               </select>
             </div>
 
@@ -50,19 +91,25 @@ const ClientNewOrder = () => {
                   className="flex items-center justify-between p-4 rounded-lg border border-border hover:border-primary/50 cursor-pointer transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <input type="radio" name="service" className="text-primary" />
-                    <div>
+                    <input 
+                      type="radio" 
+                      name="service" 
+                      className="text-primary"
+                      checked={selectedService?.id === service.id}
+                      onChange={() => setSelectedService(service)}
+                    />
+                    <div className="text-start">
                       <p className="font-medium text-foreground">{service.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        الحد الأدنى: {service.minOrder.toLocaleString()} | الحد الأقصى: {service.maxOrder.toLocaleString()}
+                        {t("newOrder.minOrder")}: {service.minOrder?.toLocaleString() || '0'} | {t("newOrder.maxOrder")}: {service.maxOrder?.toLocaleString() || '-'}
                       </p>
                     </div>
                   </div>
-                  <div className="text-left">
+                  <div className="text-end">
                     <span className="px-2 py-1 text-xs rounded-full bg-secondary text-foreground">
                       {service.category}
                     </span>
-                    <p className="text-sm font-bold text-primary mt-1">{service.price}/1000</p>
+                    <p className="text-sm font-bold text-primary mt-1">${(service.price / 100).toFixed(3)}/1000</p>
                   </div>
                 </label>
               ))}
@@ -70,22 +117,26 @@ const ClientNewOrder = () => {
           </div>
 
           <div className="bg-card rounded-xl border border-border p-6 card-shadow">
-            <h2 className="text-lg font-bold text-foreground mb-4">تفاصيل الطلب</h2>
+            <h2 className="text-lg font-bold text-foreground mb-4 text-start">{t("newOrder.orderDetails")}</h2>
             
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">الرابط</label>
+              <div className="text-start">
+                <label className="block text-sm font-medium text-foreground mb-2">{t("newOrder.link")}</label>
                 <input
                   type="url"
-                  placeholder="أدخل رابط الفيديو أو الحساب..."
+                  placeholder={t("newOrder.linkPlaceholder")}
+                  value={link}
+                  onChange={(e) => setLink(e.target.value)}
                   className="w-full bg-secondary text-foreground placeholder:text-muted-foreground rounded-lg px-4 py-3 text-sm border border-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-2">الكمية</label>
+              <div className="text-start">
+                <label className="block text-sm font-medium text-foreground mb-2">{t("newOrder.quantity")}</label>
                 <input
                   type="number"
-                  placeholder="أدخل الكمية المطلوبة..."
+                  placeholder={t("newOrder.quantityPlaceholder")}
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
                   className="w-full bg-secondary text-foreground placeholder:text-muted-foreground rounded-lg px-4 py-3 text-sm border border-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
@@ -95,37 +146,36 @@ const ClientNewOrder = () => {
 
         {/* Order Summary */}
         <div className="bg-card rounded-xl border border-border p-6 h-fit card-shadow sticky top-6">
-          <h2 className="text-lg font-bold text-foreground mb-4">ملخص الطلب</h2>
+          <h2 className="text-lg font-bold text-foreground mb-4 text-start">{t("newOrder.orderSummary")}</h2>
           
           <div className="space-y-3 mb-6">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">الخدمة:</span>
-              <span className="text-foreground">-</span>
+              <span className="text-muted-foreground">{t("newOrder.service")}</span>
+              <span className="text-foreground text-end">{selectedService?.name || '-'}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">الكمية:</span>
-              <span className="text-foreground">-</span>
+              <span className="text-muted-foreground">{t("newOrder.quantity")}</span>
+              <span className="text-foreground">{quantity || '-'}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">السعر لكل 1000:</span>
-              <span className="text-foreground">-</span>
+              <span className="text-muted-foreground">{t("newOrder.pricePerThousand")}</span>
+              <span className="text-foreground">{selectedService ? `$${(selectedService.price / 100).toFixed(3)}` : '-'}</span>
             </div>
             <hr className="border-border" />
             <div className="flex justify-between font-bold">
-              <span className="text-foreground">الإجمالي:</span>
-              <span className="text-primary text-lg">$0.00</span>
+              <span className="text-foreground">{t("newOrder.total")}</span>
+              <span className="text-primary text-lg">${totalAmount.toFixed(2)}</span>
             </div>
           </div>
 
-          <div className="p-4 bg-secondary/50 rounded-lg mb-4">
-            <p className="text-sm text-muted-foreground">
-              رصيدك الحالي: <span className="text-success font-bold">$1,245.50</span>
-            </p>
-          </div>
 
-          <button className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
+          <button 
+            onClick={handleSubmit} 
+            disabled={loading}
+            className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+          >
             <ShoppingCart className="w-5 h-5" />
-            تأكيد الطلب
+            {loading ? t("common:loading") : t("newOrder.confirmOrder")}
           </button>
         </div>
       </div>

@@ -1,9 +1,12 @@
 import AdminLayout from "@/components/layouts/AdminLayout";
 import StatusBadge from "@/components/common/StatusBadge";
-import { Search, Filter, Eye, Edit, ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { Filter, Eye, Edit, ChevronLeft, ChevronRight, Download, Copy } from "lucide-react";
 import { useEffect, useState } from "react";
-import { apiClient } from "@/lib/api";
+import { apiClient } from "@/services/api";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { useLoaderData, useRevalidator } from "react-router-dom";
+import { useSocket } from "@/hooks/useSocket";
 
 interface Order {
   id: number;
@@ -17,53 +20,60 @@ interface Order {
 }
 
 const AdminOrders = () => {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const { orders: initialOrders } = useLoaderData() as { orders: Order[] };
+  const { revalidate } = useRevalidator();
+  const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [statusFilter, setStatusFilter] = useState('all');
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
   const [editingStatus, setEditingStatus] = useState<string>('');
-
-  const fetchOrders = async () => {
-    try {
-      const response = await apiClient.getAdminOrdersList();
-      const orderData = response.data || response;
-      setOrders(Array.isArray(orderData) ? orderData : []);
-    } catch (error) {
-      toast.error('Failed to load orders');
-      console.error('Error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { t, i18n } = useTranslation(["admin", "common"]);
+  const { on, off } = useSocket();
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    const handleNewOrder = (order: any) => {
+      console.log("[AdminOrders] New order received via socket:", order);
+      
+      // Play notification sound
+      const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
+      audio.play().catch(err => console.error("Error playing sound:", err));
+
+      // Show visual notification
+      toast.success(t("orders.notifications.newOrder", { defaultValue: "New Order Received!" }), {
+        description: `#${order.id} - $${(order.totalAmount / 100).toFixed(2)}`,
+      });
+
+      // Refresh list instantly
+      revalidate();
+    };
+
+    on("NEW_ORDER", handleNewOrder);
+    return () => off("NEW_ORDER");
+  }, [on, off, revalidate, t]);
+
+  // Sync state if loader data changes
+  useEffect(() => {
+    setOrders(initialOrders);
+  }, [initialOrders]);
 
   const handleStatusChange = async (orderId: number, newStatus: string) => {
     try {
       await apiClient.updateOrderStatusAdmin(orderId, newStatus);
-      toast.success('Order status updated successfully');
+      toast.success(t("orders.updateSuccess"));
       setEditingOrderId(null);
-      await fetchOrders();
+      revalidate();
     } catch (error) {
-      toast.error('Failed to update order status');
+      toast.error(t("orders.updateError"));
       console.error('Error:', error);
     }
   };
 
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = 
-      order.id.toString().includes(searchTerm) ||
-      (order.details?.link || '').toLowerCase().includes(searchTerm.toLowerCase());
-    
     // Map order status to badge status
     const displayStatus = order.status === 'confirmed' ? 'processing' : order.status;
     const matchesStatus = statusFilter === 'all' || displayStatus === statusFilter;
     
-    return matchesSearch && matchesStatus;
-  });
+    return matchesStatus;
+  }).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const stats = {
     pending: orders.filter(o => o.status === 'pending').length,
@@ -72,46 +82,63 @@ const AdminOrders = () => {
     cancelled: orders.filter(o => o.status === 'cancelled').length,
   };
 
+  const handleExport = () => {
+    const headers = [t("orders.id"), t("orders.link"), t("common:amount"), t("common:date"), t("common:status")];
+    const csvContent = [
+      headers.join(","),
+      ...filteredOrders.map(order => [
+        `#${order.id}`,
+        `"${order.details?.link || ""}"`,
+        `$${(order.totalAmount / 100).toFixed(2)}`,
+        new Date(order.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US'),
+        order.status
+      ].join(","))
+    ].join("\n");
+
+    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", `orders-export-${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(t("orders.exportSuccess"));
+  };
+
   return (
     <AdminLayout>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground mb-2">إدارة الطلبات</h1>
-          <p className="text-muted-foreground">عرض ومراجعة جميع الطلبات</p>
+          <h1 className="text-2xl font-bold text-foreground mb-2">{t("orders.title")}</h1>
+          <p className="text-muted-foreground">{t("orders.subtitle")}</p>
         </div>
-        <button className="flex items-center gap-2 bg-secondary text-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-secondary/80 transition-colors border border-border">
+        <button 
+          onClick={handleExport}
+          className="flex items-center gap-2 bg-secondary text-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-secondary/80 transition-colors border border-border"
+        >
           <Download className="w-4 h-4" />
-          تصدير
+          {t("common:export")}
         </button>
       </div>
 
       {/* Filters */}
       <div className="bg-card rounded-xl border border-border p-4 mb-6 card-shadow">
         <div className="flex flex-col md:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="ابحث برقم الطلب أو الرابط..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-secondary text-foreground placeholder:text-muted-foreground rounded-lg pr-10 pl-4 py-2 text-sm border border-border focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
           <select 
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="bg-secondary text-foreground rounded-lg px-4 py-2 text-sm border border-border focus:outline-none focus:border-primary"
           >
-            <option value="all">جميع الحالات</option>
-            <option value="pending">قيد الانتظار</option>
-            <option value="processing">قيد التنفيذ</option>
-            <option value="completed">مكتمل</option>
-            <option value="cancelled">ملغي</option>
+            <option value="all">{t("orders.statusAll")}</option>
+            <option value="pending">{t("orders.statusPending")}</option>
+            <option value="processing">{t("orders.statusProcessing")}</option>
+            <option value="completed">{t("orders.statusCompleted")}</option>
+            <option value="cancelled">{t("orders.statusCancelled")}</option>
           </select>
           <button className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
             <Filter className="w-4 h-4" />
-            تصفية
+            {t("common:filter")}
           </button>
         </div>
       </div>
@@ -120,47 +147,70 @@ const AdminOrders = () => {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-card rounded-lg border border-border p-4 text-center card-shadow">
           <p className="text-2xl font-bold text-foreground">{stats.pending}</p>
-          <p className="text-sm text-muted-foreground">قيد الانتظار</p>
+          <p className="text-sm text-muted-foreground">{t("orders.statusPending")}</p>
         </div>
         <div className="bg-card rounded-lg border border-border p-4 text-center card-shadow">
           <p className="text-2xl font-bold text-info">{stats.processing}</p>
-          <p className="text-sm text-muted-foreground">قيد التنفيذ</p>
+          <p className="text-sm text-muted-foreground">{t("orders.statusProcessing")}</p>
         </div>
         <div className="bg-card rounded-lg border border-border p-4 text-center card-shadow">
           <p className="text-2xl font-bold text-success">{stats.completed}</p>
-          <p className="text-sm text-muted-foreground">مكتمل</p>
+          <p className="text-sm text-muted-foreground">{t("orders.statusCompleted")}</p>
         </div>
         <div className="bg-card rounded-lg border border-border p-4 text-center card-shadow">
           <p className="text-2xl font-bold text-destructive">{stats.cancelled}</p>
-          <p className="text-sm text-muted-foreground">ملغي</p>
+          <p className="text-sm text-muted-foreground">{t("orders.statusCancelled")}</p>
         </div>
       </div>
 
       {/* Orders Table */}
       <div className="bg-card rounded-xl border border-border overflow-hidden card-shadow">
         <div className="overflow-x-auto">
-          {loading ? (
-            <div className="p-8 text-center text-muted-foreground">جاري التحميل...</div>
-          ) : filteredOrders.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">لا توجد طلبات</div>
+          {filteredOrders.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">{t("orders.noOrders")}</div>
           ) : (
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border bg-secondary/50">
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">رقم الطلب</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">المبلغ</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">التاريخ</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">الحالة</th>
-                  <th className="text-right text-xs font-medium text-muted-foreground p-4">إجراءات</th>
+                  <th className="text-start text-xs font-medium text-muted-foreground p-4">{t("orders.id")}</th>
+                  <th className="text-start text-xs font-medium text-muted-foreground p-4">{t("orders.link")}</th>
+                  <th className="text-start text-xs font-medium text-muted-foreground p-4">{t("common:amount")}</th>
+                  <th className="text-start text-xs font-medium text-muted-foreground p-4">{t("common:date")}</th>
+                  <th className="text-start text-xs font-medium text-muted-foreground p-4">{t("common:status")}</th>
+                  <th className="text-start text-xs font-medium text-muted-foreground p-4">{t("common:actions")}</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredOrders.map((order) => (
                   <tr key={order.id} className="border-b border-border last:border-0 hover:bg-secondary/30">
                     <td className="p-4 text-sm font-medium text-primary">#{order.id}</td>
+                    <td className="p-4">
+                      {order.details?.link ? (
+                        <div className="flex items-center gap-2 max-w-[250px]">
+                          <span 
+                            className="text-xs font-mono bg-secondary/80 px-2 py-1 rounded truncate select-all cursor-text text-foreground border border-border/50" 
+                            title={order.details.link}
+                          >
+                            {order.details.link}
+                          </span>
+                          <button 
+                            onClick={() => {
+                              navigator.clipboard.writeText(order.details.link);
+                              toast.success(t("common:copy") + "!");
+                            }}
+                            className="p-1.5 hover:bg-accent rounded-md transition-colors text-muted-foreground hover:text-primary shrink-0"
+                            title={t("common:copy")}
+                          >
+                            <Copy className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">{t("orders.noLink")}</span>
+                      )}
+                    </td>
                     <td className="p-4 text-sm text-foreground">${(order.totalAmount / 100).toFixed(2)}</td>
                     <td className="p-4 text-sm text-muted-foreground">
-                      {new Date(order.createdAt).toLocaleDateString('ar-SA')}
+                      {new Date(order.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}
                     </td>
                     <td className="p-4">
                       {editingOrderId === order.id ? (
@@ -173,10 +223,10 @@ const AdminOrders = () => {
                           className="bg-secondary text-foreground rounded-lg px-2 py-1 text-xs border border-border focus:outline-none"
                           autoFocus
                         >
-                          <option value="pending">قيد الانتظار</option>
-                          <option value="confirmed">مؤكد</option>
-                          <option value="completed">مكتمل</option>
-                          <option value="cancelled">ملغي</option>
+                          <option value="pending">{t("orders.statusPending")}</option>
+                          <option value="confirmed">{t("orders.statusProcessing")}</option>
+                          <option value="completed">{t("orders.statusCompleted")}</option>
+                          <option value="cancelled">{t("orders.statusCancelled")}</option>
                         </select>
                       ) : (
                         <StatusBadge status={order.status === 'confirmed' ? 'processing' : order.status} />
@@ -190,7 +240,7 @@ const AdminOrders = () => {
                             setEditingStatus(order.status);
                           }}
                           className="p-2 rounded-lg hover:bg-secondary transition-colors" 
-                          title="تعديل الحالة"
+                          title={t("common:edit")}
                         >
                           <Edit className="w-4 h-4 text-muted-foreground" />
                         </button>
@@ -205,7 +255,9 @@ const AdminOrders = () => {
 
         {/* Pagination */}
         <div className="flex items-center justify-between p-4 border-t border-border">
-          <p className="text-sm text-muted-foreground">عرض {filteredOrders.length} من {orders.length} طلب</p>
+          <p className="text-sm text-muted-foreground">
+            {t("orders.pagination", { count: filteredOrders.length, total: orders.length })}
+          </p>
           <div className="flex items-center gap-2">
             <button className="p-2 rounded-lg border border-border hover:bg-secondary transition-colors disabled:opacity-50" disabled>
               <ChevronRight className="w-4 h-4 text-foreground" />

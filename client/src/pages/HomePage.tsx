@@ -1,46 +1,36 @@
 import PublicLayout from "@/components/layouts/PublicLayout";
 import ServiceCard from "@/components/common/ServiceCard";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Shield, Zap, Headphones, Youtube, Instagram, Twitter } from "lucide-react";
-import { useEffect, useState } from "react";
-import { apiClient } from "@/lib/api";
+import { Link, useLoaderData } from "react-router-dom";
+import { ArrowLeft, Shield, Zap, Headphones, Youtube, Instagram, Music, Facebook } from "lucide-react";
+import { useState } from "react";
+import { apiClient } from "@/services/api";
 import { toast } from "sonner";
 
-const features = [
-  { icon: Shield, title: "مدفوعات آمنة 100%", description: "جميع المعاملات مشفرة ومحمية" },
-  { icon: Zap, title: "تنفيذ فوري للطلبات", description: "ابدأ في استلام الخدمة خلال دقائق" },
-  { icon: Headphones, title: "دعم فني متواصل 24/7", description: "فريقنا جاهز لمساعدتك في أي وقت" },
-];
-
-const categories = [
-  { icon: Youtube, label: "خدمات يوتيوب", href: "/services/youtube", color: "bg-red-500" },
-  { icon: Instagram, label: "خدمات انستقرام", href: "/services/instagram", color: "bg-gradient-to-br from-purple-500 to-pink-500" },
-  { icon: Twitter, label: "خدمات تويتر", href: "/services/twitter", color: "bg-blue-400" },
-];
+import { useTranslation } from "react-i18next";
+import { useAuth } from "@/contexts/AuthContext";
 
 const HomePage = () => {
-  const [services, setServices] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { services } = useLoaderData() as { services: any[] };
+  const { t, i18n } = useTranslation("home");
+  const { user } = useAuth();
+  const isRtl = i18n.language === "ar";
+  
+  const featuresList = [
+    { icon: Shield, title: t("features.secure.title"), description: t("features.secure.description") },
+    { icon: Zap, title: t("features.instant.title"), description: t("features.instant.description") },
+    { icon: Headphones, title: t("features.support.title"), description: t("features.support.description") },
+  ];
 
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        const response = await apiClient.getServices();
-        const serviceData = response.data || response;
-        setServices((Array.isArray(serviceData) ? serviceData : []).slice(0, 4));
-      } catch (error) {
-        toast.error('Failed to load services');
-        console.error('Error:', error);
-        setServices([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const categoriesList = [
+    { icon: Youtube, label: t("categories.youtubeServices"), href: "/services?category=YouTube", color: "bg-red-500" },
+    { icon: Instagram, label: t("categories.instagramServices"), href: "/services?category=Instagram", color: "bg-gradient-to-br from-purple-500 to-pink-500" },
+    { icon: Facebook, label: t("categories.facebookServices"), href: "/services?category=Facebook", color: "bg-blue-600" },
+    { icon: Music, label: t("categories.tiktokServices"), href: "/services?category=TikTok", color: "bg-black" },
+  ];
+  // Taking first 4 services as "Popular"
+  const popularServices = Array.isArray(services) ? services.slice(0, 4) : [];
 
-    fetchServices();
-  }, []);
-
-  const formattedServices = services.map((service: any) => ({
+  const formattedServices = popularServices.map((service: any) => ({
     id: service.id?.toString() || service.name,
     title: service.name,
     titleEn: service.name,
@@ -54,26 +44,28 @@ const HomePage = () => {
       <section className="bg-gradient-to-b from-card to-background py-16 md:py-24">
         <div className="container text-center">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-            دعم حسابات التواصل الاجتماعي
-            <span className="text-primary block mt-2">بجودة عالية وضمان حقيقي</span>
+            {t("hero.title")}
+            <span className="text-primary block mt-2">{t("hero.subtitle")}</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-            منصة رائدة لخدمات التسويق الإلكتروني. زيادة المتابعين والمشاهدات والتفاعل على جميع منصات التواصل الاجتماعي.
+            {t("hero.description")}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/services"
-              className="btn-primary px-8 py-4 rounded-lg font-semibold text-lg inline-flex items-center justify-center gap-2"
+              className="px-8 py-4 rounded-lg font-semibold text-lg inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             >
-              تصفح الخدمات
-              <ArrowLeft className="w-5 h-5" />
+              {t("hero.browseServices")}
+              <ArrowLeft className={`w-5 h-5 ${isRtl ? "" : "rotate-180"}`} />
             </Link>
-            <Link
-              to="/register"
-              className="btn-outline px-8 py-4 rounded-lg font-semibold text-lg"
-            >
-              إنشاء حساب مجاني
-            </Link>
+            {!user && (
+              <Link
+                to="/register"
+                className="px-8 py-4 rounded-lg font-semibold text-lg border border-primary text-primary hover:bg-primary/10 transition-colors"
+              >
+                {t("hero.createAccount")}
+              </Link>
+            )}
           </div>
         </div>
       </section>
@@ -82,7 +74,7 @@ const HomePage = () => {
       <section className="py-12 border-b border-border">
         <div className="container">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
+            {featuresList.map((feature, index) => (
               <div
                 key={index}
                 className="flex items-center gap-4 p-6 rounded-xl bg-card border border-border"
@@ -104,11 +96,11 @@ const HomePage = () => {
       <section className="py-16">
         <div className="container">
           <div className="text-center mb-10">
-            <h2 className="text-3xl font-bold mb-4">اختر منصتك المفضلة</h2>
-            <p className="text-muted-foreground">نقدم خدمات متنوعة لجميع منصات التواصل الاجتماعي</p>
+            <h2 className="text-3xl font-bold mb-4">{t("categories.title")}</h2>
+            <p className="text-muted-foreground">{t("categories.subtitle")}</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {categories.map((cat, index) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {categoriesList.map((cat, index) => (
               <Link
                 key={index}
                 to={cat.href}
@@ -129,22 +121,20 @@ const HomePage = () => {
         <div className="container">
           <div className="flex items-center justify-between mb-10">
             <div>
-              <h2 className="text-3xl font-bold mb-2">الخدمات الأكثر طلباً</h2>
-              <p className="text-muted-foreground">اكتشف خدماتنا الأكثر شعبية</p>
+              <h2 className="text-3xl font-bold mb-2">{t("popularServices.title")}</h2>
+              <p className="text-muted-foreground">{t("popularServices.subtitle")}</p>
             </div>
             <Link
               to="/services"
               className="hidden sm:flex items-center gap-2 text-primary font-medium hover:underline"
             >
-              عرض الكل
-              <ArrowLeft className="w-4 h-4" />
+              {t("popularServices.viewAll")}
+              <ArrowLeft className={`w-4 h-4 ${isRtl ? "" : "rotate-180"}`} />
             </Link>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {loading ? (
-              <div className="col-span-full text-center py-8 text-muted-foreground">جاري التحميل...</div>
-            ) : formattedServices.length === 0 ? (
-              <div className="col-span-full text-center py-8 text-muted-foreground">لا توجد خدمات متاحة</div>
+            {formattedServices.length === 0 ? (
+              <div className="col-span-full text-center py-8 text-muted-foreground">{t("popularServices.noServices", { defaultValue: "No services available" })}</div>
             ) : (
               formattedServices.map((service: any) => (
                 <ServiceCard key={service.id} {...service} />
