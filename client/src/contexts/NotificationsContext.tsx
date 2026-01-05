@@ -1,3 +1,11 @@
+/**
+ * client/src/contexts/NotificationsContext.tsx
+ * 
+ * Notifications context provider.
+ * Manages user notifications, fetches from API, listens for real-time updates via WebSocket,
+ * and provides mark-as-read functionality.
+ */
+
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { apiClient } from "@/services/api";
 import { useAuth } from './AuthContext';

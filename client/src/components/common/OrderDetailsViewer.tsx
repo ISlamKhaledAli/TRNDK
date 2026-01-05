@@ -118,7 +118,7 @@ export const OrderDetailsViewer = ({ data, label, isRoot = false, titleLink }: O
             {price !== undefined && (
               <div className="inline-flex flex-col">
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{t('price', { defaultValue: 'Price' })}</span>
-                <span className="font-medium font-mono">${Number(price).toFixed(2)}</span>
+                <span className="font-medium font-mono">{(Number(price) / 100).toFixed(2)}</span>
               </div>
             )}
             {quantity !== undefined && (

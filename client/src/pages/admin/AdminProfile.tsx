@@ -1,3 +1,10 @@
+/**
+ * client/src/pages/admin/AdminProfile.tsx
+ * 
+ * Admin profile management page.
+ * Allows admins to view and edit their profile information and change password.
+ */
+
 import AdminLayout from "@/components/layouts/AdminLayout";
 import { User, Mail, Phone, Lock, Save, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";

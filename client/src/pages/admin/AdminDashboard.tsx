@@ -1,3 +1,11 @@
+/**
+ * client/src/pages/admin/AdminDashboard.tsx
+ * 
+ * Admin dashboard page.
+ * Displays key metrics (revenue, orders, users), statistics charts,
+ * recent orders, recent users, and top services with real-time data.
+ */
+
 import AdminLayout from "@/components/layouts/AdminLayout";
 import { Users, ShoppingCart, DollarSign, TrendingUp, ArrowUpRight, ArrowDownRight, ClipboardList } from "lucide-react";
 import { Link, useLoaderData, useRevalidator } from "react-router-dom";

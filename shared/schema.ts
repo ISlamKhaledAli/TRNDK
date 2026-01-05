@@ -1,3 +1,13 @@
+/**
+ * shared/schema.ts
+ * 
+ * Shared type definitions and Zod validation schemas.
+ * Defines interfaces and validation schemas for:
+ * - Users, Services, Orders, Payments, Notifications, Reviews, Settings
+ * - API request/response types
+ * Used by both client and server for type safety and validation.
+ */
+
 import { z } from "zod";
 
 // === CONSTANTS ===

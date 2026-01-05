@@ -1,3 +1,11 @@
+/**
+ * client/src/pages/admin/AdminUsers.tsx
+ * 
+ * Admin users management page.
+ * Displays all users in a table with search, filtering, and pagination.
+ * Allows admins to view user details, update status, and toggle VIP status.
+ */
+
 import AdminLayout from "@/components/layouts/AdminLayout";
 import { Eye, ChevronLeft, ChevronRight, Crown, X } from "lucide-react";
 import { useEffect, useState } from "react";

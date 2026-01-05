@@ -1,3 +1,11 @@
+/**
+ * client/src/pages/admin/AdminServices.tsx
+ * 
+ * Admin services management page.
+ * Displays all services in a grid with search and category filtering.
+ * Allows admins to create, edit, delete, and toggle service availability.
+ */
+
 import AdminLayout from "@/components/layouts/AdminLayout";
 import { Plus, Edit, Trash2, ToggleLeft, ToggleRight, X, Percent } from "lucide-react";
 import { useEffect, useState } from "react";

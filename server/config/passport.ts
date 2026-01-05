@@ -1,3 +1,11 @@
+/**
+ * server/config/passport.ts
+ * 
+ * Passport.js configuration for Google OAuth 2.0 authentication.
+ * Handles user authentication via Google Sign-In, account linking by email,
+ * and automatic user creation for new Google accounts.
+ */
+
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { storage } from "../storage/storage";

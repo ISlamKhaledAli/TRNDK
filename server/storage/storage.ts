@@ -1,3 +1,12 @@
+/**
+ * server/storage/storage.ts
+ * 
+ * Data storage layer with two implementations:
+ * - MemStorage: In-memory storage for development/testing with mock data
+ * - DatabaseStorage: Prisma-based MySQL storage for production
+ * Provides unified interface for users, services, orders, payments, notifications, reviews, and settings.
+ */
+
 import { type User, type InsertUser, type Service, type InsertService, type Order, type InsertOrder, type Payment, type InsertPayment, type Notification, type InsertNotification, type Review, type InsertReview, type Setting, type InsertSetting } from "@shared/schema";
 import { hashSync } from "bcryptjs";
 import { db } from "../config/db";

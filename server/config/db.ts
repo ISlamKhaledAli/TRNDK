@@ -1,3 +1,11 @@
+/**
+ * server/config/db.ts
+ * 
+ * Database configuration and Prisma client initialization.
+ * Validates DATABASE_URL environment variable and creates a singleton Prisma client
+ * with query logging enabled for development and debugging.
+ */
+
 import { PrismaClient } from "@prisma/client";
 import "dotenv/config";
 

@@ -1,3 +1,13 @@
+/**
+ * prisma/seed.ts
+ * 
+ * Database seeding script.
+ * Populates the database with initial data including:
+ * - Admin user
+ * - Sample customers
+ * - Sample services (Instagram, Facebook, TikTok, YouTube)
+ */
+
 import { PrismaClient } from "@prisma/client";
 import { hashSync } from "bcryptjs";
 

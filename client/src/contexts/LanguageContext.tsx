@@ -1,3 +1,11 @@
+/**
+ * client/src/contexts/LanguageContext.tsx
+ * 
+ * Language/internationalization context provider.
+ * Manages language switching between Arabic and English,
+ * syncs with i18next, and updates HTML dir/lang attributes for RTL/LTR support.
+ */
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 import i18n from "@/lib/i18n/i18n";
 

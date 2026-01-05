@@ -1,3 +1,11 @@
+/**
+ * server/middleware/auth.ts
+ * 
+ * Authentication middleware and JWT utilities.
+ * Provides token generation/verification, password hashing/comparison,
+ * and middleware for protecting routes (authMiddleware, adminMiddleware).
+ */
+
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";

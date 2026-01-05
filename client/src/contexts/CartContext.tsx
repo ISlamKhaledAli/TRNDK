@@ -1,3 +1,11 @@
+/**
+ * client/src/contexts/CartContext.tsx
+ * 
+ * Shopping cart and wishlist context provider.
+ * Manages cart items, wishlist, quantities, and persists data to localStorage.
+ * Provides cart operations (add, remove, update, clear) and price calculations.
+ */
+
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 export interface CartItem {

@@ -1,3 +1,11 @@
+/**
+ * client/src/contexts/AuthContext.tsx
+ * 
+ * Authentication context provider.
+ * Manages user authentication state, login/logout functionality,
+ * and provides authentication status checks throughout the application.
+ */
+
 import { createContext, useContext, useState, useEffect } from 'react';
 import { apiClient } from "@/services/api";
 import { useQuery } from "@tanstack/react-query";

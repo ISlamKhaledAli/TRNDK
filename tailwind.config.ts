@@ -1,3 +1,11 @@
+/**
+ * tailwind.config.ts
+ * 
+ * Tailwind CSS configuration.
+ * Defines custom theme colors, fonts, animations, and design tokens
+ * for the application's design system including dark mode support.
+ */
+
 import type { Config } from "tailwindcss";
 
 export default {

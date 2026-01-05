@@ -1,3 +1,11 @@
+/**
+ * server/services/socket.ts
+ * 
+ * WebSocket (Socket.IO) service for real-time communication.
+ * Manages socket connections, room subscriptions (admins, individual users),
+ * and emits events for new orders, user registrations, order status updates, and notifications.
+ */
+
 import { Server as HttpServer } from "http";
 import { Server } from "socket.io";
 import { User } from "@shared/schema";

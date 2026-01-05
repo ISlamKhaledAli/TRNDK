@@ -1,3 +1,11 @@
+/**
+ * server/utils/admin-init.ts
+ * 
+ * Admin initialization utility.
+ * Ensures at least one admin user exists in the database on server startup.
+ * Creates a default admin from environment variables (ADMIN_EMAIL, ADMIN_PASSWORD) if none exists.
+ */
+
 import { db } from "../config/db";
 import { hashSync } from "bcryptjs";
 import "dotenv/config";

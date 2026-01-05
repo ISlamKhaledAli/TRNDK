@@ -1,3 +1,10 @@
+/**
+ * vite.config.ts
+ * 
+ * Vite configuration for the React client application.
+ * Configures path aliases, build output directory, and development server settings.
+ */
+
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";

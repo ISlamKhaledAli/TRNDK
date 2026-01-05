@@ -1,3 +1,11 @@
+/**
+ * client/src/contexts/CurrencyContext.tsx
+ * 
+ * Currency conversion context provider.
+ * Fetches live exchange rates from external API, caches them locally,
+ * and provides price formatting in multiple currencies (USD, SAR, AED, EUR, etc.).
+ */
+
 import React, { createContext, useContext, useState, useEffect } from "react";
 
 type CurrencyCode = "USD" | "EUR" | "GBP" | "SAR" | "AED" | "KWD" | "EGP" | "QAR" | "JOD" | "TRY" | "INR";

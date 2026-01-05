@@ -1,3 +1,11 @@
+/**
+ * server/services/notification.service.ts
+ * 
+ * Notification service for creating and managing user notifications.
+ * Handles notifications for order creation and status changes,
+ * with role-based notification logic (users vs admins) and real-time WebSocket emission.
+ */
+
 import { storage } from "../storage/storage";
 import { type Order } from "@shared/schema";
 import { emitOrderStatusUpdate, emitNotification } from "./socket";

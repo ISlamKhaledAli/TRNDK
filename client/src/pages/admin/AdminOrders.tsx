@@ -1,3 +1,11 @@
+/**
+ * client/src/pages/admin/AdminOrders.tsx
+ * 
+ * Admin orders management page.
+ * Displays all orders in a table with filtering, sorting, pagination,
+ * and allows admins to update order statuses.
+ */
+
 import AdminLayout from "@/components/layouts/AdminLayout";
 import StatusBadge from "@/components/common/StatusBadge";
 import { Filter, Eye, Edit, ChevronLeft, ChevronRight, Download, Copy } from "lucide-react";

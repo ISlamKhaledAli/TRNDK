@@ -1,3 +1,11 @@
+/**
+ * client/src/pages/admin/AdminPayments.tsx
+ * 
+ * Admin payments management page.
+ * Displays all payment transactions with filtering, search, pagination,
+ * and allows admins to view payment details and update payment statuses.
+ */
+
 import AdminLayout from "@/components/layouts/AdminLayout";
 import { Download, Eye, CheckCircle, XCircle, ChevronLeft, ChevronRight, DollarSign, CreditCard, Smartphone, Building, X } from "lucide-react";
 import { useEffect, useState } from "react";

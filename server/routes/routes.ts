@@ -1,3 +1,13 @@
+/**
+ * server/routes/routes.ts
+ * 
+ * API route definitions for the application.
+ * Registers all endpoints including:
+ * - Public routes (services, login, register, Google OAuth)
+ * - Authenticated routes (profile, orders, notifications)
+ * - Admin routes (users, services, orders, payments management)
+ */
+
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "../storage/storage";

@@ -1,3 +1,11 @@
+/**
+ * script/build.ts
+ * 
+ * Production build script.
+ * Builds both client (Vite) and server (esbuild) for production deployment.
+ * Bundles server dependencies to reduce cold start times.
+ */
+
 import { build as esbuild } from "esbuild";
 import { build as viteBuild } from "vite";
 import { rm, readFile } from "fs/promises";

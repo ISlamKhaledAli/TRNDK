@@ -1,3 +1,11 @@
+/**
+ * server/static.ts
+ * 
+ * Static file serving for production builds.
+ * Serves the compiled React application from the dist/public directory
+ * with caching and fallback to index.html for client-side routing.
+ */
+
 import express, { type Express } from "express";
 import fs from "fs";
 import path from "path";

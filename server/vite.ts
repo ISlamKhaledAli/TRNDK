@@ -1,3 +1,11 @@
+/**
+ * server/vite.ts
+ * 
+ * Vite development server integration.
+ * Sets up Vite middleware in development mode for hot module replacement (HMR)
+ * and serves the React application with live reloading.
+ */
+
 import { type Express } from "express";
 import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";

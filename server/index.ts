@@ -1,3 +1,14 @@
+/**
+ * server/index.ts
+ * 
+ * Main server entry point. Configures and starts the Express application with:
+ * - Security middleware (Helmet, CORS, rate limiting)
+ * - Authentication (Passport with Google OAuth)
+ * - WebSocket support for real-time notifications
+ * - Database connection and admin initialization
+ * - Vite dev server (development) or static file serving (production)
+ */
+
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 // Trigger reload
