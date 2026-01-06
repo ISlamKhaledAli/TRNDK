@@ -42,7 +42,7 @@ const DialogContent = React.forwardRef<
         
         // Structure overrides
         "flex flex-col",
-        "w-[90vw] max-h-[90vh]", // Dimensions (90vw mobile)
+        "w-[140vw] max-h-[90vh]", // Dimensions (90vw mobile)
         "gap-0 p-0", 
         "overflow-hidden",
         "sm:rounded-lg",

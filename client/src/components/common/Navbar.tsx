@@ -80,7 +80,9 @@ const Navbar = () => {
             <LanguageSwitcher />
 
             {/* Currency Selector */}
-            <CurrencySelector />
+            <div className="hidden sm:block">
+              <CurrencySelector />
+            </div>
 
             {/* Theme Toggle */}
             <button
