@@ -60,17 +60,14 @@ const CheckoutPage = () => {
 
     setLoading(true);
     try {
-      const item = items[0];
-      const result = await apiClient.createOrder({
-        serviceId: item.serviceId,
-        status: 'pending',
-        totalAmount: Math.round(total * 100),
-        details: {
+      const result = await apiClient.checkout({
+        items: items.map(item => ({
+          serviceId: item.serviceId,
           quantity: item.quantity,
           link: item.link,
-          paymentMethod,
-          cartItems: items
-        }
+          price: item.price
+        })),
+        paymentMethod
       });
       refreshNotifications();
       toast.success(t("messages.success"));

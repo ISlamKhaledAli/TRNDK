@@ -96,6 +96,19 @@ export const apiClient = {
     return res.json();
   },
 
+  async checkout(data: { items: any[]; paymentMethod: string }) {
+    const res = await fetch(`${API_BASE}/orders/checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.message || 'Checkout failed');
+    }
+    return res.json();
+  },
+
   async getMyOrders() {
     const res = await fetch(`${API_BASE}/orders/my`);
     if (!res.ok) throw new Error('Failed to fetch orders');
@@ -137,6 +150,17 @@ export const apiClient = {
       method: 'DELETE',
     });
     if (!res.ok) throw new Error('Failed to delete order');
+    return res.json();
+  },
+
+  async reportDelay(id: number) {
+    const res = await fetch(`${API_BASE}/orders/${id}/report-delay`, {
+      method: 'POST',
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.message || 'Failed to report delay');
+    }
     return res.json();
   },
 

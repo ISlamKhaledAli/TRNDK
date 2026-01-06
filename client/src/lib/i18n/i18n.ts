@@ -53,6 +53,8 @@ const resources = {
         orderStatusMessage: "Your order #{{orderId}} status has been updated to: {{status}}",
         newOrderAdminTitle: "New Order",
         newOrderAdminMessage: "New order received #{{orderId}} with amount {{amount}}",
+        orderDelayedTitle: "A delay has been reported",
+        orderDelayedMessage: "The user reported a delay in order number {{orderId}}",
       },
       footer: {
         brandDescription: "Leading platform for digital marketing services and social media account support with high quality and real guarantee.",
@@ -79,7 +81,7 @@ const resources = {
       loading: "Loading...",
       confirmDelete: "Are you sure you want to delete this item?",
       export: "Export",
-      currency: "SAR",
+      currency: "USD",
       statusLabels: {
         pending: "Pending",
         confirmed: "Confirmed",
@@ -494,6 +496,9 @@ const resources = {
         },
         deleteSuccess: "Order deleted successfully",
         deleteError: "Failed to delete order",
+        delayReportedMessage: "Delay reported for order #{{id}}",
+        delayReportedStatus: "Delay Reported",
+        reportDelay: "Report Delay",
       },
     },
     checkout: {
@@ -687,6 +692,8 @@ const resources = {
         orderStatusMessage: "تم تحديث حالة طلبك رقم #{{orderId}} إلى: {{status}}",
         newOrderAdminTitle: "طلب جديد",
         newOrderAdminMessage: "تم استلام طلب جديد رقم #{{orderId}} بقيمة {{amount}}",
+        orderDelayedTitle: "تم الإبلاغ عن تأخير",
+        orderDelayedMessage: "أبلغ المستخدم عن تأخير في الطلب رقم {{orderId}}",
       },
       footer: {
         brandDescription: "متجر رائد لخدمات التسويق الإلكتروني ودعم حسابات التواصل الاجتماعي بجودة عالية وضمان حقيقي.",
@@ -713,7 +720,7 @@ const resources = {
       loading: "جاري التحميل...",
       confirmDelete: "هل أنت متأكد من حذف هذا العنصر؟",
       export: "تصدير",
-      currency: "ر.س",
+      currency: "$",
       statusLabels: {
         pending: "قيد الانتظار",
         confirmed: "تم التأكيد",
@@ -1128,6 +1135,9 @@ const resources = {
         },
         deleteSuccess: "تم حذف الطلب بنجاح",
         deleteError: "فشل حذف الطلب",
+        delayReportedMessage: "تم الإبلاغ عن تأخير للطلب #{{id}}",
+        delayReportedStatus: "تم الإبلاغ",
+        reportDelay: "الإبلاغ عن تأخير",
       },
     },
     checkout: {

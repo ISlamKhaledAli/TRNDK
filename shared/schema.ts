@@ -54,6 +54,10 @@ export interface Order {
   details?: any | null;
   createdAt?: Date | null;
   updatedAt?: Date | null;
+  lastNotifyAt?: Date | null;
+  transactionId?: string | null;
+  currency?: string; // Enforced USD
+  service?: Service; // For frontend convenience
 }
 
 export interface Payment {
@@ -64,6 +68,7 @@ export interface Payment {
   method: string;
   status: string;
   transactionId?: string | null;
+  currency?: string; // Enforced USD
   createdAt?: Date | null;
   updatedAt?: Date | null;
 }
@@ -127,6 +132,8 @@ export const insertOrderSchema = z.object({
   status: z.string().optional().default("pending"),
   totalAmount: z.number().int(),
   details: z.any().optional().nullable(),
+  transactionId: z.string().optional().nullable(),
+  currency: z.string().default("USD"),
 });
 
 export const insertPaymentSchema = z.object({
@@ -136,6 +143,7 @@ export const insertPaymentSchema = z.object({
   method: z.string(),
   status: z.string().optional().default("pending"),
   transactionId: z.string().optional().nullable(),
+  currency: z.string().default("USD"),
 });
 
 export const insertNotificationSchema = z.object({
@@ -155,6 +163,17 @@ export const insertReviewSchema = z.object({
 export const insertSettingSchema = z.object({
   key: z.string(),
   value: z.string(),
+});
+
+export const checkoutSchema = z.object({
+  items: z.array(z.object({
+    serviceId: z.number().int(),
+    quantity: z.number().int().min(1),
+    link: z.string().min(1),
+    price: z.number().int().nonnegative(),
+    // Allow any other details needed per item
+  })),
+  paymentMethod: z.string(),
 });
 
 // === TYPE INFERENCE ===

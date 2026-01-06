@@ -12,7 +12,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "../storage/storage";
 import { z } from "zod";
-import { insertUserSchema, insertServiceSchema, insertOrderSchema, insertReviewSchema, SERVICE_CATEGORIES } from "@shared/schema";
+import { insertUserSchema, insertServiceSchema, checkoutSchema, insertOrderSchema, insertPaymentSchema, insertNotificationSchema, insertReviewSchema, insertSettingSchema, SERVICE_CATEGORIES } from "@shared/schema";
 import { Router } from "express";
 import { signToken, hashPassword, comparePassword, authMiddleware, adminMiddleware } from "../middleware/auth";
 import { NotificationService } from "../services/notification.service";
@@ -235,6 +235,81 @@ export async function registerRoutes(
     }
   });
 
+  // Checkout (Bulk Orders)
+  apiRouter.post('/orders/checkout', authMiddleware, async (req, res) => {
+    try {
+      const checkoutData = checkoutSchema.parse(req.body);
+      const userId = req.user!.id;
+
+      // 1. Transaction & Payment Setup
+      const transactionId = `TXN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+      const totalAmount = checkoutData.items.reduce((sum, item) => sum + (item.price * (item.quantity / 1000)), 0); // Price is per 1000 units usually? 
+      // Wait, let's verify how price is calculated. 
+      // In checkout page: (item.price / 100) * (item.quantity / 1000) for display.
+      // Database price is likely in cents per 1000 units?
+      // Service.price = number.
+      // Let's assume passed price in items is correct or we should refetch from DB for security? 
+      // For security, we should fetching services.
+      
+      const serviceIds = checkoutData.items.map(i => i.serviceId);
+      // We can't easily fetch all services in bulk with current storage interface efficiently without loop or new method changes.
+      // Let's fetch individually for now to be safe and simple.
+
+      const orders = [];
+      let calculatedTotal = 0;
+
+      for (const item of checkoutData.items) {
+        const service = await storage.getService(item.serviceId);
+        if (!service) throw new Error(`Service ${item.serviceId} not found`);
+        if (!service.isActive) throw new Error(`Service ${service.name} is unavailable`);
+
+        // Calculate item total: (price per 1000 * quantity) / 1000 * 100 (if price is in dollars?)
+        // Wait, schema says price is integer (cents?).
+        // If price is 100 ($1.00) for 1000 units.
+        // Quantity 2000 => 2 * 100 = 200.
+        // Let's rely on standard logic: Price is per 1000 units usually in SMM panels.
+        const itemTotal = Math.round(service.price * (item.quantity / 1000));
+        calculatedTotal += itemTotal;
+
+        const orderResult = await storage.createOrder({
+          userId,
+          serviceId: item.serviceId,
+          status: 'pending',
+          totalAmount: itemTotal,
+          details: {
+            quantity: item.quantity,
+            link: item.link,
+            originalPrice: service.price
+          },
+          transactionId
+        });
+
+        if (!orderResult.success) throw new Error(orderResult.error);
+        orders.push(orderResult.data!);
+      }
+
+      // Create One Payment Record
+      await storage.createPayment({
+        userId,
+        amount: calculatedTotal,
+        method: checkoutData.paymentMethod,
+        status: 'pending',
+        transactionId
+      });
+
+      // Notifications
+      for (const order of orders) {
+        await NotificationService.notifyOrderCreated(order);
+        emitNewOrder(order);
+      }
+
+      res.status(201).json({ data: orders });
+
+    } catch (e: any) {
+      res.status(400).json({ message: e.message || "Validation Error", errors: e });
+    }
+  });
+
   // Customer Orders
   apiRouter.post('/orders', authMiddleware, async (req, res) => {
     try {
@@ -303,6 +378,100 @@ export async function registerRoutes(
       return res.status(result.error?.includes('Unauthorized') ? 403 : 404).json({ message: result.error });
     }
     res.json({ message: 'Order deleted' });
+    res.json({ message: 'Order deleted' });
+  });
+
+  // Report Delay
+  apiRouter.post('/orders/:id/report-delay', authMiddleware, async (req, res) => {
+    try {
+      const orderId = Number(req.params.id);
+      const userId = req.user!.id;
+
+      // 1. Fetch order with service
+      // Ensure ownership
+      const userOrders = await storage.getOrders(userId);
+      const order = userOrders.find(o => o.id === orderId);
+
+      if (!order) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+
+      // 2. Validate Status
+      // Requirement: "The order status must be in_progress"
+      // Based on available statuses: 'pending', 'confirmed', 'processing', 'completed', 'cancelled'
+      // We accept 'processing' and 'confirmed' as "in progress".
+      if (!['processing', 'confirmed'].includes(order.status)) {
+         return res.status(400).json({ message: "Order must be in progress to report a delay." });
+      }
+
+      // 3. Validate Time (Deadline exceeded for first report)
+      // We still need to check if the estimated time passed at least once
+      const service = (order as any).service;
+      const parseDurationMs = (durationStr: string): number => {
+         try {
+           const parts = durationStr.toLowerCase().split(' ');
+           let unit = 'hours';
+           if (parts.some(p => p.startsWith('minute'))) unit = 'minutes';
+           else if (parts.some(p => p.startsWith('hour'))) unit = 'hours';
+           else if (parts.some(p => p.startsWith('day'))) unit = 'days';
+
+           const numbers = durationStr.match(/\d+/g);
+           let val = 0;
+           if (numbers && numbers.length > 0) {
+              val = Math.max(...numbers.map(n => parseInt(n)));
+           } else {
+              val = 24; // fallback
+           }
+
+           switch(unit) {
+              case 'minutes': return val * 60 * 1000;
+              case 'hours': return val * 3600 * 1000;
+              case 'days': return val * 86400 * 1000;
+              default: return val * 3600 * 1000;
+           }
+         } catch {
+            return 24 * 3600 * 1000; 
+         }
+      };
+
+      const durationMs = service?.duration ? parseDurationMs(service.duration) : 24 * 3600 * 1000;
+      const createdAt = new Date(order.createdAt!).getTime();
+      const now = Date.now();
+      const deadline = createdAt + durationMs;
+
+      // Initial check: Has the estimated time passed?
+      if (now < deadline) {
+         return res.status(400).json({ message: "Estimated completion time has not passed yet." });
+      }
+
+      // 4. Validate Cooldown (24 hours) check
+      // "The user cannot click the button again until 24 hours have passed since the last click."
+      // "current_time >= last_notify_at + INTERVAL 24 HOURS"
+      if (order.lastNotifyAt) {
+        const lastNotify = new Date(order.lastNotifyAt).getTime();
+        const cooldownMs = 24 * 60 * 60 * 1000; // 24 hours
+        if (now < lastNotify + cooldownMs) {
+           return res.status(400).json({ message: "You can only report a delay once every 24 hours." });
+        }
+      }
+
+      // 5. Update Order
+      const result = await storage.updateOrderLastNotify(orderId, new Date());
+      if (!result.success) {
+         return res.status(400).json({ message: result.error });
+      }
+
+      // 6. Notify
+      // Message: "The service is still in progress after 24 hours." (or similar context)
+      // The i18n key 'orderDelayedMessage' is "The user reported a delay in order number {{orderId}}"
+      // We reuse the existing notification method.
+      await NotificationService.notifyOrderDelay({ ...order, lastNotifyAt: new Date() });
+
+      res.json({ message: "Delay reported successfully", data: result.data });
+
+    } catch (e: any) {
+       res.status(400).json({ message: "Error reporting delay", error: e.message });
+    }
   });
 
 

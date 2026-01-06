@@ -93,6 +93,9 @@ export interface IStorage {
   // Settings
   getSetting(key: string): Promise<Setting | undefined>;
   updateSetting(key: string, value: string): Promise<StorageResult<Setting>>;
+  
+  // Custom
+  updateOrderLastNotify(id: number, date: Date): Promise<StorageResult<Order>>;
 }
 
 export class MemStorage implements IStorage {
@@ -375,6 +378,10 @@ export class MemStorage implements IStorage {
   async getOrders(userId: number): Promise<Order[]> {
     return Array.from(this.orders.values())
       .filter(order => order.userId === userId)
+      .map(order => {
+        const service = this.services.get(order.serviceId);
+        return { ...order, service };
+      })
       .sort((a, b) => b.id - a.id);
   }
 
@@ -394,6 +401,7 @@ export class MemStorage implements IStorage {
       ...insertPayment,
       id,
       transactionId: insertPayment.transactionId ?? `TXN-${now.getTime()}`,
+      currency: 'USD',
       createdAt: now,
       updatedAt: now,
       orderId: insertPayment.orderId ?? null,
@@ -431,6 +439,7 @@ export class MemStorage implements IStorage {
       id, 
       createdAt: now, 
       updatedAt: now,
+      currency: 'USD',
       status: insertOrder.status || 'pending',
       details: insertOrder.details ?? null
     };
@@ -720,6 +729,15 @@ export class MemStorage implements IStorage {
     this.settings.set(key, setting);
     return { success: true, data: setting };
   }
+
+  async updateOrderLastNotify(id: number, date: Date): Promise<StorageResult<Order>> {
+    const order = this.orders.get(id);
+    if (!order) return { success: false, error: 'Order not found' };
+    
+    const updated = { ...order, lastNotifyAt: date };
+    this.orders.set(id, updated);
+    return { success: true, data: updated };
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -889,7 +907,8 @@ export class DatabaseStorage implements IStorage {
   async getOrders(userId: number): Promise<Order[]> {
     return db.order.findMany({
       where: { userId },
-      orderBy: { id: 'desc' }
+      orderBy: { id: 'desc' },
+      include: { service: true }
     });
   }
 
@@ -900,7 +919,13 @@ export class DatabaseStorage implements IStorage {
   async createOrder(insertOrder: InsertOrder): Promise<StorageResult<Order>> {
     try {
       // Prisma JSON handling is automatic if typed correctly
-      const order = await db.order.create({ data: insertOrder as any }); 
+      const data = {
+        ...insertOrder,
+        currency: 'USD',
+        transactionId: insertOrder.transactionId ?? null
+      };
+      
+      const order = await db.order.create({ data: data as any }); 
       return { success: true, data: order };
     } catch (e: any) {
       return { success: false, error: e.message };
@@ -943,6 +968,7 @@ export class DatabaseStorage implements IStorage {
         ...insertPayment,
         orderId: insertPayment.orderId ?? undefined,
         transactionId: insertPayment.transactionId ?? undefined,
+        currency: 'USD',
       };
       const payment = await db.payment.create({ data });
       return { success: true, data: payment };
@@ -1216,6 +1242,18 @@ export class DatabaseStorage implements IStorage {
         create: { key, value }
       });
       return { success: true, data: setting };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  async updateOrderLastNotify(id: number, date: Date): Promise<StorageResult<Order>> {
+    try {
+      const order = await db.order.update({
+        where: { id },
+        data: { lastNotifyAt: date } as any
+      });
+      return { success: true, data: order };
     } catch (e: any) {
       return { success: false, error: e.message };
     }

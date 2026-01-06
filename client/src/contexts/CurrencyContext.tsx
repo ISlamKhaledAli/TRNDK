@@ -1,9 +1,9 @@
 /**
  * client/src/contexts/CurrencyContext.tsx
  * 
- * Currency conversion context provider.
- * Fetches live exchange rates from external API, caches them locally,
- * and provides price formatting in multiple currencies (USD, SAR, AED, EUR, etc.).
+ * Enforced USD Currency Context with Display Options.
+ * System currency is locked to USD ($).
+ * Users can select a "Display Currency" to see approximate conversions.
  */
 
 import React, { createContext, useContext, useState, useEffect } from "react";
@@ -11,8 +11,9 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 type CurrencyCode = "USD" | "EUR" | "GBP" | "SAR" | "AED" | "KWD" | "EGP" | "QAR" | "JOD" | "TRY" | "INR";
 
 interface CurrencyContextType {
-  currency: CurrencyCode;
-  setCurrency: (code: CurrencyCode) => void;
+  currency: "USD"; // System currency is always USD
+  displayCurrency: CurrencyCode;
+  setDisplayCurrency: (code: CurrencyCode) => void;
   formatPrice: (amountInUsd: number) => { main: string; secondary?: string };
   availableCurrencies: { code: CurrencyCode; label: string; symbol: string }[];
   loading: boolean;
@@ -40,16 +41,19 @@ const CURRENCIES: { code: CurrencyCode; label: string; symbol: string }[] = [
 ];
 
 export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [currency, setCurrencyState] = useState<CurrencyCode>("USD");
+  // System currency strictly USD
+  const currency: "USD" = "USD";
+  
+  const [displayCurrency, setDisplayCurrencyState] = useState<CurrencyCode>("USD");
   const [rates, setRates] = useState<Record<string, number>>({ USD: 1 });
   const [loading, setLoading] = useState(true);
 
-  // Load saved currency choice
+  // Load saved display currency choice
   useEffect(() => {
-    const saved = localStorage.getItem("preferredCurrency");
+    const saved = localStorage.getItem("preferredDisplayCurrency");
     const isValidCurrency = CURRENCIES.some(c => c.code === saved);
     if (saved && isValidCurrency) {
-      setCurrencyState(saved as CurrencyCode);
+      setDisplayCurrencyState(saved as CurrencyCode);
     }
   }, []);
 
@@ -97,35 +101,36 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     fetchRates();
   }, []);
 
-  const setCurrency = (code: CurrencyCode) => {
-    setCurrencyState(code);
-    localStorage.setItem("preferredCurrency", code);
+  const setDisplayCurrency = (code: CurrencyCode) => {
+    setDisplayCurrencyState(code);
+    localStorage.setItem("preferredDisplayCurrency", code);
   };
 
   const formatPrice = (amountInUsd: number) => {
-    // Main price is ALWAYS USD
+    // Main price is ALWAYS USD ($X.XX)
     const main = `$${amountInUsd.toFixed(2)}`;
     
-    // If selected is USD or rates not loaded, no secondary needed
-    if (currency === "USD" || !rates[currency]) {
+    // If display is USD or rates not loaded, no secondary needed
+    if (displayCurrency === "USD" || !rates[displayCurrency]) {
       return { main };
     }
 
-    // Calculate secondary
-    const rate = rates[currency];
+    // Calculate secondary (Approximate)
+    const rate = rates[displayCurrency];
     const converted = amountInUsd * rate;
-    const symbol = CURRENCIES.find(c => c.code === currency)?.symbol || currency;
+    const symbol = CURRENCIES.find(c => c.code === displayCurrency)?.symbol || displayCurrency;
     
     return {
       main,
-      secondary: `${symbol} ${converted.toFixed(2)}`
+      secondary: `≈ ${symbol} ${converted.toFixed(2)}`
     };
   };
 
   return (
     <CurrencyContext.Provider value={{ 
       currency, 
-      setCurrency, 
+      displayCurrency,
+      setDisplayCurrency, 
       formatPrice, 
       availableCurrencies: CURRENCIES,
       loading,

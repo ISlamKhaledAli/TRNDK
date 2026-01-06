@@ -92,4 +92,32 @@ export class NotificationService {
     // Real-time Socket.IO notification to user
     emitOrderStatusUpdate(order.userId, { ...order, status: newStatus });
   }
+
+  /**
+   * Triggers a notification when a user reports a delay.
+   */
+  static async notifyOrderDelay(order: Order): Promise<void> {
+    const admins = await storage.getAdmins();
+    const adminTitle = "notifications.orderDelayedTitle";
+    // Message keys need to be handled in frontend translations.
+    // We send a structured message that the frontend can parse.
+    const adminMessage = JSON.stringify({
+      key: "notifications.orderDelayedMessage",
+      params: { 
+        orderId: order.id,
+        serviceId: order.serviceId,
+        userName: (order as any).user?.name || `User #${order.userId}`
+      }
+    });
+
+    for (const admin of admins) {
+      const adminNotif = await storage.createNotification({
+        userId: admin.id,
+        orderId: order.id,
+        title: adminTitle,
+        message: adminMessage,
+      });
+      if (adminNotif.success) emitNotification(admin.id, adminNotif.data);
+    }
+  }
 }
