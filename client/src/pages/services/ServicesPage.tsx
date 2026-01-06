@@ -31,7 +31,9 @@ const ServicesPage = () => {
     const fetchCategories = async () => {
       try {
         const { data } = await apiClient.getServiceCategories();
-        const formatted = data.map((cat: string) => ({
+        const formatted = data
+          .filter((cat: string) => cat !== "Other Services")
+          .map((cat: string) => ({
           id: cat,
           label: cat
         }));
@@ -65,6 +67,9 @@ const ServicesPage = () => {
   }, [searchParams, selectedCategory]);
 
   const filteredServices = services.filter((service) => {
+    // Strict exclusion of 'Other Services'
+    if (service.category === "Other Services") return false;
+    
     return selectedCategory === "all" || service.category === selectedCategory;
   });
 

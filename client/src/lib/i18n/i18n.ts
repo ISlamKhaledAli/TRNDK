@@ -15,6 +15,7 @@ const resources = {
         youtubeServices: "YouTube Services",
         instagramServices: "Instagram Services",
         tiktokServices: "TikTok Services",
+        otherServices: "Other Services",
         login: "Login",
       },
       search: {
@@ -573,6 +574,7 @@ const resources = {
         twitterServices: "Twitter Services",
         facebookServices: "Facebook Services",
         tiktokServices: "TikTok Services",
+        otherServices: "Other Services",
       },
       popularServices: {
         title: "Most Requested Services",
@@ -654,6 +656,7 @@ const resources = {
         youtubeServices: "خدمات يوتيوب",
         instagramServices: "خدمات انستقرام",
         tiktokServices: "خدمات تيك توك",
+        otherServices: "خدمات أخرى",
         login: "تسجيل الدخول",
       },
       search: {

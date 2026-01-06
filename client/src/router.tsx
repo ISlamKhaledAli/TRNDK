@@ -7,8 +7,9 @@ import PublicRoute from "@/components/auth/PublicRoute";
 
 // Public Pages
 import HomePage from "@/pages/common/HomePage";
-import ServicesPage from "@/pages/services/ServicesPage";
-import ServiceDetailsPage from "@/pages/services/ServiceDetailsPage";
+import ServicesPage from "./pages/services/ServicesPage";
+import OtherServicesPage from "./pages/services/OtherServicesPage";
+import ServiceDetailsPage from "./pages/services/ServiceDetailsPage";
 import CheckoutPage from "@/pages/common/CheckoutPage";
 import LoginPage from "@/pages/auth/LoginPage";
 import RegisterPage from "@/pages/auth/RegisterPage";
@@ -27,6 +28,7 @@ import AdminServices from "@/pages/admin/AdminServices";
 import AdminUsers from "@/pages/admin/AdminUsers";
 import AdminPayments from "@/pages/admin/AdminPayments";
 import AdminProfile from "@/pages/admin/AdminProfile";
+
 
 const RootFallback = () => (
   <div className="flex items-center justify-center min-h-screen bg-background">
@@ -66,6 +68,14 @@ export const router = createBrowserRouter([
             throw new Response("Failed to load services", { status: 500 });
           }
         }
+      },
+      {
+        path: "/services/other",
+        element: <OtherServicesPage />,
+        loader: async () => {
+          const { data } = await apiClient.getServices();
+          return { services: data };
+        },
       },
       {
         path: "/services/:id",

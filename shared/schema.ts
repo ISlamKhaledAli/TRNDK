@@ -11,7 +11,7 @@
 import { z } from "zod";
 
 // === CONSTANTS ===
-export const SERVICE_CATEGORIES = ["Instagram", "Facebook", "TikTok", "YouTube"] as const;
+export const SERVICE_CATEGORIES = ["Instagram", "Facebook", "TikTok", "YouTube", "Other Services"] as const;
 export type ServiceCategory = (typeof SERVICE_CATEGORIES)[number];
 
 // === TYPE DEFINITIONS ===

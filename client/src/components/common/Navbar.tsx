@@ -43,6 +43,7 @@ const Navbar = () => {
   const navLinks = [
     { href: "/", label: t("nav.home") },
     { href: "/services", label: t("nav.services") },
+    { href: "/services/other", label: t("nav.otherServices") },
   ];
 
   return (
