@@ -6,6 +6,8 @@ import {
   Users,
   CreditCard,
   LogOut,
+  Megaphone,
+  DollarSign,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Brand from "./Brand";
@@ -26,6 +28,8 @@ const AdminSidebar = () => {
     { icon: ClipboardList, label: t("sidebar.orders"), href: "/admin/orders" },
     { icon: Package, label: t("sidebar.services"), href: "/admin/services" },
     { icon: Users, label: t("sidebar.users"), href: "/admin/users" },
+    { icon: Megaphone, label: t("sidebar.affiliates"), href: "/admin/affiliates" },
+    { icon: DollarSign, label: t("sidebar.payoutRequests"), href: "/admin/affiliate-payouts" },
     { icon: CreditCard, label: t("sidebar.payments"), href: "/admin/payments" },
   ];
 

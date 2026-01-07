@@ -48,7 +48,7 @@ const RegisterPage = () => {
           defaultValue: "Registration successful!",
         })
       );
-      navigate("/client/dashboard");
+      navigate("/");
     } catch (error) {
       toast.error(
         t("common:messages.error", {

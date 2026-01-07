@@ -56,6 +56,8 @@ const resources = {
         newOrderAdminMessage: "New order received #{{orderId}} with amount {{amount}}",
         orderDelayedTitle: "A delay has been reported",
         orderDelayedMessage: "The user reported a delay in order number {{orderId}}",
+        payoutRequestedTitle: "New Payout Request",
+        payoutRequestedMessage: "Affiliate {{name}} requested a payout of their approved earnings.",
       },
       footer: {
         brandDescription: "Leading platform for digital marketing services and social media account support with high quality and real guarantee.",
@@ -92,6 +94,8 @@ const resources = {
         completed: "Completed",
         cancelled: "Cancelled",
         failed: "Failed",
+        active: "Active",
+        inactive: "Inactive",
       },
       messages: {
         success: "Success",
@@ -139,6 +143,8 @@ const resources = {
         services: "Services",
         users: "Users",
         payments: "Payments",
+        affiliates: "Affiliates",
+        payoutRequests: "Payout Requests",
         management: "Management",
         logout: "Logout",
       },
@@ -358,6 +364,58 @@ const resources = {
         permissions: "Permissions:",
         fullPermissions: "Full",
       },
+      affiliates: {
+        title: "Affiliate Management",
+        subtitle: "View and manage all affiliates",
+        allAffiliates: "All Affiliates",
+        table: {
+          user: "User (Email)",
+          code: "Code",
+          rate: "Rate",
+          pending: "Pending",
+          approved: "Approved",
+          paid: "Paid",
+          status: "Status"
+        },
+        actions: {
+          payout: "Payout",
+          modifyRate: "Modify Rate",
+          activate: "Activate",
+          deactivate: "Deactivate"
+        },
+        editRate: {
+          title: "Edit Commission Rate",
+          rateLabel: "Rate (%)"
+        },
+        messages: {
+          noAffiliates: "No affiliates found.",
+          updateSuccess: "Affiliate updated successfully.",
+          payoutSuccess: "Payout processed successfully.",
+          invalidRate: "Rate must be between 0 and 100."
+        }
+      },
+      payouts: {
+        title: "Withdrawal Requests",
+        pendingWithdrawals: "Pending Withdrawals",
+        table: {
+          affiliate: "Affiliate",
+          code: "Code",
+          amount: "Requested Amount",
+          action: "Action"
+        },
+        actions: {
+          complete: "Complete Payout"
+        },
+        note: {
+          title: "Note on Payouts:",
+          description: "Clicking \"Complete Payout\" marks the funds as paid in the system. Make sure you have manually transferred the funds to the affiliate via your preferred payment method before confirming here."
+        },
+        messages: {
+          noRequests: "No active withdrawal requests.",
+          payoutSuccess: "Payout marked as completed.",
+          confirmPayout: "Confirm payout of {{amount}} for {{name}}?"
+        }
+      }
     },
     client: {
       sidebar: {
@@ -365,6 +423,7 @@ const resources = {
         orders: "Order History",
         services: "Services",
         profile: "Account & Tools",
+        affiliates: "Affiliates",
         mainMenu: "Main Menu",
         logout: "Logout",
       },
@@ -501,6 +560,37 @@ const resources = {
         delayReportedStatus: "Delay Reported",
         reportDelay: "Report Delay",
       },
+      affiliateDashboard: {
+        title: "Affiliate Dashboard",
+        subtitle: "Refer friends and earn commission",
+        becomeAffiliate: "Become an Affiliate",
+        becomeAffiliateDesc: "Earn money by referring friends to our platform.",
+        referralCode: "Your Referral Code",
+        joinProgram: "Join Affiliate Program",
+        joining: "Joining...",
+        status: {
+          totalOrders: "Total Orders",
+          totalOrdersDesc: "Successful referrals",
+          pending: "Pending Approval",
+          pendingDesc: "Orders in progress",
+          available: "Available to Withdraw",
+          withdraw: "Withdraw Funds",
+          minWithdrawal: "Min. withdrawal $25.00",
+          requested: "Requested",
+          requestedDesc: "Waiting for admin",
+          paid: "Total Paid",
+          paidDesc: "Earnings sent to you",
+          commissionRate: "Current Commission Rate",
+          payoutInfo: "Payout Information",
+          payoutNote: "Commission Payouts are processed manually by administrators."
+        },
+        messages: {
+          joinSuccess: "You are now an affiliate!",
+          payoutRequested: "Payout requested successfully.",
+          copied: "Copied!",
+          linkCopied: "Referral link copied to clipboard."
+        }
+      },
     },
     checkout: {
       title: "Checkout",
@@ -587,13 +677,14 @@ const resources = {
         description: "Earn generous commissions with us by marketing our services. Register now and start making profits.",
         registerNow: "Register Now",
       },
-      services: {
-        title: "Social Media Services",
-        allCategories: "All Services",
-        searchPlaceholder: "Search for a service...",
-        noResults: "No services found matching your search",
-        tryFilters: "Try changing your search terms or category",
-      }
+    },
+    services: {
+      title: "Social Media Services",
+      allCategories: "All Services",
+      searchPlaceholder: "Search for a service...",
+      noResults: "No services found matching your search",
+      tryFilters: "Try changing your search terms or category",
+      otherServicesDesc: "Explore a variety of other services we offer to meet all your needs."
     },
     serviceDetails: {
       backToServices: "Services",
@@ -697,6 +788,8 @@ const resources = {
         newOrderAdminMessage: "تم استلام طلب جديد رقم #{{orderId}} بقيمة {{amount}}",
         orderDelayedTitle: "تم الإبلاغ عن تأخير",
         orderDelayedMessage: "أبلغ المستخدم عن تأخير في الطلب رقم {{orderId}}",
+        payoutRequestedTitle: "طلب سحب جديد",
+        payoutRequestedMessage: "طلب المسوق {{name}} سحب أرباحه المعتمدة.",
       },
       footer: {
         brandDescription: "متجر رائد لخدمات التسويق الإلكتروني ودعم حسابات التواصل الاجتماعي بجودة عالية وضمان حقيقي.",
@@ -733,6 +826,8 @@ const resources = {
         completed: "مكتمل",
         cancelled: "ملغي",
         failed: "فشل",
+        active: "نشط",
+        inactive: "غير نشط",
       },
       messages: {
         success: "تمت العملية بنجاح",
@@ -780,6 +875,8 @@ const resources = {
         services: "الخدمات",
         users: "المستخدمين",
         payments: "المدفوعات",
+        affiliates: "المسوقين",
+        payoutRequests: "طلبات السحب",
         management: "الإدارة",
         logout: "تسجيل الخروج",
       },
@@ -996,9 +1093,61 @@ const resources = {
         passwordUpdateSuccess: "تم تحديث كلمة المرور بنجاح",
         passwordUpdateError: "فشل تحديث كلمة المرور",
         registrationDate: "تاريخ التسجيل:",
-        permissions: "صلاحيات:",
+        permissions: "الصلاحيات:",
         fullPermissions: "كاملة",
       },
+      affiliates: {
+        title: "إدارة المسوقين",
+        subtitle: "عرض وإدارة جميع المسوقين بالعمولة",
+        allAffiliates: "جميع المسوقين",
+        table: {
+          user: "المستخدم (البريد)",
+          code: "الكود",
+          rate: "النسبة",
+          pending: "معلق",
+          approved: "مقبول",
+          paid: "مدفوع",
+          status: "الحالة"
+        },
+        actions: {
+          payout: "صرف",
+          modifyRate: "تعديل النسبة",
+          activate: "تفعيل",
+          deactivate: "تعطيل"
+        },
+        editRate: {
+          title: "تعديل نسبة العمولة",
+          rateLabel: "النسبة (%)"
+        },
+        messages: {
+          noAffiliates: "لم يتم العثور على مسوقين.",
+          updateSuccess: "تم تحديث بيانات المسوق بنجاح.",
+          payoutSuccess: "تمت عملية الصرف بنجاح.",
+          invalidRate: "يجب أن تكون النسبة بين 0 و 100."
+        }
+      },
+      payouts: {
+        title: "طلبات السحب",
+        pendingWithdrawals: "سحوبات قيد الانتظار",
+        table: {
+          affiliate: "المسوق",
+          code: "الكود",
+          amount: "المبلغ المطلوب",
+          action: "إجراء"
+        },
+        actions: {
+          complete: "إتمام الصرف"
+        },
+        note: {
+          title: "ملاحظة حول الصرف:",
+          description: "النقر على \"إتمام الصرف\" يحدد المبالغ كمدفوعة في النظام. تأكد من تحويل الأموال يدوياً للمسوق عبر وسيلة الدفع المفضلة قبل التأكيد هنا."
+        },
+        messages: {
+          noRequests: "لا توجد طلبات سحب نشطة.",
+          payoutSuccess: "تم تحديد الصرف كمكتمل.",
+          confirmPayout: "تأكيد صرف مبلغ {{amount}} لـ {{name}}؟"
+        }
+      }
     },
     client: {
       sidebar: {
@@ -1006,6 +1155,7 @@ const resources = {
         orders: "سجل الطلبات",
         services: "الخدمات",
         profile: "الحساب & الأدوات",
+        affiliates: "التسويق بالعمولة",
         mainMenu: "القائمة الرئيسية",
         logout: "تسجيل الخروج",
       },
@@ -1139,8 +1289,39 @@ const resources = {
         deleteSuccess: "تم حذف الطلب بنجاح",
         deleteError: "فشل حذف الطلب",
         delayReportedMessage: "تم الإبلاغ عن تأخير للطلب #{{id}}",
-        delayReportedStatus: "تم الإبلاغ",
-        reportDelay: "الإبلاغ عن تأخير",
+        delayReportedStatus: "تم الإبلاغ عن تأخير",
+        reportDelay: "إبلاغ عن تأخير",
+      },
+      affiliateDashboard: {
+        title: "لوحة تحكم المسوقين",
+        subtitle: "أحِل أصدقاءك واربح عمولة",
+        becomeAffiliate: "كن مسوقاً بالعمولة",
+        becomeAffiliateDesc: "اربح المال عن طريق إحالة الأصدقاء إلى منصتنا.",
+        referralCode: "كود الإحالة الخاص بك",
+        joinProgram: "الانضمام لبرنامج التسويق",
+        joining: "جاري الانضمام...",
+        status: {
+          totalOrders: "إجمالي الطلبات",
+          totalOrdersDesc: "إحالات ناجحة",
+          pending: "قيد الموافقة",
+          pendingDesc: "طلبات قيد التنفيذ",
+          available: "متاح للسحب",
+          withdraw: "سحب الأرباح",
+          minWithdrawal: "الحد أدنى للسحب $25.00",
+          requested: "مطلوب",
+          requestedDesc: "بانتظار الإدارة",
+          paid: "إجمالي المدفوع",
+          paidDesc: "أرباح تم إرسالها لك",
+          commissionRate: "نسبة العمولة الحالية",
+          payoutInfo: "معلومات الصرف",
+          payoutNote: "تتم معالجة صرف العمولات يدوياً من قبل الإدارة."
+        },
+        messages: {
+          joinSuccess: "لقد أصبحت مسوقاً بالعمولة الآن!",
+          payoutRequested: "تم طلب السحب بنجاح.",
+          copied: "تم النسخ!",
+          linkCopied: "تم نسخ رابط الإحالة إلى الحافظة."
+        }
       },
     },
     checkout: {
@@ -1227,13 +1408,14 @@ const resources = {
         description: "اربح معنا عمولات مجزية من خلال تسويق خدماتنا. سجل الآن وابدأ في تحقيق الأرباح.",
         registerNow: "سجل الآن",
       },
-      services: {
-        title: "خدمات السوشيال ميديا",
-        allCategories: "جميع الخدمات",
-        searchPlaceholder: "ابحث عن خدمة...",
-        noResults: "لا توجد خدمات مطابقة لبحثك",
-        tryFilters: "جرب تغيير مصطلحات البحث أو الفئة المختارة",
-      }
+    },
+    services: {
+      title: "خدمات السوشيال ميديا",
+      allCategories: "جميع الخدمات",
+      searchPlaceholder: "ابحث عن خدمة...",
+      noResults: "لا توجد خدمات مطابقة لبحثك",
+      tryFilters: "جرب تغيير مصطلحات البحث أو الفئة المختارة",
+      otherServicesDesc: "استكشف مجموعة متنوعة من الخدمات الأخرى التي نقدمها لتلبية جميع احتياجاتك."
     },
     serviceDetails: {
       backToServices: "خدمات",

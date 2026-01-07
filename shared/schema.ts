@@ -14,6 +14,16 @@ import { z } from "zod";
 export const SERVICE_CATEGORIES = ["Instagram", "Facebook", "TikTok", "YouTube", "Other Services"] as const;
 export type ServiceCategory = (typeof SERVICE_CATEGORIES)[number];
 
+export const COMMISSION_STATUS = {
+  NONE: "none",
+  PENDING: "pending",
+  APPROVED: "approved",
+  REQUESTED: "requested",
+  PAID: "paid",
+  CANCELLED: "cancelled"
+} as const;
+export type CommissionStatus = (typeof COMMISSION_STATUS)[keyof typeof COMMISSION_STATUS];
+
 // === TYPE DEFINITIONS ===
 // Matching Prisma schema and application needs
 
@@ -45,6 +55,16 @@ export interface Service {
   updatedAt?: Date | null;
 }
 
+
+export interface Affiliate {
+  id: number;
+  userId: number;
+  referralCode: string;
+  commissionRate: number;
+  isActive: boolean;
+  createdAt?: Date | null;
+}
+
 export interface Order {
   id: number;
   userId: number;
@@ -58,6 +78,11 @@ export interface Order {
   transactionId?: string | null;
   currency?: string; // Enforced USD
   service?: Service; // For frontend convenience
+  
+  // Affiliate Fields
+  affiliateId?: number | null;
+  commissionAmount?: number | null;
+  commissionStatus?: string | null;
 }
 
 export interface Payment {
@@ -165,6 +190,13 @@ export const insertSettingSchema = z.object({
   value: z.string(),
 });
 
+export const insertAffiliateSchema = z.object({
+  userId: z.number().int(),
+  referralCode: z.string().min(3, "Referral code must be at least 3 characters"),
+  commissionRate: z.number().min(0).max(100).default(10.0),
+  isActive: z.boolean().default(true),
+});
+
 export const checkoutSchema = z.object({
   items: z.array(z.object({
     serviceId: z.number().int(),
@@ -174,6 +206,7 @@ export const checkoutSchema = z.object({
     // Allow any other details needed per item
   })),
   paymentMethod: z.string(),
+  referralCode: z.string().optional(), // Add referral code to checkout
 });
 
 // === TYPE INFERENCE ===
@@ -184,6 +217,7 @@ export type InsertPayment = z.input<typeof insertPaymentSchema>;
 export type InsertNotification = z.input<typeof insertNotificationSchema>;
 export type InsertReview = z.input<typeof insertReviewSchema>;
 export type InsertSetting = z.input<typeof insertSettingSchema>;
+export type InsertAffiliate = z.input<typeof insertAffiliateSchema>;
 
 // API Types
 export type LoginRequest = {

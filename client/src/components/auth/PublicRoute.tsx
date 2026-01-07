@@ -9,11 +9,7 @@ const PublicRoute = () => {
   }
 
   if (user) {
-    // Redirect to appropriate dashboard based on role
-    if (user.role === 'admin') {
-      return <Navigate to="/admin/dashboard" replace />;
-    }
-    return <Navigate to="/client/dashboard" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <Outlet />;

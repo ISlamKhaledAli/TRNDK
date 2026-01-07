@@ -11,6 +11,7 @@
 
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
+import "express-async-errors";
 // Trigger reload
 import { registerRoutes } from "./routes/routes";
 import { serveStatic } from "./static";
@@ -97,7 +98,12 @@ app.use((req, res, next) => {
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
       if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        try {
+          const serialized = JSON.stringify(capturedJsonResponse);
+          logLine += ` :: ${serialized}`;
+        } catch (e) {
+          logLine += ` :: [Serialization Error]`;
+        }
       }
 
       log(logLine);
@@ -125,7 +131,8 @@ app.use((req, res, next) => {
     const message = err.message || "Internal Server Error";
 
     res.status(status).json({ message });
-    throw err;
+    // Don't re-throw after sending response, as it can crash the process in some environments
+    // throw err;
   });
 
   // importantly only setup vite in development and after

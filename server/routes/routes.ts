@@ -12,11 +12,11 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "../storage/storage";
 import { z } from "zod";
-import { insertUserSchema, insertServiceSchema, checkoutSchema, insertOrderSchema, insertPaymentSchema, insertNotificationSchema, insertReviewSchema, insertSettingSchema, SERVICE_CATEGORIES } from "@shared/schema";
+import { insertUserSchema, insertServiceSchema, checkoutSchema, insertOrderSchema, insertPaymentSchema, insertNotificationSchema, insertReviewSchema, insertSettingSchema, insertAffiliateSchema, SERVICE_CATEGORIES } from "@shared/schema";
 import { Router } from "express";
 import { signToken, hashPassword, comparePassword, authMiddleware, adminMiddleware } from "../middleware/auth";
 import { NotificationService } from "../services/notification.service";
-import { emitNewOrder, emitNewUser } from "../services/socket";
+import { emitNewOrder, emitNewUser, emitNotification } from "../services/socket";
 import passport from "passport";
 
 export async function registerRoutes(
@@ -119,7 +119,7 @@ export async function registerRoutes(
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       });
 
-      const redirectPath = user.role === "admin" ? "/admin/dashboard" : "/client/dashboard";
+      const redirectPath = user.role === "admin" ? "/admin/dashboard" : "/";
       console.log("[Route] Redirecting to:", redirectPath);
       res.redirect(redirectPath);
     }
@@ -252,8 +252,18 @@ export async function registerRoutes(
       // For security, we should fetching services.
       
       const serviceIds = checkoutData.items.map(i => i.serviceId);
-      // We can't easily fetch all services in bulk with current storage interface efficiently without loop or new method changes.
-      // Let's fetch individually for now to be safe and simple.
+      
+      // Affiliate Logic
+      let affiliateId: number | undefined;
+      let commissionRate = 0;
+      
+      if (checkoutData.referralCode) {
+        const affiliate = await storage.getAffiliateByCode(checkoutData.referralCode);
+        if (affiliate && affiliate.isActive && affiliate.userId !== userId) {
+           affiliateId = affiliate.id;
+           commissionRate = affiliate.commissionRate;
+        }
+      }
 
       const orders = [];
       let calculatedTotal = 0;
@@ -263,13 +273,16 @@ export async function registerRoutes(
         if (!service) throw new Error(`Service ${item.serviceId} not found`);
         if (!service.isActive) throw new Error(`Service ${service.name} is unavailable`);
 
-        // Calculate item total: (price per 1000 * quantity) / 1000 * 100 (if price is in dollars?)
-        // Wait, schema says price is integer (cents?).
-        // If price is 100 ($1.00) for 1000 units.
-        // Quantity 2000 => 2 * 100 = 200.
-        // Let's rely on standard logic: Price is per 1000 units usually in SMM panels.
         const itemTotal = Math.round(service.price * (item.quantity / 1000));
         calculatedTotal += itemTotal;
+
+        // Calculate Commission
+        let commissionAmount = 0;
+        let commissionStatus = 'none';
+        if (affiliateId) {
+           commissionAmount = Math.floor(itemTotal * (commissionRate / 100)); // Round down to safe side
+           commissionStatus = 'pending';
+        }
 
         const orderResult = await storage.createOrder({
           userId,
@@ -277,11 +290,15 @@ export async function registerRoutes(
           status: 'pending',
           totalAmount: itemTotal,
           details: {
-            quantity: item.quantity,
-            link: item.link,
-            originalPrice: service.price
+             quantity: item.quantity,
+             link: item.link,
+             originalPrice: service.price
           },
-          transactionId
+          transactionId,
+          // @ts-ignore - Extra fields handled by storage/db
+          affiliateId,
+          commissionAmount,
+          commissionStatus
         });
 
         if (!orderResult.success) throw new Error(orderResult.error);
@@ -300,6 +317,9 @@ export async function registerRoutes(
       // Notifications
       for (const order of orders) {
         await NotificationService.notifyOrderCreated(order);
+        if (affiliateId) {
+           // Notify affiliate? Maybe later.
+        }
         emitNewOrder(order);
       }
 
@@ -317,6 +337,18 @@ export async function registerRoutes(
         ...req.body,
         userId: req.user!.id
       });
+      
+      const referralCode = req.body.referralCode; // Manually get from body as it's not in insertOrderSchema
+      let affiliateId: number | undefined;
+      let commissionRate = 0;
+      
+      if (referralCode) {
+        const affiliate = await storage.getAffiliateByCode(referralCode);
+        if (affiliate && affiliate.isActive && affiliate.userId !== req.user!.id) {
+           affiliateId = affiliate.id;
+           commissionRate = affiliate.commissionRate;
+        }
+      }
 
       // Validate Service Availability
       const service = await storage.getService(orderData.serviceId);
@@ -326,7 +358,22 @@ export async function registerRoutes(
       if (!service.isActive) {
         return res.status(400).json({ message: "Service is currently unavailable" });
       }
-      const result = await storage.createOrder(orderData);
+
+      let commissionAmount = 0;
+      let commissionStatus = 'none';
+      if (affiliateId) {
+         commissionAmount = Math.floor(orderData.totalAmount * (commissionRate / 100));
+         commissionStatus = 'pending';
+      }
+
+      const result = await storage.createOrder({
+        ...orderData,
+        // @ts-ignore
+        affiliateId,
+        commissionAmount,
+        commissionStatus
+      });
+      
       if (!result.success) {
         return res.status(400).json({ message: result.error });
       }
@@ -631,6 +678,138 @@ export async function registerRoutes(
     if (!result.success) {
       return res.status(400).json({ message: result.error });
     }
+    res.json({ data: result.data });
+  });
+
+  // Affiliate Routes
+  apiRouter.post('/affiliates/join', authMiddleware, async (req, res) => {
+    try {
+      const affiliateData = insertAffiliateSchema.parse({
+        ...req.body,
+        userId: req.user!.id
+      });
+      // Force user ID match
+      if (affiliateData.userId !== req.user!.id) {
+        return res.status(400).json({ message: "User ID mismatch" });
+      }
+
+      const result = await storage.createAffiliate(affiliateData);
+      if (!result.success) {
+        return res.status(400).json({ message: result.error });
+      }
+      res.status(201).json({ data: result.data });
+    } catch (e: any) {
+      res.status(400).json({ message: 'Validation error', errors: e });
+    }
+  });
+
+  apiRouter.get('/affiliates/me', authMiddleware, async (req, res) => {
+    const affiliate = await storage.getAffiliateByUserId(req.user!.id);
+    if (!affiliate) {
+      return res.status(404).json({ message: "Affiliate account not found" });
+    }
+    
+    // Calculate stats dynamically
+    const orders = await storage.getAllOrders(); // Helper needed: getOrdersByAffiliate?
+    // Using getAllOrders is potentially expensive but manageable for now if we filter in memory or add index.
+    // Better: storage should have query capabilities. For now, filter in memory as MVP.
+    const affiliateOrders = orders.filter(o => o.affiliateId === affiliate.id);
+    
+    const totalEarnings = affiliateOrders.reduce((sum, o) => sum + (o.commissionAmount || 0), 0);
+    const paidEarnings = affiliateOrders
+      .filter(o => o.commissionStatus === 'paid')
+      .reduce((sum, o) => sum + (o.commissionAmount || 0), 0);
+    const pendingEarnings = affiliateOrders
+      .filter(o => o.commissionStatus === 'pending')
+      .reduce((sum, o) => sum + (o.commissionAmount || 0), 0);
+      
+    res.json({ 
+      data: {
+        ...affiliate,
+        stats: {
+          totalOrders: affiliateOrders.length,
+          totalEarnings,
+          paidEarnings,
+          approvedEarnings: affiliateOrders.filter(o => o.commissionStatus === 'approved').reduce((sum, o) => sum + (o.commissionAmount || 0), 0),
+          requestedEarnings: affiliateOrders.filter(o => o.commissionStatus === 'requested').reduce((sum, o) => sum + (o.commissionAmount || 0), 0),
+          pendingEarnings: affiliateOrders.filter(o => o.commissionStatus === 'pending').reduce((sum, o) => sum + (o.commissionAmount || 0), 0),
+        }
+      }
+    });
+  });
+
+  apiRouter.get('/affiliates/validate-code', async (req, res) => {
+    const code = req.query.code as string;
+    if (!code) return res.status(400).json({ message: "Code required" });
+    
+    const affiliate = await storage.getAffiliateByCode(code);
+    if (!affiliate || !affiliate.isActive) {
+      return res.status(404).json({ message: "Invalid or inactive referral code" });
+    }
+    res.json({ valid: true, code: affiliate.referralCode });
+  });
+
+  apiRouter.post('/affiliates/request-payout', authMiddleware, async (req, res) => {
+    const affiliate = await storage.getAffiliateByUserId(req.user!.id);
+    if (!affiliate) return res.status(404).json({ message: "Affiliate account not found" });
+
+    const result = await storage.requestPayout(affiliate.id);
+    if (!result.success) return res.status(400).json({ message: result.error });
+
+    // Notify admins
+    await NotificationService.notifyPayoutRequested(affiliate, req.user!.name);
+
+    res.json({ message: "Payout requested successfully" });
+  });
+
+  apiRouter.get('/admin/payout-requests', authMiddleware, async (req, res) => {
+     if (req.user!.role !== 'admin') return res.status(403).json({ message: "Unauthorized" });
+     const requests = await storage.getPayoutRequests();
+     res.json({ data: requests });
+  });
+
+  // Admin Affiliate Routes
+  apiRouter.get('/admin/affiliates', authMiddleware, async (req, res) => {
+     if (req.user!.role !== 'admin') return res.status(403).json({ message: "Unauthorized" });
+     const affiliates = await storage.getAllAffiliates();
+     
+     // Enhance with aggregated stats for admin
+     const orders = await storage.getAllOrders();
+     const enhancedAffiliates = affiliates.map(affiliate => {
+       const affiliateOrders = orders.filter(o => o.affiliateId === affiliate.id);
+       const stats = {
+         totalOrders: affiliateOrders.length,
+         pendingEarnings: affiliateOrders.filter(o => o.commissionStatus === 'pending').reduce((sum, o) => sum + (o.commissionAmount || 0), 0),
+         approvedEarnings: affiliateOrders.filter(o => o.commissionStatus === 'approved').reduce((sum, o) => sum + (o.commissionAmount || 0), 0),
+         requestedEarnings: affiliateOrders.filter(o => o.commissionStatus === 'requested').reduce((sum, o) => sum + (o.commissionAmount || 0), 0),
+         paidEarnings: affiliateOrders.filter(o => o.commissionStatus === 'paid').reduce((sum, o) => sum + (o.commissionAmount || 0), 0),
+       };
+       return { ...affiliate, stats };
+     });
+
+     res.json({ data: enhancedAffiliates });
+  });
+
+  apiRouter.post('/admin/affiliates/:id/payout', authMiddleware, async (req, res) => {
+    try {
+      if (req.user!.role !== 'admin') return res.status(403).json({ message: "Unauthorized" });
+      const affiliateId = parseInt(req.params.id, 10);
+      if (isNaN(affiliateId)) return res.status(400).json({ message: "Invalid affiliate ID" });
+      
+      const result = await storage.payoutAffiliate(affiliateId);
+      if (!result.success) return res.status(400).json({ message: result.error });
+      res.json({ message: "Payout processed successfully" });
+    } catch (err: any) {
+      console.error("[Route] Payout error:", err);
+      res.status(500).json({ message: "Internal server error during payout processing" });
+    }
+  });
+
+  apiRouter.patch('/admin/affiliates/:id', authMiddleware, async (req, res) => {
+    if (req.user!.role !== 'admin') return res.status(403).json({ message: "Unauthorized" });
+    const updates = req.body; // should validate
+    const result = await storage.updateAffiliate(Number(req.params.id), updates);
+    if (!result.success) return res.status(400).json({ message: result.error });
     res.json({ data: result.data });
   });
 

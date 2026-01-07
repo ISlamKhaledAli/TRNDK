@@ -5,6 +5,7 @@ import {
   Diamond,
   Settings,
   LogOut,
+  Megaphone,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Brand from "./Brand";
@@ -24,6 +25,7 @@ const ClientSidebar = () => {
     },
     { icon: ClipboardList, label: t("sidebar.orders"), href: "/client/orders" },
     { icon: Diamond, label: t("sidebar.services"), href: "/services" },
+    { icon: Megaphone, label: t("sidebar.affiliates"), href: "/client/affiliates" },
     { icon: Settings, label: t("sidebar.profile"), href: "/client/profile" },
   ];
 

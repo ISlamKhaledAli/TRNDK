@@ -60,6 +60,7 @@ const CheckoutPage = () => {
 
     setLoading(true);
     try {
+      const referralCode = localStorage.getItem('referralCode') || undefined;
       const result = await apiClient.checkout({
         items: items.map(item => ({
           serviceId: item.serviceId,
@@ -67,8 +68,12 @@ const CheckoutPage = () => {
           link: item.link,
           price: item.price
         })),
-        paymentMethod
+        paymentMethod,
+        referralCode
       });
+      // Clear referral code after successful use if desired, 
+      // but usually we keep it for potential future orders or session persistence.
+      // localStorage.removeItem('referralCode'); 
       refreshNotifications();
       toast.success(t("messages.success"));
       clearCart();

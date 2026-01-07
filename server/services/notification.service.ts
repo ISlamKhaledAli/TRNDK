@@ -120,4 +120,27 @@ export class NotificationService {
       if (adminNotif.success) emitNotification(admin.id, adminNotif.data);
     }
   }
+
+  /**
+   * Triggers a notification when an affiliate requests a payout.
+   */
+  static async notifyPayoutRequested(affiliate: any, userName: string): Promise<void> {
+    const admins = await storage.getAdmins();
+    const adminTitle = "notifications.payoutRequestedTitle";
+    const adminMessage = JSON.stringify({
+      key: "notifications.payoutRequestedMessage",
+      params: { 
+        name: userName
+      }
+    });
+
+    for (const admin of admins) {
+      const adminNotif = await storage.createNotification({
+        userId: admin.id,
+        title: adminTitle,
+        message: adminMessage,
+      });
+      if (adminNotif.success) emitNotification(admin.id, adminNotif.data);
+    }
+  }
 }

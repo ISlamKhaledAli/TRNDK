@@ -23,6 +23,7 @@ model User {
   payments      Payment[]
   notifications Notification[]
   reviews       Review[]
+  affiliate     Affiliate?
 
   @@map("users")
 }
@@ -47,6 +48,21 @@ model Service {
   @@map("services")
 }
 
+
+model Affiliate {
+  id             Int      @id @default(autoincrement())
+  userId         Int      @unique @map("user_id")
+  referralCode   String   @unique @map("referral_code")
+  commissionRate Float    @default(10.0) @map("commission_rate")
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@map("affiliates")
+}
+
 model Order {
   id          Int      @id @default(autoincrement())
   userId      Int      @map("user_id")
@@ -60,8 +76,14 @@ model Order {
   transactionId String? @map("transaction_id")
   currency      String   @default("USD")
 
+  // Affiliate Fields
+  affiliateId      Int?    @map("affiliate_id")
+  commissionAmount Int     @default(0) @map("commission_amount") // in cents
+  commissionStatus String  @default("none") @map("commission_status") // none, pending, approved, paid, cancelled
+
   user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   service       Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  affiliate     Affiliate?     @relation(fields: [affiliateId], references: [id])
   payments      Payment[]
   notifications Notification[]
 
@@ -122,3 +144,4 @@ model Setting {
 
   @@map("settings")
 }
+

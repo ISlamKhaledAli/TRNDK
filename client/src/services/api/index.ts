@@ -86,7 +86,7 @@ export const apiClient = {
     return res.json();
   },
 
-  async createOrder(order: any) {
+  async createOrder(order: any & { referralCode?: string }) {
     const res = await fetch(`${API_BASE}/orders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -96,7 +96,7 @@ export const apiClient = {
     return res.json();
   },
 
-  async checkout(data: { items: any[]; paymentMethod: string }) {
+  async checkout(data: { items: any[]; paymentMethod: string; referralCode?: string }) {
     const res = await fetch(`${API_BASE}/orders/checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -299,5 +299,76 @@ export const apiClient = {
     });
     if (!res.ok) throw new Error('Failed to update setting');
     return res.json();
+  },
+
+  // Affiliate
+  async validateReferralCode(code: string) {
+    const res = await fetch(`${API_BASE}/affiliates/validate-code?code=${encodeURIComponent(code)}`);
+    if (!res.ok) throw new Error('Invalid code');
+    return res.json();
+  },
+
+  async joinAffiliate(data: any) {
+    const res = await fetch(`${API_BASE}/affiliates/join`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+       const error = await res.json();
+       throw new Error(error.message || 'Failed to join affiliate program');
+    }
+    return res.json();
+  },
+
+  async getAffiliateMe() {
+    const res = await fetch(`${API_BASE}/affiliates/me`);
+    if (!res.ok) throw new Error('Failed to fetch affiliate data');
+    return res.json();
+  },
+
+  async getAdminAffiliates() {
+     const res = await fetch(`${API_BASE}/admin/affiliates`);
+     if (!res.ok) throw new Error('Failed to fetch affiliates');
+     return res.json();
+  },
+
+  async updateAffiliate(id: number, updates: any) {
+    const res = await fetch(`${API_BASE}/admin/affiliates/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) throw new Error('Failed to update affiliate');
+    return res.json();
+  },
+
+  async payoutAffiliate(id: number) {
+    const res = await fetch(`${API_BASE}/admin/affiliates/${id}/payout`, {
+      method: "POST",
+    });
+    if (!res.ok) throw new Error('Failed to process payout');
+    return res.json();
+  },
+
+  async requestPayout() {
+    const res = await fetch(`${API_BASE}/affiliates/request-payout`, {
+      method: "POST",
+    });
+    if (!res.ok) {
+       const error = await res.json();
+       throw new Error(error.message || 'Failed to request payout');
+    }
+    return res.json();
+  },
+
+  async getAdminPayoutRequests() {
+    const res = await fetch(`${API_BASE}/admin/payout-requests`);
+    if (!res.ok) throw new Error('Failed to fetch payout requests');
+    return res.json();
+  },
+
+  async updateCommissionStatus(orderId: number, status: string) {
+    return Promise.resolve();
   },
 };

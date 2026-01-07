@@ -29,11 +29,7 @@ const LoginPage = () => {
 
       toast.success(t("common:messages.success"));
 
-      navigate(
-        response.user.role === "admin"
-          ? "/admin/dashboard"
-          : "/client/dashboard"
-      );
+      navigate("/");
     } catch (error) {
       toast.error(t("common:messages.error"));
       console.error("Login error:", error);

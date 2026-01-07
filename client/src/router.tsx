@@ -28,6 +28,10 @@ import AdminServices from "@/pages/admin/AdminServices";
 import AdminUsers from "@/pages/admin/AdminUsers";
 import AdminPayments from "@/pages/admin/AdminPayments";
 import AdminProfile from "@/pages/admin/AdminProfile";
+import AdminPayouts from "@/pages/admin/AdminPayouts";
+import AffiliateDashboard from "./pages/affiliate/AffiliateDashboard";
+import AdminAffiliates from "./pages/admin/AdminAffiliates";
+import ReferralTracker from "@/components/common/ReferralTracker";
 
 
 const RootFallback = () => (
@@ -39,7 +43,7 @@ const RootFallback = () => (
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <Outlet />,
+    element: <><ReferralTracker /><Outlet /></>,
     errorElement: <NotFound />,
     HydrateFallback: RootFallback,
     children: [
@@ -162,6 +166,10 @@ export const router = createBrowserRouter([
               }
             }
           },
+          {
+             path: "/client/affiliates",
+             element: <AffiliateDashboard />
+          },
         ]
       },
 
@@ -238,6 +246,14 @@ export const router = createBrowserRouter([
           {
             path: "/admin/profile",
             element: <AdminProfile />
+          },
+          {
+             path: "/admin/affiliates",
+             element: <AdminAffiliates />
+          },
+          {
+            path: "/admin/affiliate-payouts",
+            element: <AdminPayouts />
           },
         ]
       },

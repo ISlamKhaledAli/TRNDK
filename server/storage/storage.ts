@@ -7,7 +7,7 @@
  * Provides unified interface for users, services, orders, payments, notifications, reviews, and settings.
  */
 
-import { type User, type InsertUser, type Service, type InsertService, type Order, type InsertOrder, type Payment, type InsertPayment, type Notification, type InsertNotification, type Review, type InsertReview, type Setting, type InsertSetting } from "@shared/schema";
+import { type User, type InsertUser, type Service, type InsertService, type Order, type InsertOrder, type Payment, type InsertPayment, type Notification, type InsertNotification, type Review, type InsertReview, type Setting, type InsertSetting, type Affiliate, type InsertAffiliate } from "@shared/schema";
 import { hashSync } from "bcryptjs";
 import { db } from "../config/db";
 import { Prisma } from "@prisma/client";
@@ -96,6 +96,18 @@ export interface IStorage {
   
   // Custom
   updateOrderLastNotify(id: number, date: Date): Promise<StorageResult<Order>>;
+  updateOrderCommission(id: number, amount: number, status: string): Promise<StorageResult<Order>>;
+
+  // Affiliates
+  getAffiliate(id: number): Promise<Affiliate | undefined>;
+  getAffiliateByUserId(userId: number): Promise<Affiliate | undefined>;
+  getAffiliateByCode(code: string): Promise<Affiliate | undefined>;
+  getAllAffiliates(): Promise<(Affiliate & { user: User })[]>;
+  createAffiliate(affiliate: InsertAffiliate): Promise<StorageResult<Affiliate>>;
+  updateAffiliate(id: number, updates: Partial<Affiliate>): Promise<StorageResult<Affiliate>>;
+  requestPayout(affiliateId: number): Promise<StorageResult<void>>;
+  payoutAffiliate(affiliateId: number): Promise<StorageResult<void>>;
+  getPayoutRequests(): Promise<(Affiliate & { user: User; stats: { requestedEarnings: number } })[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -110,7 +122,9 @@ export class MemStorage implements IStorage {
   private currentPaymentId: number;
   private currentNotificationId: number;
   private reviews: Map<number, Review>;
-  private currentReviewId: number;
+  private affiliates: Map<number, Affiliate>;
+  private currentReviewId: number; 
+  private currentAffiliateId: number;
   private settings: Map<string, Setting>;
 
   constructor() {
@@ -120,6 +134,7 @@ export class MemStorage implements IStorage {
     this.payments = new Map();
     this.notifications = new Map();
     this.reviews = new Map();
+    this.affiliates = new Map();
     this.settings = new Map();
     
     // Initialize default tax rate
@@ -130,6 +145,7 @@ export class MemStorage implements IStorage {
     this.currentPaymentId = 1;
     this.currentNotificationId = 1;
     this.currentReviewId = 1;
+    this.currentAffiliateId = 1;
 
     // Seed mock data
     this.seedData();
@@ -453,14 +469,72 @@ export class MemStorage implements IStorage {
       return { success: false, error: 'Order not found' };
     }
     
-    const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled'];
+    const validStatuses = ['pending', 'confirmed', 'processing', 'completed', 'cancelled'];
     if (!validStatuses.includes(status)) {
       return { success: false, error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` };
     }
     
-    const updatedOrder = { ...order, status, updatedAt: new Date() };
+    // Auto-approve commission if completed
+    let commissionStatus = order.commissionStatus;
+    if (status === 'completed' && order.affiliateId && order.commissionStatus === 'pending') {
+      commissionStatus = 'approved';
+    } else if (status === 'cancelled' && order.affiliateId) {
+      commissionStatus = 'cancelled';
+    }
+
+    const updatedOrder = { ...order, status, commissionStatus, updatedAt: new Date() };
     this.orders.set(id, updatedOrder);
     return { success: true, data: updatedOrder };
+  }
+
+  async payoutAffiliate(affiliateId: number): Promise<StorageResult<void>> {
+    const orders = Array.from(this.orders.values()).filter(o => o.affiliateId === affiliateId && o.commissionStatus === 'requested');
+    
+    for (const order of orders) {
+      this.orders.set(order.id, { ...order, commissionStatus: 'paid', updatedAt: new Date() });
+    }
+    
+    return { success: true, data: undefined };
+  }
+
+  async requestPayout(affiliateId: number): Promise<StorageResult<void>> {
+    const affiliate = this.affiliates.get(affiliateId);
+    if (!affiliate) return { success: false, error: "Affiliate not found" };
+
+    const approvedOrders = Array.from(this.orders.values()).filter(o => o.affiliateId === affiliateId && o.commissionStatus === 'approved');
+    const totalApproved = approvedOrders.reduce((sum, o) => sum + (o.commissionAmount || 0), 0);
+
+    if (totalApproved < 2500) {
+      return { success: false, error: "Minimum withdrawal amount is $25.00" };
+    }
+
+    for (const order of approvedOrders) {
+      this.orders.set(order.id, { ...order, commissionStatus: 'requested', updatedAt: new Date() });
+    }
+
+    return { success: true, data: undefined };
+  }
+
+  async getPayoutRequests(): Promise<(Affiliate & { user: User; stats: { requestedEarnings: number } })[]> {
+    const result: (Affiliate & { user: User; stats: { requestedEarnings: number } })[] = [];
+    
+    for (const affiliate of Array.from(this.affiliates.values())) {
+      const user = this.users.get(affiliate.userId);
+      if (!user) continue;
+
+      const requestedOrders = Array.from(this.orders.values()).filter(o => o.affiliateId === affiliate.id && o.commissionStatus === 'requested');
+      const requestedEarnings = requestedOrders.reduce((sum, o) => sum + (o.commissionAmount || 0), 0);
+
+      if (requestedEarnings > 0) {
+        result.push({
+          ...affiliate,
+          user,
+          stats: { requestedEarnings }
+        });
+      }
+    }
+
+    return result;
   }
 
   async deleteOrder(id: number, userId: number): Promise<StorageResult<void>> {
@@ -738,6 +812,69 @@ export class MemStorage implements IStorage {
     this.orders.set(id, updated);
     return { success: true, data: updated };
   }
+
+  async updateOrderCommission(id: number, amount: number, status: string): Promise<StorageResult<Order>> {
+    const order = this.orders.get(id);
+    if (!order) return { success: false, error: 'Order not found' };
+    
+    const updated = { ...order, commissionAmount: Math.round(amount), commissionStatus: status };
+    this.orders.set(id, updated);
+    return { success: true, data: updated };
+  }
+
+  // Affiliates
+  async getAffiliate(id: number): Promise<Affiliate | undefined> {
+    return this.affiliates.get(id);
+  }
+
+  async getAffiliateByUserId(userId: number): Promise<Affiliate | undefined> {
+    return Array.from(this.affiliates.values()).find(a => a.userId === userId);
+  }
+
+  async getAffiliateByCode(code: string): Promise<Affiliate | undefined> {
+    return Array.from(this.affiliates.values()).find(a => a.referralCode === code);
+  }
+
+  async getAllAffiliates(): Promise<(Affiliate & { user: User })[]> {
+    return Array.from(this.affiliates.values()).map(a => {
+      const user = this.users.get(a.userId)!;
+      return { ...a, user };
+    });
+  }
+
+  async createAffiliate(insertAffiliate: InsertAffiliate): Promise<StorageResult<Affiliate>> {
+    // Check uniqueness
+    const existing = await this.getAffiliateByUserId(insertAffiliate.userId);
+    if (existing) return { success: false, error: "User is already an affiliate" };
+    
+    const duplicateCode = await this.getAffiliateByCode(insertAffiliate.referralCode);
+    if (duplicateCode) return { success: false, error: "Referral code already exists" };
+
+    const id = this.currentAffiliateId++;
+    const affiliate: Affiliate = {
+      ...insertAffiliate,
+      id,
+      commissionRate: insertAffiliate.commissionRate ?? 5.0,
+      isActive: insertAffiliate.isActive ?? true,
+      createdAt: new Date()
+    };
+    this.affiliates.set(id, affiliate);
+    return { success: true, data: affiliate };
+  }
+
+  async updateAffiliate(id: number, updates: Partial<Affiliate>): Promise<StorageResult<Affiliate>> {
+    const affiliate = this.affiliates.get(id);
+    if (!affiliate) return { success: false, error: "Affiliate not found" };
+
+    if (updates.referralCode && updates.referralCode !== affiliate.referralCode) {
+       const duplicate = await this.getAffiliateByCode(updates.referralCode);
+       if (duplicate) return { success: false, error: "Referral code already in use" };
+    }
+
+    const updated = { ...affiliate, ...updates };
+    this.affiliates.set(id, updated);
+    return { success: true, data: updated };
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -934,13 +1071,116 @@ export class DatabaseStorage implements IStorage {
 
   async updateOrderStatus(id: number, status: string): Promise<StorageResult<Order>> {
     try {
+      // Fetch current order to check affiliate status
+      const currentOrder = await db.order.findUnique({ where: { id } });
+      if (!currentOrder) return { success: false, error: "Order not found" };
+
+      let commissionStatus = currentOrder.commissionStatus;
+      if (status === 'completed' && currentOrder.affiliateId && currentOrder.commissionStatus === 'pending') {
+        commissionStatus = 'approved';
+      } else if (status === 'cancelled' && currentOrder.affiliateId) {
+        commissionStatus = 'cancelled';
+      }
+
       const order = await db.order.update({
         where: { id },
-        data: { status }
+        data: { status, commissionStatus }
       });
       return { success: true, data: order };
     } catch (e: any) {
       return { success: false, error: e.message };
+    }
+  }
+
+  async payoutAffiliate(affiliateId: number): Promise<StorageResult<void>> {
+    console.log(`[Storage] Processing payout for affiliate ID: ${affiliateId}`);
+    try {
+      const result = await db.order.updateMany({
+        where: { 
+          affiliateId,
+          commissionStatus: 'requested'
+        },
+        data: {
+          commissionStatus: 'paid'
+        }
+      });
+      console.log(`[Storage] Payout processed. Updated ${result.count} orders.`);
+      return { success: true, data: undefined };
+    } catch (e: any) {
+      console.error(`[Storage] Payout error for affiliate ${affiliateId}:`, e);
+      return { success: false, error: e.message };
+    }
+  }
+
+  async requestPayout(affiliateId: number): Promise<StorageResult<void>> {
+    console.log(`[Storage] Requesting payout for affiliate ID: ${affiliateId}`);
+    try {
+      const approvedOrders = await db.order.findMany({
+        where: {
+          affiliateId,
+          commissionStatus: 'approved'
+        }
+      });
+
+      const totalApproved = approvedOrders.reduce((sum, o) => sum + (o.commissionAmount || 0), 0);
+      console.log(`[Storage] Affiliate ${affiliateId} has $${(totalApproved / 100).toFixed(2)} approved.`);
+
+      if (totalApproved < 2500) {
+        return { success: false, error: "Minimum withdrawal amount is $25.00" };
+      }
+
+      await db.order.updateMany({
+        where: {
+          affiliateId,
+          commissionStatus: 'approved'
+        },
+        data: {
+          commissionStatus: 'requested'
+        }
+      });
+
+      return { success: true, data: undefined };
+    } catch (e: any) {
+      console.error(`[Storage] Request payout error for affiliate ${affiliateId}:`, e);
+      return { success: false, error: e.message };
+    }
+  }
+
+  async getPayoutRequests(): Promise<(Affiliate & { user: User; stats: { requestedEarnings: number } })[]> {
+    try {
+      const affiliatesWithRequests = await db.affiliate.findMany({
+        where: {
+          orders: {
+            some: {
+              commissionStatus: 'requested'
+            }
+          }
+        },
+        include: {
+          user: true,
+          orders: {
+            where: {
+              commissionStatus: 'requested'
+            }
+          }
+        }
+      });
+
+      return affiliatesWithRequests.map(aff => {
+        const requestedEarnings = aff.orders.reduce((sum, o) => sum + (o.commissionAmount || 0), 0);
+        return {
+          id: aff.id,
+          userId: aff.userId,
+          referralCode: aff.referralCode,
+          commissionRate: aff.commissionRate,
+          isActive: aff.isActive,
+          user: aff.user,
+          stats: { requestedEarnings }
+        };
+      }) as (Affiliate & { user: User; stats: { requestedEarnings: number } })[];
+    } catch (e: any) {
+      console.error("Error fetching payout requests:", e);
+      return [];
     }
   }
 
@@ -1254,6 +1494,70 @@ export class DatabaseStorage implements IStorage {
         data: { lastNotifyAt: date } as any
       });
       return { success: true, data: order };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  async updateOrderCommission(id: number, amount: number, status: string): Promise<StorageResult<Order>> {
+    try {
+      const order = await db.order.update({
+        where: { id },
+        data: { 
+          commissionAmount: Math.round(amount),
+          commissionStatus: status
+        }
+      });
+      return { success: true, data: order };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  // Affiliates
+  async getAffiliate(id: number): Promise<Affiliate | undefined> {
+    const affiliate = await db.affiliate.findUnique({ where: { id } });
+    return affiliate ?? undefined;
+  }
+
+  async getAffiliateByUserId(userId: number): Promise<Affiliate | undefined> {
+    const affiliate = await db.affiliate.findUnique({ where: { userId } });
+    return affiliate ?? undefined;
+  }
+
+  async getAffiliateByCode(referralCode: string): Promise<Affiliate | undefined> {
+    const affiliate = await db.affiliate.findUnique({ where: { referralCode } });
+    return affiliate ?? undefined;
+  }
+
+  async getAllAffiliates(): Promise<(Affiliate & { user: User })[]> {
+    return db.affiliate.findMany({ include: { user: true } });
+  }
+
+  async createAffiliate(insertAffiliate: InsertAffiliate): Promise<StorageResult<Affiliate>> {
+    try {
+      const affiliate = await db.affiliate.create({ 
+        data: {
+          userId: insertAffiliate.userId,
+          referralCode: insertAffiliate.referralCode,
+          commissionRate: insertAffiliate.commissionRate ?? 5.0,
+          isActive: insertAffiliate.isActive ?? true
+        } 
+      });
+      return { success: true, data: affiliate };
+    } catch (e: any) {
+      return { success: false, error: e.message };
+    }
+  }
+
+  async updateAffiliate(id: number, updates: Partial<Affiliate>): Promise<StorageResult<Affiliate>> {
+    try {
+      const { id: _, userId, ...data } = updates; // Prevent updating id or userId
+      const affiliate = await db.affiliate.update({
+        where: { id },
+        data: data as any
+      });
+      return { success: true, data: affiliate };
     } catch (e: any) {
       return { success: false, error: e.message };
     }

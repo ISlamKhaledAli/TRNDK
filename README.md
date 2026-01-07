@@ -29,9 +29,19 @@ The system follows a streamlined flow: **Cart → Checkout → Orders**, where e
 - Manage services (create, update, delete)
 - View and update all orders
 - Manage users (view, suspend, promote to VIP)
+- Manage affiliates and commission rates
+- Process payout requests
 - View dashboard statistics (revenue, orders, users)
-- Receive notifications for new orders
+- Receive notifications for new orders and payout requests
 - Configure platform settings
+
+### Affiliate
+- Join the affiliate program with a unique referral code
+- Share referral links to promote services
+- Earn 5% commission on completed orders (default rate, adjustable by admin)
+- Track earnings (Pending, Approved, Requested, Paid)
+- Request payouts when approved balance reaches $25 minimum
+- View referral statistics and performance
 
 ---
 
@@ -92,10 +102,12 @@ Services → Cart → Checkout → Orders (grouped by transactionId)
 #### Client Routes
 - `/` - Home page
 - `/services` - Browse services
+- `/services/other` - Other services category
 - `/cart` - View cart
 - `/checkout` - Complete purchase
 - `/client/dashboard` - Client dashboard
 - `/client/orders` - View order history
+- `/client/affiliates` - Affiliate dashboard and program enrollment
 - `/client/profile` - User profile
 
 #### Admin Routes
@@ -103,6 +115,8 @@ Services → Cart → Checkout → Orders (grouped by transactionId)
 - `/admin/services` - Manage services
 - `/admin/orders` - View and update all orders
 - `/admin/users` - Manage users
+- `/admin/affiliates` - Manage affiliates and commission rates
+- `/admin/affiliate-payouts` - Process payout requests
 - `/admin/settings` - Platform settings
 
 ---
@@ -146,6 +160,50 @@ model Payment {
 
 > [!WARNING]
 > **Breaking this rule will cause payment failures and financial discrepancies.**
+
+---
+
+## 💼 Affiliate Commission System
+
+The platform includes a comprehensive affiliate marketing system that allows users to earn commissions by referring customers.
+
+### Commission Flow
+
+```
+Referral Link → Order Placed → Order Completed → Commission Approved → Payout Requested → Admin Processes → Funds Paid
+```
+
+### Commission Statuses
+
+1. **Pending**: Order is placed but not yet completed
+2. **Approved**: Order is completed, commission is ready for withdrawal
+3. **Requested**: Affiliate has requested a payout (minimum $25)
+4. **Paid**: Admin has processed the payout
+5. **Cancelled**: Order was cancelled, commission voided
+
+### Key Rules
+
+> [!IMPORTANT]
+> - **Default Commission Rate**: 5% of order total (adjustable per affiliate by admin)
+> - **Minimum Payout**: $25.00 in approved earnings
+> - **Auto-Approval**: Commissions automatically move from `pending` to `approved` when order status changes to `completed`
+> - **Tracking**: Referral codes are stored in localStorage and attached to orders during checkout
+
+### Affiliate Workflow
+
+1. **Join Program**: User enrolls and receives a unique referral code
+2. **Share Link**: Affiliate shares `/?ref=CODE` with potential customers
+3. **Track Orders**: System tracks all orders from referral links
+4. **Earn Commission**: 5% commission on each completed order
+5. **Request Payout**: When approved balance ≥ $25, affiliate can request withdrawal
+6. **Admin Review**: Admin processes payout request and marks as paid
+
+### Admin Management
+
+- View all affiliates and their performance stats
+- Adjust individual commission rates (0-100%)
+- Process payout requests from dedicated admin panel
+- Receive real-time notifications for new payout requests
 
 ---
 

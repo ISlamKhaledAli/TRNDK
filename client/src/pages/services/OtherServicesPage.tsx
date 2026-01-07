@@ -17,8 +17,9 @@ interface Service {
 
 const OtherServicesPage = () => {
   const { services } = useLoaderData() as { services: Service[] };
-  const { i18n } = useTranslation("home");
+  const { i18n } = useTranslation();
   const { t } = useTranslation("common"); 
+  const { t: ts } = useTranslation("services");
   const isRtl = i18n.language === "ar";
   
   // Filter for "Other Services" only
@@ -66,9 +67,7 @@ const OtherServicesPage = () => {
           </h1>
           
           <p className="text-muted-foreground">
-            {isRtl 
-              ? "استكشف مجموعة متنوعة من الخدمات الأخرى التي نقدمها لتلبية جميع احتياجاتك."
-              : "Explore a variety of other services we offer to meet all your needs."}
+            {ts("otherServicesDesc")}
           </p>
         </div>
 
@@ -76,7 +75,7 @@ const OtherServicesPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {formattedServices.length === 0 ? (
             <div className="col-span-full py-12 text-center text-muted-foreground bg-card rounded-lg border border-border">
-              <p className="text-lg mb-2">{isRtl ? "لا توجد خدمات متاحة حالياً" : "No services available at the moment"}</p>
+              <p className="text-lg mb-2">{ts("noResults")}</p>
             </div>
           ) : (
             formattedServices.map((service) => (

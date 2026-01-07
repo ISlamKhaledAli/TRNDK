@@ -43,11 +43,13 @@ const ClientNewOrder = () => {
 
     setLoading(true);
     try {
+      const referralCode = localStorage.getItem('referralCode') || undefined;
       await apiClient.createOrder({
         serviceId: selectedService.id,
         status: 'pending',
         totalAmount: Math.round(totalAmount * 100), // Convert to cents
-        details: { link, quantity: Number(quantity) }
+        details: { link, quantity: Number(quantity) },
+        referralCode
       });
       refreshNotifications(); // Trigger immediate notification update
       toast.success(t("newOrder.success"));
