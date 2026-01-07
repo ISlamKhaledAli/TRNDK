@@ -80,6 +80,12 @@ export const apiClient = {
     return res.json();
   },
 
+  async getConfig() {
+    const res = await fetch(`${API_BASE}/config`);
+    if (!res.ok) throw new Error('Failed to fetch config');
+    return res.json();
+  },
+
   async getService(id: number) {
     const res = await fetch(`${API_BASE}/services/${id}`);
     if (!res.ok) throw new Error('Service not found');
@@ -351,9 +357,11 @@ export const apiClient = {
     return res.json();
   },
 
-  async requestPayout() {
+  async requestPayout(details?: any) {
     const res = await fetch(`${API_BASE}/affiliates/request-payout`, {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(details || {}),
     });
     if (!res.ok) {
        const error = await res.json();
@@ -370,5 +378,34 @@ export const apiClient = {
 
   async updateCommissionStatus(orderId: number, status: string) {
     return Promise.resolve();
+  },
+
+  async createPaymentIntent(transactionId: string) {
+    const res = await fetch(`${API_BASE}/payments/payoneer/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transactionId }), 
+    });
+    if (!res.ok) {
+       const error = await res.json();
+       throw new Error(error.message || 'Payment initiation failed');
+    }
+    return res.json();
+  },
+
+  async verifyPayment(transactionId: string) {
+    const res = await fetch(`${API_BASE}/payments/payoneer/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transactionId }),
+    });
+    if (!res.ok) throw new Error('Verification failed');
+    return res.json();
+  },
+
+  async getPaymentDetails(transactionId: string) {
+    const res = await fetch(`${API_BASE}/payments/payoneer/details/${transactionId}`);
+    if (!res.ok) throw new Error('Failed to fetch payment details');
+    return res.json();
   },
 };

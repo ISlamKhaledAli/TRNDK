@@ -202,7 +202,7 @@ export const checkoutSchema = z.object({
     serviceId: z.number().int(),
     quantity: z.number().int().min(1),
     link: z.string().min(1),
-    price: z.number().int().nonnegative(),
+    price: z.number().int().nonnegative().describe("FOR DISPLAY ONLY - Backend ignores this and uses DB price"),
     // Allow any other details needed per item
   })),
   paymentMethod: z.string(),

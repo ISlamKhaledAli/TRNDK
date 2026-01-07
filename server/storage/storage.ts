@@ -71,6 +71,7 @@ export interface IStorage {
   getAllPayments(): Promise<Payment[]>;
   createPayment(payment: InsertPayment): Promise<StorageResult<Payment>>; 
   updatePaymentStatus(id: number, status: string): Promise<StorageResult<Payment>>;
+  getPaymentByTransactionId(transactionId: string): Promise<Payment | undefined>;
 
   // Admin
   getAdmins(): Promise<User[]>; 
@@ -402,7 +403,9 @@ export class MemStorage implements IStorage {
   }
 
   async getAllOrders(): Promise<Order[]> {
-    return Array.from(this.orders.values()).sort((a, b) => b.id - a.id);
+    return Array.from(this.orders.values())
+      .filter(o => o.status !== 'pending_payment')
+      .sort((a, b) => b.id - a.id);
   }
 
   // Payments
@@ -443,6 +446,10 @@ export class MemStorage implements IStorage {
     return { success: true, data: updated };
   }
 
+  async getPaymentByTransactionId(transactionId: string): Promise<Payment | undefined> {
+    return Array.from(this.payments.values()).find(p => p.transactionId === transactionId);
+  }
+
   async createOrder(insertOrder: InsertOrder): Promise<StorageResult<Order>> {
     if (!insertOrder.userId || !insertOrder.serviceId || insertOrder.totalAmount === undefined) {
       return { success: false, error: 'UserId, serviceId, and totalAmount are required' };
@@ -469,7 +476,7 @@ export class MemStorage implements IStorage {
       return { success: false, error: 'Order not found' };
     }
     
-    const validStatuses = ['pending', 'confirmed', 'processing', 'completed', 'cancelled'];
+     const validStatuses = ['pending_payment', 'pending', 'confirmed', 'processing', 'completed', 'cancelled'];
     if (!validStatuses.includes(status)) {
       return { success: false, error: `Invalid status. Must be one of: ${validStatuses.join(', ')}` };
     }
@@ -613,7 +620,7 @@ export class MemStorage implements IStorage {
       if (ordersByStatus[order.status] !== undefined) {
         ordersByStatus[order.status]++;
       }
-      if (order.status !== 'cancelled' && order.status !== 'status') {
+      if (order.status !== 'cancelled' && order.status !== 'pending_payment') {
          totalSpent += order.totalAmount;
       }
     });
@@ -1050,7 +1057,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllOrders(): Promise<Order[]> {
-    return db.order.findMany({ orderBy: { id: 'desc' } });
+    return await db.order.findMany({
+      where: {
+        NOT: { status: 'pending_payment' }
+      },
+      orderBy: { id: 'desc' }
+    });
   }
 
   async createOrder(insertOrder: InsertOrder): Promise<StorageResult<Order>> {
@@ -1092,27 +1104,38 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async payoutAffiliate(affiliateId: number): Promise<StorageResult<void>> {
-    console.log(`[Storage] Processing payout for affiliate ID: ${affiliateId}`);
+  async payoutAffiliate(payoutId: number): Promise<StorageResult<void>> {
+    console.log(`[Storage] Processing payout for payout ID: ${payoutId}`);
     try {
+      const payout = await db.payout.findUnique({ where: { id: payoutId } });
+      if (!payout) return { success: false, error: 'Payout request not found' };
+
+      // Update the payout status
+      await db.payout.update({
+        where: { id: payoutId },
+        data: { status: 'completed' }
+      });
+
+      // Update all orders linked to this payout
       const result = await db.order.updateMany({
         where: { 
-          affiliateId,
+          payoutId,
           commissionStatus: 'requested'
         },
         data: {
           commissionStatus: 'paid'
         }
       });
-      console.log(`[Storage] Payout processed. Updated ${result.count} orders.`);
+      
+      console.log(`[Storage] Payout processed. Updated ${result.count} orders for payout #${payoutId}.`);
       return { success: true, data: undefined };
     } catch (e: any) {
-      console.error(`[Storage] Payout error for affiliate ${affiliateId}:`, e);
+      console.error(`[Storage] Payout error for payout ID ${payoutId}:`, e);
       return { success: false, error: e.message };
     }
   }
 
-  async requestPayout(affiliateId: number): Promise<StorageResult<void>> {
+  async requestPayout(affiliateId: number, details?: any): Promise<StorageResult<void>> {
     console.log(`[Storage] Requesting payout for affiliate ID: ${affiliateId}`);
     try {
       const approvedOrders = await db.order.findMany({
@@ -1129,14 +1152,26 @@ export class DatabaseStorage implements IStorage {
         return { success: false, error: "Minimum withdrawal amount is $25.00" };
       }
 
+      // Create a Payout record to track this specific withdrawal request
+      const payout = await db.payout.create({
+        data: {
+          affiliateId,
+          amount: totalApproved,
+          method: 'manual',
+          status: 'pending',
+          details: details || {},
+        }
+      });
+
       await db.order.updateMany({
         where: {
           affiliateId,
           commissionStatus: 'approved'
         },
         data: {
-          commissionStatus: 'requested'
-        }
+          commissionStatus: 'requested',
+          payoutId: payout.id
+        } as any
       });
 
       return { success: true, data: undefined };
@@ -1146,38 +1181,33 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getPayoutRequests(): Promise<(Affiliate & { user: User; stats: { requestedEarnings: number } })[]> {
+  async getPaymentByTransactionId(transactionId: string): Promise<Payment | undefined> {
+     const payment = await db.payment.findFirst({ where: { transactionId } });
+     return payment ?? undefined;
+  }
+
+  async getPayoutRequests(): Promise<any[]> {
     try {
-      const affiliatesWithRequests = await db.affiliate.findMany({
-        where: {
-          orders: {
-            some: {
-              commissionStatus: 'requested'
-            }
+      const pendingPayouts = await db.payout.findMany({
+        where: { status: 'pending' },
+        include: {
+          affiliate: {
+            include: { user: true }
           }
         },
-        include: {
-          user: true,
-          orders: {
-            where: {
-              commissionStatus: 'requested'
-            }
-          }
-        }
+        orderBy: { createdAt: 'desc' }
       });
 
-      return affiliatesWithRequests.map(aff => {
-        const requestedEarnings = aff.orders.reduce((sum, o) => sum + (o.commissionAmount || 0), 0);
-        return {
-          id: aff.id,
-          userId: aff.userId,
-          referralCode: aff.referralCode,
-          commissionRate: aff.commissionRate,
-          isActive: aff.isActive,
-          user: aff.user,
-          stats: { requestedEarnings }
-        };
-      }) as (Affiliate & { user: User; stats: { requestedEarnings: number } })[];
+      return pendingPayouts.map(p => ({
+        id: p.id,
+        affiliateId: p.affiliateId,
+        amount: p.amount,
+        details: p.details,
+        createdAt: p.createdAt,
+        user: p.affiliate.user,
+        referralCode: p.affiliate.referralCode,
+        commissionRate: p.affiliate.commissionRate
+      }));
     } catch (e: any) {
       console.error("Error fetching payout requests:", e);
       return [];
@@ -1357,14 +1387,20 @@ export class DatabaseStorage implements IStorage {
   async getAdminDashboardData(): Promise<AdminDashboardData> {
     const overallStats = await Promise.all([
       db.user.count({ where: { NOT: { role: 'admin' } } }),
-      db.order.count(),
+      db.order.count({ where: { NOT: { status: 'pending_payment' } } }),
       db.order.groupBy({
         by: ['status'],
-        _count: { status: true }
+        _count: { status: true },
+        where: { NOT: { status: 'pending_payment' } }
       }),
       db.order.aggregate({
         _sum: { totalAmount: true },
-        where: { NOT: { status: 'cancelled' } }
+        where: { 
+          NOT: [
+            { status: 'cancelled' },
+            { status: 'pending_payment' }
+          ]
+        }
       })
     ]);
     
@@ -1407,7 +1443,12 @@ export class DatabaseStorage implements IStorage {
        by: ['serviceId'],
        _sum: { totalAmount: true },
        _count: { id: true },
-       where: { NOT: { status: 'cancelled' } },
+       where: { 
+         NOT: [
+           { status: 'cancelled' },
+           { status: 'pending_payment' }
+         ]
+       },
      });
      
      // We need service names.
@@ -1431,8 +1472,18 @@ export class DatabaseStorage implements IStorage {
     const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
     const [currMonthOrders, prevMonthOrders] = await Promise.all([
-      db.order.findMany({ where: { createdAt: { gte: currentMonthStart, lt: nextMonthStart } } }),
-      db.order.findMany({ where: { createdAt: { gte: prevMonthStart, lt: currentMonthStart } } })
+      db.order.findMany({ 
+        where: { 
+          createdAt: { gte: currentMonthStart, lt: nextMonthStart },
+          NOT: { status: 'pending_payment' }
+        } 
+      }),
+      db.order.findMany({ 
+        where: { 
+          createdAt: { gte: prevMonthStart, lt: currentMonthStart },
+          NOT: { status: 'pending_payment' }
+        } 
+      })
     ]);
 
     const [currMonthUsers, prevMonthUsers] = await Promise.all([

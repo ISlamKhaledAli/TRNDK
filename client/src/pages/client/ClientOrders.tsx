@@ -1,4 +1,4 @@
-import { Filter, Eye } from "lucide-react";
+import { Eye, CreditCard, Loader2, Filter } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLoaderData, useRevalidator } from "react-router-dom";
 import { useSocket } from "@/hooks/useSocket";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
+import { formatPrice } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import StatusBadge from "@/components/common/StatusBadge";
 import OrderDetailsViewer from "@/components/common/OrderDetailsViewer";
@@ -23,11 +24,12 @@ interface Order {
   id: number;
   userId: number;
   serviceId: number;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  status: 'pending_payment' | 'pending' | 'confirmed' | 'processing' | 'completed' | 'cancelled' | 'failed';
   totalAmount: number;
   createdAt: string;
   details?: any;
   lastNotifyAt?: string;
+  transactionId?: string;
   service?: {
     name: string;
     duration?: string;
@@ -92,6 +94,25 @@ const ClientOrders = () => {
   }, [initialOrders]);
 
   // Reset modal state
+  const [isPaying, setIsPaying] = useState<number | null>(null);
+
+  const handlePay = async (transactionId: string, orderId: number) => {
+    try {
+      setIsPaying(orderId);
+      const data = await apiClient.createPaymentIntent(transactionId);
+      if (data.redirectUrl) {
+         window.location.href = data.redirectUrl;
+      } else {
+         toast.error("No payment URL received");
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to initiate payment");
+      console.error(error);
+    } finally {
+      setIsPaying(null);
+    }
+  };
+
   const handleCloseModal = () => {
     setSelectedOrder(null);
   };
@@ -192,7 +213,7 @@ const ClientOrders = () => {
                 {filteredOrders.map((order) => (
                   <tr key={order.id} className="border-b border-border last:border-0 hover:bg-secondary/30">
                     <td className="p-4 text-sm font-medium text-foreground">#{order.id}</td>
-                    <td className="p-4 text-sm text-foreground">{(order.totalAmount / 100).toFixed(2)} <span className="text-xs text-muted-foreground">{t("common:currency")}</span></td>
+                    <td className="p-4 text-sm text-foreground">{formatPrice(order.totalAmount)} <span className="text-xs text-muted-foreground">{t("common:currency")}</span></td>
                     <td className="p-4 text-sm text-muted-foreground">
                       {new Date(order.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}
                     </td>
@@ -209,6 +230,18 @@ const ClientOrders = () => {
                           <Eye className="w-4 h-4" />
                           {t("common:view")}
                         </button>
+                        
+                        {order.status === 'pending_payment' && order.transactionId && (
+                          <button
+                            onClick={() => handlePay(order.transactionId!, order.id)}
+                            disabled={isPaying === order.id}
+                            className="inline-flex items-center gap-1 text-sm text-green-600 hover:text-green-700 font-bold"
+                            title={t("orders.payNow")}
+                          >
+                            {isPaying === order.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
+                            {t("orders.payNow")}
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -247,7 +280,7 @@ const ClientOrders = () => {
                   <div className="bg-secondary/50 rounded-lg p-4 space-y-3 text-start h-full">
                     <div>
                       <p className="text-xs font-medium text-muted-foreground mb-1">{t("orders.details.total")}</p>
-                      <p className="text-lg font-bold text-foreground">{(selectedOrder.totalAmount / 100).toFixed(2)} <span className="text-sm font-normal text-muted-foreground">{t("common:currency")}</span></p>
+                      <p className="text-lg font-bold text-foreground">{formatPrice(selectedOrder.totalAmount)} <span className="text-sm font-normal text-muted-foreground">{t("common:currency")}</span></p>
                     </div>
                     <div>
                       <p className="text-xs font-medium text-muted-foreground mb-1">{t("orders.details.date")}</p>

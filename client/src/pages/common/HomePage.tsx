@@ -34,7 +34,7 @@ const HomePage = () => {
     id: service.id?.toString() || service.name,
     title: service.name,
     titleEn: service.name,
-    price: service.price / 100,
+    price: service.price,
     image: service.imageUrl || "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=400&fit=crop",
   }));
 

@@ -11,6 +11,7 @@ import { Plus, Edit, Trash2, ToggleLeft, ToggleRight, X, Percent } from "lucide-
 import { useEffect, useState } from "react";
 import { apiClient } from "@/services/api";
 import { toast } from "sonner";
+import { formatPrice } from "../../lib/utils";
 import { useTranslation } from "react-i18next";
 import { useLoaderData, useRevalidator } from "react-router-dom";
 
@@ -105,7 +106,7 @@ const AdminServices = () => {
         nameEn: service.nameEn || '',
         description: service.description,
         descriptionEn: service.descriptionEn || '',
-        price: (service.price / 100).toString(),
+        price: (service.price / 100).toFixed(2),
         category: service.category || '',
         duration: service.duration || '',
         imageUrl: service.imageUrl || '',
@@ -279,7 +280,7 @@ const AdminServices = () => {
                         {service.category || t("services.fields.noCategory")}
                       </span>
                     </td>
-                    <td className="p-4 text-sm text-foreground text-start">${(service.price / 100).toFixed(2)}</td>
+                    <td className="p-4 text-sm text-foreground text-start">{formatPrice(service.price)}</td>
                     <td className="p-4 text-sm text-foreground text-start">{service.duration || '-'}</td>
                     <td className="p-4 text-start">
                       <button 

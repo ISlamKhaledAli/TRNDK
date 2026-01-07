@@ -13,6 +13,7 @@ import { Button } from "../../components/ui/button";
 import { Loader2, DollarSign, User, ExternalLink } from "lucide-react";
 import { useToast } from "../../hooks/use-toast";
 import AdminLayout from "@/components/layouts/AdminLayout";
+import { formatPrice } from "../../lib/utils";
 import { useTranslation } from "react-i18next";
 
 export default function AdminPayouts() {
@@ -27,7 +28,7 @@ export default function AdminPayouts() {
   });
 
   const payoutMutation = useMutation({
-    mutationFn: (affiliateId: number) => apiClient.payoutAffiliate(affiliateId),
+    mutationFn: (payoutId: number) => apiClient.payoutAffiliate(payoutId),
     onSuccess: () => {
       toast({ title: t('common:messages.success'), description: t('admin:payouts.messages.payoutSuccess') });
       queryClient.invalidateQueries({ queryKey: ['admin-payout-requests'] });
@@ -61,22 +62,23 @@ export default function AdminPayouts() {
                   <TableRow>
                     <TableHead className="text-start">{t('admin:payouts.table.affiliate')}</TableHead>
                     <TableHead className="text-start">{t('admin:payouts.table.code')}</TableHead>
+                    <TableHead className="text-start">Account Number</TableHead>
                     <TableHead className="text-start">{t('admin:payouts.table.amount')}</TableHead>
                     <TableHead className="text-end">{t('admin:payouts.table.action')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {isError && (
-                    <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center text-red-500">
-                         {t('common:messages.error')}: {(fetchError as Error)?.message}
-                      </TableCell>
-                    </TableRow>
+                     <TableRow>
+                       <TableCell colSpan={6} className="h-24 text-center text-red-500">
+                          {t('common:messages.error')}: {(fetchError as Error)?.message}
+                       </TableCell>
+                     </TableRow>
                   )}
                   {requests.length > 0 ? (
                     requests.map((request: any) => {
                       if (!request) return null;
-                      const requestedAmount = (request.stats?.requestedEarnings || 0) / 100;
+                      const accountNumber = request.details?.accountNumber || 'N/A';
                       return (
                       <TableRow key={request.id}>
                         <TableCell className="text-start">
@@ -91,15 +93,18 @@ export default function AdminPayouts() {
                         <TableCell className="text-start">
                            <code className="bg-muted px-2 py-1 rounded text-xs">{request.referralCode}</code>
                         </TableCell>
+                        <TableCell className="text-start">
+                           <span className="font-mono text-sm">{accountNumber}</span>
+                        </TableCell>
                         <TableCell className="text-lg font-bold text-green-700 text-start">
-                          ${((request.stats?.requestedEarnings || 0) / 100).toFixed(2)}
+                          {formatPrice(request.amount || 0)}
                         </TableCell>
                         <TableCell className="text-end">
                           <Button 
                             className="bg-green-600 hover:bg-green-700" 
                             size="sm"
                             onClick={() => {
-                              const amountStr = `$${((request.stats?.requestedEarnings || 0) / 100).toFixed(2)}`;
+                              const amountStr = formatPrice(request.amount || 0);
                               if (confirm(t('admin:payouts.messages.confirmPayout', { amount: amountStr, name: request.user?.name }))) {
                                 payoutMutation.mutate(request.id);
                               }
@@ -115,7 +120,7 @@ export default function AdminPayouts() {
                     })
                   ) : !isLoading && !isError ? (
                     <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                      <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                         {t('admin:payouts.messages.noRequests')}
                       </TableCell>
                     </TableRow>

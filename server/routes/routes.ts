@@ -18,6 +18,10 @@ import { signToken, hashPassword, comparePassword, authMiddleware, adminMiddlewa
 import { NotificationService } from "../services/notification.service";
 import { emitNewOrder, emitNewUser, emitNotification } from "../services/socket";
 import passport from "passport";
+import payoutsRouter from "./payouts";
+import paymentsRouter from "./payments";
+import { normalizePrice, validatePrice } from "../utils/price";
+import { PayoneerGateway } from "../services/payments/payoneer-gateway";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -26,6 +30,7 @@ export async function registerRoutes(
 
   // Prefix all routes with /api/v1 to match frontend expectations
   const apiRouter = Router();
+  const payoneerGateway = new PayoneerGateway();
 
   // Health Check
   apiRouter.get('/health', (_req, res) => {
@@ -53,6 +58,15 @@ export async function registerRoutes(
   // Get Service Categories
   apiRouter.get('/services/categories', (req, res) => {
     res.json({ data: SERVICE_CATEGORIES });
+  });
+
+  // Get Public Config (Feature Flags)
+  apiRouter.get('/config', (req, res) => {
+    res.json({
+      data: {
+        payoneerEnabled: process.env.PAYONEER_ENABLED === 'true'
+      }
+    });
   });
 
   apiRouter.get('/services/:id', async (req, res) => {
@@ -235,7 +249,7 @@ export async function registerRoutes(
     }
   });
 
-  // Checkout (Bulk Orders)
+  // Checkout (Bulk Orders) - Now Payoneer ONLY
   apiRouter.post('/orders/checkout', authMiddleware, async (req, res) => {
     try {
       const checkoutData = checkoutSchema.parse(req.body);
@@ -243,17 +257,8 @@ export async function registerRoutes(
 
       // 1. Transaction & Payment Setup
       const transactionId = `TXN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      const totalAmount = checkoutData.items.reduce((sum, item) => sum + (item.price * (item.quantity / 1000)), 0); // Price is per 1000 units usually? 
-      // Wait, let's verify how price is calculated. 
-      // In checkout page: (item.price / 100) * (item.quantity / 1000) for display.
-      // Database price is likely in cents per 1000 units?
-      // Service.price = number.
-      // Let's assume passed price in items is correct or we should refetch from DB for security? 
-      // For security, we should fetching services.
       
-      const serviceIds = checkoutData.items.map(i => i.serviceId);
-      
-      // Affiliate Logic
+      // Calculate Affiliate Logic
       let affiliateId: number | undefined;
       let commissionRate = 0;
       
@@ -268,26 +273,32 @@ export async function registerRoutes(
       const orders = [];
       let calculatedTotal = 0;
 
+      // 2. Fetch service prices and calculate total (SERVER-SIDE ONLY)
       for (const item of checkoutData.items) {
         const service = await storage.getService(item.serviceId);
         if (!service) throw new Error(`Service ${item.serviceId} not found`);
         if (!service.isActive) throw new Error(`Service ${service.name} is unavailable`);
 
         const itemTotal = Math.round(service.price * (item.quantity / 1000));
+        
+        if (!validatePrice(itemTotal)) {
+           throw new Error(`Critical: Invalid item total calculated for service ${service.id}`);
+        }
+
         calculatedTotal += itemTotal;
 
         // Calculate Commission
         let commissionAmount = 0;
         let commissionStatus = 'none';
         if (affiliateId) {
-           commissionAmount = Math.floor(itemTotal * (commissionRate / 100)); // Round down to safe side
+           commissionAmount = Math.floor(itemTotal * (commissionRate / 100));
            commissionStatus = 'pending';
         }
 
         const orderResult = await storage.createOrder({
           userId,
           serviceId: item.serviceId,
-          status: 'pending',
+          status: 'pending_payment',
           totalAmount: itemTotal,
           details: {
              quantity: item.quantity,
@@ -295,7 +306,7 @@ export async function registerRoutes(
              originalPrice: service.price
           },
           transactionId,
-          // @ts-ignore - Extra fields handled by storage/db
+          // @ts-ignore
           affiliateId,
           commissionAmount,
           commissionStatus
@@ -305,28 +316,50 @@ export async function registerRoutes(
         orders.push(orderResult.data!);
       }
 
-      // Create One Payment Record
+      // 3. Apply Tax (Fetched from DB)
+      const taxSetting = await storage.getSetting('taxRate');
+      const taxRate = taxSetting ? parseFloat(taxSetting.value) : 15;
+      const taxAmount = Math.round(calculatedTotal * (taxRate / 100));
+      const finalTotal = calculatedTotal + taxAmount;
+
+      // 4. Create One Payment Record (Enforce Payoneer)
       await storage.createPayment({
         userId,
-        amount: calculatedTotal,
-        method: checkoutData.paymentMethod,
+        amount: finalTotal,
+        method: 'payoneer', // Force Payoneer
         status: 'pending',
         transactionId
       });
 
-      // Notifications
-      for (const order of orders) {
-        await NotificationService.notifyOrderCreated(order);
-        if (affiliateId) {
-           // Notify affiliate? Maybe later.
-        }
-        emitNewOrder(order);
+      // 5. Initiate Payoneer Payment Intent Immediately
+      try {
+        const intent = await payoneerGateway.createPaymentIntent(
+            finalTotal, 
+            'USD', 
+            transactionId,
+            req.user
+        );
+        
+        console.log(`[Checkout] Success. Transaction: ${transactionId}. Total: ${finalTotal}. Redirecting...`);
+        res.status(201).json({ 
+          success: true,
+          redirectUrl: intent.url,
+          transactionId
+        });
+      } catch (e: any) {
+        console.error('[Checkout] Payoneer Error:', e);
+        // We still created the pending orders, but payment failed to initiate.
+        // Return 201 because records exist, but indicate redirect failure.
+        res.status(201).json({ 
+          success: false,
+          error: "Failed to initiate Payoneer payment: " + e.message,
+          transactionId
+        });
       }
 
-      res.status(201).json({ data: orders });
-
     } catch (e: any) {
-      res.status(400).json({ message: e.message || "Validation Error", errors: e });
+      console.error('[Checkout] Error:', e.message);
+      res.status(400).json({ message: e.message || "Validation Error" });
     }
   });
 
@@ -581,7 +614,18 @@ export async function registerRoutes(
   // Admin Routes - Services
   apiRouter.post('/admin/services', authMiddleware, async (req, res) => {
     try {
-      const serviceData = insertServiceSchema.parse(req.body);
+      const rawData = req.body;
+      // Normalize price before validation
+      if (rawData.price !== undefined) {
+        rawData.price = normalizePrice(rawData.price);
+      }
+
+      const serviceData = insertServiceSchema.parse(rawData);
+      
+      if (!validatePrice(serviceData.price)) {
+        return res.status(400).json({ message: "Invalid price value" });
+      }
+
       const result = await storage.createService(serviceData);
       if (!result.success) {
         return res.status(400).json({ message: result.error });
@@ -594,7 +638,18 @@ export async function registerRoutes(
 
   apiRouter.put('/admin/services/:id', authMiddleware, async (req, res) => {
     try {
-      const updates = insertServiceSchema.partial().parse(req.body);
+      const rawData = req.body;
+      // Normalize price if provided
+      if (rawData.price !== undefined) {
+        rawData.price = normalizePrice(rawData.price);
+      }
+
+      const updates = insertServiceSchema.partial().parse(rawData);
+      
+      if (updates.price !== undefined && !validatePrice(updates.price)) {
+        return res.status(400).json({ message: "Invalid price value" });
+      }
+
       const result = await storage.updateService(Number(req.params.id), updates);
       if (!result.success) {
         return res.status(404).json({ message: result.error });
@@ -615,8 +670,10 @@ export async function registerRoutes(
 
   // Admin Routes - Orders
   apiRouter.get('/admin/orders', authMiddleware, async (req, res) => {
+    // Admin only sees paid/processing orders
     const orders = await storage.getAllOrders();
-    res.json({ data: orders });
+    const actionableOrders = orders.filter(o => o.status !== 'pending_payment');
+    res.json({ data: actionableOrders });
   });
 
   apiRouter.patch('/admin/orders/:id/status', authMiddleware, async (req, res) => {
@@ -680,6 +737,12 @@ export async function registerRoutes(
     }
     res.json({ data: result.data });
   });
+
+  // Payment Gateway Routes (Charging)
+  apiRouter.use('/payments', authMiddleware, paymentsRouter);
+
+  // Payout Routes
+  apiRouter.use('/payouts', payoutsRouter);
 
   // Affiliate Routes
   apiRouter.post('/affiliates/join', authMiddleware, async (req, res) => {
@@ -753,7 +816,7 @@ export async function registerRoutes(
     const affiliate = await storage.getAffiliateByUserId(req.user!.id);
     if (!affiliate) return res.status(404).json({ message: "Affiliate account not found" });
 
-    const result = await storage.requestPayout(affiliate.id);
+    const result = await storage.requestPayout(affiliate.id, req.body);
     if (!result.success) return res.status(400).json({ message: result.error });
 
     // Notify admins
@@ -833,6 +896,9 @@ export async function registerRoutes(
     }
     res.json({ data: result.data });
   });
+
+  apiRouter.use('/payments', paymentsRouter);
+  apiRouter.use('/payouts', payoutsRouter);
 
   app.use('/api/v1', apiRouter);
 

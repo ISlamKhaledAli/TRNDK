@@ -4,6 +4,7 @@ import { Wallet, ClipboardList, DollarSign, Crown, Plus, Headphones, Clock, Sett
 import { Link, useLoaderData, useRevalidator } from "react-router-dom";
 import { apiClient } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
+import { formatPrice } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { useSocket } from "@/hooks/useSocket";
 import { useEffect } from "react";
@@ -40,7 +41,6 @@ const ClientDashboard = () => {
   }, [on, off, revalidate, t]);
 
   const quickActionsList = [
-    { icon: Plus, label: t("dashboard.quickActions.newOrder"), href: "/client/new-order" },
     { icon: Clock, label: t("dashboard.quickActions.orderHistory"), href: "/client/orders" },
     { icon: Headphones, label: t("dashboard.quickActions.support"), href: "/client/support" },
     { icon: Settings, label: t("dashboard.quickActions.settings"), href: "/client/profile" },
@@ -59,7 +59,7 @@ const ClientDashboard = () => {
   }[] = [
     {
       label: t("dashboard.stats.spent"),
-      value: `$${(dashboard?.totalSpent / 100).toFixed(2)}`,
+      value: formatPrice(dashboard?.totalSpent || 0),
       icon: DollarSign,
       color: "text-green-500",
       bgKey: "bg-green-500/10",
@@ -129,22 +129,6 @@ const ClientDashboard = () => {
         ))}
       </div>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {quickActionsList.map((action, index) => (
-          <Link
-            key={index}
-            to={action.href}
-            className="bg-card rounded-xl p-5 border border-border hover:border-primary/50 transition-all hover:shadow-md text-center group card-shadow"
-          >
-            <div className="w-12 h-12 mx-auto rounded-xl bg-secondary flex items-center justify-center mb-3 group-hover:bg-primary/10 transition-colors">
-              <action.icon className="w-6 h-6 text-foreground group-hover:text-primary transition-colors" />
-            </div>
-            <p className="font-medium text-foreground">{action.label}</p>
-          </Link>
-        ))}
-      </div>
-
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Orders */}
         <div className="lg:col-span-2 bg-card rounded-xl border border-border card-shadow">
@@ -178,7 +162,7 @@ const ClientDashboard = () => {
                         <td className="p-4">
                             <span className="text-sm text-foreground">{order.serviceName}</span>
                         </td>
-                        <td className="p-4 text-sm text-foreground">${(order.totalAmount / 100).toFixed(2)}</td>
+                        <td className="p-4 text-sm text-foreground">{formatPrice(order.totalAmount)}</td>
                         <td className="p-4">
                         <StatusBadge status={order.status} />
                         </td>

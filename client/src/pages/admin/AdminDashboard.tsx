@@ -11,6 +11,7 @@ import { Users, ShoppingCart, DollarSign, TrendingUp, ArrowUpRight, ArrowDownRig
 import { Link, useLoaderData, useRevalidator } from "react-router-dom";
 import StatusBadge from "@/components/common/StatusBadge";
 import { useAuth } from "@/contexts/AuthContext";
+import { formatPrice } from "../../lib/utils";
 import { useTranslation } from "react-i18next";
 import { useSocket } from "@/hooks/useSocket";
 import { useEffect } from "react";
@@ -33,7 +34,7 @@ const AdminDashboard = () => {
 
             // Show visual notification
             toast.success(t("dashboard.notifications.newOrder", { defaultValue: "New Order Received!" }), {
-                description: `${t("dashboard.recentOrders.service", { defaultValue: "Service" })}: ${order.serviceId} - $${(order.totalAmount / 100).toFixed(2)}`,
+                description: `${t("dashboard.recentOrders.service", { defaultValue: "Service" })}: ${order.serviceId} - ${formatPrice(order.totalAmount)}`,
                 duration: 5000,
             });
 
@@ -74,7 +75,7 @@ const AdminDashboard = () => {
   const stats = [
     {
         label: t("dashboard.stats.totalRevenue"),
-        value: `$${(dashboard?.totalRevenue / 100).toFixed(2)}`,
+        value: formatPrice(dashboard?.totalRevenue || 0),
         change: formatChange(dashboard.revenueChange || 0),
         up: (dashboard.revenueChange || 0) >= 0,
         icon: DollarSign,
@@ -177,7 +178,7 @@ const AdminDashboard = () => {
                         <td className="p-4 text-sm text-primary font-medium">#{order.id}</td>
                         <td className="p-4 text-sm text-foreground">{order.userName}</td>
                         <td className="p-4 text-sm text-foreground">{order.serviceName}</td>
-                        <td className="p-4 text-sm text-foreground font-medium">${(order.totalAmount / 100).toFixed(2)}</td>
+                        <td className="p-4 text-sm text-foreground font-medium">{formatPrice(order.totalAmount)}</td>
                         <td className="p-4">
                           <StatusBadge status={order.status} />
                         </td>
@@ -212,7 +213,7 @@ const AdminDashboard = () => {
                         <p className="text-xs text-muted-foreground">{service.orders} {t("dashboard.topServices.orders")}</p>
                     </div>
                     </div>
-                    <span className="text-sm font-bold text-success">${(service.revenue / 100).toFixed(2)}</span>
+                    <span className="text-sm font-bold text-success">{formatPrice(service.revenue)}</span>
                 </div>
                 ))
             )}
@@ -254,7 +255,7 @@ const AdminDashboard = () => {
             <DollarSign className="w-6 h-6 text-success" />
           </div>
           <div className="text-start">
-            <p className="font-medium text-foreground">${(dashboard.totalRevenue / 100).toFixed(2)}</p>
+            <p className="font-medium text-foreground">{formatPrice(dashboard.totalRevenue)}</p>
             <p className="text-sm text-muted-foreground">{t("dashboard.quickActions.totalSales")}</p>
           </div>
         </Link>

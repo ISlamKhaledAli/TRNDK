@@ -89,7 +89,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const isInWishlist = (serviceId: number) => wishlist.includes(serviceId);
 
   const totalItems = items.reduce((sum, item) => sum + 1, 0);
-  const totalPrice = items.reduce((sum, item) => sum + (item.price / 100) * (item.quantity / 1000), 0);
+  const totalPrice = items.reduce((sum, item) => sum + (item.price) * (item.quantity / 1000), 0);
 
   return (
     <CartContext.Provider

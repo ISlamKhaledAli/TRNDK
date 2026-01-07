@@ -13,12 +13,15 @@ import ServiceDetailsPage from "./pages/services/ServiceDetailsPage";
 import CheckoutPage from "@/pages/common/CheckoutPage";
 import LoginPage from "@/pages/auth/LoginPage";
 import RegisterPage from "@/pages/auth/RegisterPage";
+import PaymentSuccessPage from "@/pages/common/PaymentSuccessPage";
+import PaymentFailedPage from "@/pages/common/PaymentFailedPage";
+import MockPayoneerPage from "@/pages/common/MockPayoneerPage";
 import NotFound from "@/pages/common/NotFound";
 
 // Client Pages
 import ClientDashboard from "@/pages/client/ClientDashboard";
 import ClientOrders from "@/pages/client/ClientOrders";
-import ClientNewOrder from "@/pages/client/ClientNewOrder";
+
 import ClientProfile from "@/pages/client/ClientProfile";
 
 // Admin Pages
@@ -104,6 +107,18 @@ export const router = createBrowserRouter([
         path: "/checkout",
         element: <CheckoutPage />
       },
+      {
+        path: "/payment/success",
+        element: <PaymentSuccessPage />
+      },
+      {
+        path: "/payment/failed",
+        element: <PaymentFailedPage />
+      },
+      {
+        path: "/mock-payoneer/checkout",
+        element: <MockPayoneerPage />
+      },
 
       // Auth Routes (Restricted for authenticated users)
       {
@@ -142,18 +157,7 @@ export const router = createBrowserRouter([
               }
             }
           },
-          {
-            path: "/client/new-order",
-            element: <ClientNewOrder />,
-            loader: async () => {
-              try {
-                const res = await apiClient.getServices();
-                return { services: res.data || res };
-              } catch (e) {
-                throw new Response("Failed to load services", { status: 500 });
-              }
-            }
-          },
+
           {
             path: "/client/profile",
             element: <ClientProfile />,

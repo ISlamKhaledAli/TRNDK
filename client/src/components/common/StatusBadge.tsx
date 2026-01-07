@@ -8,6 +8,7 @@ interface StatusBadgeProps {
 
 const statusClasses: Record<string, string> = {
   pending: "badge-pending",
+  pending_payment: "badge-pending",
   confirmed: "badge-info",
   processing: "badge-processing",
   shipped: "badge-processing",

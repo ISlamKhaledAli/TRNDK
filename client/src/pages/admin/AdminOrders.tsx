@@ -12,6 +12,7 @@ import { Filter, Eye, Edit, ChevronLeft, ChevronRight, Download, Copy } from "lu
 import { useEffect, useState } from "react";
 import { apiClient } from "@/services/api";
 import { toast } from "sonner";
+import { formatPrice } from "../../lib/utils";
 import { useTranslation } from "react-i18next";
 import { useLoaderData, useRevalidator } from "react-router-dom";
 import { useSocket } from "@/hooks/useSocket";
@@ -47,7 +48,7 @@ const AdminOrders = () => {
 
       // Show visual notification
       toast.success(t("orders.notifications.newOrder", { defaultValue: "New Order Received!" }), {
-        description: `#${order.id} - $${(order.totalAmount / 100).toFixed(2)}`,
+        description: `#${order.id} - ${formatPrice(order.totalAmount)}`,
       });
 
       // Refresh list instantly
@@ -97,7 +98,7 @@ const AdminOrders = () => {
       ...filteredOrders.map(order => [
         `#${order.id}`,
         `"${order.details?.link || ""}"`,
-        `$${(order.totalAmount / 100).toFixed(2)}`,
+        formatPrice(order.totalAmount),
         new Date(order.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US'),
         order.status
       ].join(","))
@@ -216,7 +217,7 @@ const AdminOrders = () => {
                         <span className="text-xs text-muted-foreground">{t("orders.noLink")}</span>
                       )}
                     </td>
-                    <td className="p-4 text-sm text-foreground">${(order.totalAmount / 100).toFixed(2)}</td>
+                    <td className="p-4 text-sm text-foreground">{formatPrice(order.totalAmount)}</td>
                     <td className="p-4 text-sm text-muted-foreground">
                       {new Date(order.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US')}
                     </td>

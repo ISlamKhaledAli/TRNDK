@@ -237,7 +237,7 @@ const ServiceDetailsPage = () => {
                       </div>
                       <div className="text-end">
                         <p className="text-sm text-muted-foreground">{t("serviceDetails:totalPrice")}</p>
-                        <PriceDisplay amount={service.price / 100} isBold className="items-end text-lg" />
+                        <PriceDisplay amount={service.price} isBold className="items-end text-lg" />
                       </div>
                     </div>
 
@@ -372,7 +372,7 @@ const ServiceDetailsPage = () => {
                     />
                     <div className="flex-1 text-end">
                       <p className="text-sm font-medium line-clamp-2 text-start">{svc.name}</p>
-                      <PriceDisplay amount={svc.price / 100} isBold className="text-xs" />
+                      <PriceDisplay amount={svc.price} isBold className="text-xs" />
                     </div>
                   </Link>
                 ))}

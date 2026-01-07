@@ -1,4 +1,6 @@
 import { ExternalLink } from "lucide-react";
+import { format } from "date-fns";
+import { formatPrice } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 
@@ -118,7 +120,7 @@ export const OrderDetailsViewer = ({ data, label, isRoot = false, titleLink }: O
             {price !== undefined && (
               <div className="inline-flex flex-col">
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">{t('price', { defaultValue: 'Price' })}</span>
-                <span className="font-medium font-mono">{(Number(price) / 100).toFixed(2)}</span>
+                <span className="font-medium font-mono">{formatPrice(Number(price))}</span>
               </div>
             )}
             {quantity !== undefined && (

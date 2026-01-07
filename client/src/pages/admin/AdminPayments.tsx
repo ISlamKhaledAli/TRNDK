@@ -11,6 +11,7 @@ import { Download, Eye, CheckCircle, XCircle, ChevronLeft, ChevronRight, DollarS
 import { useEffect, useState } from "react";
 import { apiClient } from "@/services/api";
 import { toast } from "sonner";
+import { formatPrice } from "../../lib/utils";
 import { useTranslation } from "react-i18next";
 import { useLoaderData, useRevalidator } from "react-router-dom";
 import { useSocket } from "@/hooks/useSocket";
@@ -20,7 +21,7 @@ interface Payment {
   userId: number;
   orderId?: number;
   amount: number;
-  method: 'card' | 'apple' | 'stc' | 'bank';
+  method: 'card' | 'apple' | 'stc' | 'bank' | 'payoneer';
   status: 'pending' | 'completed' | 'failed';
   transactionId?: string;
   createdAt: string;
@@ -38,6 +39,7 @@ const methodIcons: Record<string, { icon: typeof CreditCard; labelKey: string }>
   apple: { icon: Smartphone, labelKey: "payments.methodApple" },
   stc: { icon: Smartphone, labelKey: "payments.methodStc" },
   bank: { icon: Building, labelKey: "payments.methodBank" },
+  payoneer: { icon: CreditCard, labelKey: "payments.methodPayoneer" },
 };
 
 const AdminPayments = () => {
@@ -62,7 +64,7 @@ const AdminPayments = () => {
 
       // Show toast
       toast.success(t("payments.notifications.newPayment", { defaultValue: "New Payment Received!" }), {
-        description: `${t("payments.table.amount")}: $${(order.totalAmount / 100).toFixed(2)}`,
+        description: `${t("payments.table.amount")}: ${formatPrice(order.totalAmount)}`,
       });
 
       // Refresh data
@@ -144,7 +146,7 @@ const AdminPayments = () => {
           `#${payment.id}`,
           `"${user?.name || 'Unknown'}"`,
           `"${user?.email || ""}"`,
-          `$${(payment.amount / 100).toFixed(2)}`,
+          formatPrice(payment.amount),
           `"${t(method.labelKey)}"`,
           new Date(payment.createdAt).toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : 'en-US'),
           payment.status
@@ -196,7 +198,7 @@ const AdminPayments = () => {
               <DollarSign className="w-5 h-5 text-success" />
             </div>
             <div className="text-start">
-              <p className="text-xl font-bold text-foreground">${(stats.totalRevenue / 100).toFixed(2)}</p>
+              <p className="text-xl font-bold text-foreground">{formatPrice(stats.totalRevenue)}</p>
               <p className="text-xs text-muted-foreground">{t("payments.stats.totalRevenue")}</p>
             </div>
           </div>
@@ -207,7 +209,7 @@ const AdminPayments = () => {
               <DollarSign className="w-5 h-5 text-info" />
             </div>
             <div className="text-start">
-              <p className="text-xl font-bold text-foreground">${(stats.todayRevenue / 100).toFixed(2)}</p>
+              <p className="text-xl font-bold text-foreground">{formatPrice(stats.todayRevenue)}</p>
               <p className="text-xs text-muted-foreground">{t("payments.stats.todayRevenue")}</p>
             </div>
           </div>
@@ -218,7 +220,7 @@ const AdminPayments = () => {
               <DollarSign className="w-5 h-5 text-warning" />
             </div>
             <div className="text-start">
-              <p className="text-xl font-bold text-foreground">${(stats.pending / 100).toFixed(2)}</p>
+              <p className="text-xl font-bold text-foreground">{formatPrice(stats.pending)}</p>
               <p className="text-xs text-muted-foreground">{t("payments.stats.pending")}</p>
             </div>
           </div>
@@ -229,7 +231,7 @@ const AdminPayments = () => {
               <DollarSign className="w-5 h-5 text-destructive" />
             </div>
             <div className="text-start">
-              <p className="text-xl font-bold text-foreground">${(stats.failed / 100).toFixed(2)}</p>
+              <p className="text-xl font-bold text-foreground">{formatPrice(stats.failed)}</p>
               <p className="text-xs text-muted-foreground">{t("payments.stats.failed")}</p>
             </div>
           </div>
@@ -255,10 +257,7 @@ const AdminPayments = () => {
             className="bg-secondary text-foreground rounded-lg px-4 py-2 text-sm border border-border focus:outline-none focus:border-primary"
           >
             <option value="all">{t("payments.methodAll")}</option>
-            <option value="card">{t("payments.methodCard")}</option>
-            <option value="apple">{t("payments.methodApple")}</option>
-            <option value="stc">{t("payments.methodStc")}</option>
-            <option value="bank">{t("payments.methodBank")}</option>
+            <option value="payoneer">Payoneer</option>
           </select>
         </div>
       </div>
@@ -293,7 +292,7 @@ const AdminPayments = () => {
                         <p className="text-sm font-medium text-foreground">{user?.name || 'Unknown'}</p>
                         <p className="text-xs text-muted-foreground">{user?.email || ''}</p>
                       </td>
-                      <td className="p-4 text-sm font-bold text-foreground text-start">${(payment.amount / 100).toFixed(2)}</td>
+                      <td className="p-4 text-sm font-bold text-foreground text-start">{formatPrice(payment.amount)}</td>
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <method.icon className="w-4 h-4 text-muted-foreground" />
@@ -411,7 +410,7 @@ const AdminPayments = () => {
               <div className="bg-secondary/50 rounded-lg p-4 space-y-3 text-start">
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-1">{t("payments.modal.amount")}</p>
-                  <p className="text-lg font-bold text-foreground">${(selectedPayment.amount / 100).toFixed(2)}</p>
+                  <p className="text-lg font-bold text-foreground">{formatPrice(selectedPayment.amount)}</p>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-1">{t("payments.modal.method")}</p>

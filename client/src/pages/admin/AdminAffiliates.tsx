@@ -19,6 +19,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "../../hooks/use-toast";
 import AdminLayout from "@/components/layouts/AdminLayout";
+import { formatPrice } from "../../lib/utils";
 import { useTranslation } from "react-i18next";
 
 export default function AdminAffiliates() {
@@ -117,9 +118,9 @@ function AffiliateRow({ affiliate }: { affiliate: any }) {
             </div>
          </TableCell>
          <TableCell className="text-start">{affiliate.commissionRate}%</TableCell>
-         <TableCell className="text-yellow-600 font-medium text-start">${((affiliate.stats?.pendingEarnings || 0) / 100).toFixed(2)}</TableCell>
-         <TableCell className="text-green-600 font-medium text-start">${((affiliate.stats?.approvedEarnings || 0) / 100).toFixed(2)}</TableCell>
-         <TableCell className="text-blue-600 font-medium text-start">${((affiliate.stats?.paidEarnings || 0) / 100).toFixed(2)}</TableCell>
+         <TableCell className="text-yellow-600 font-medium text-start">{formatPrice(affiliate.stats?.pendingEarnings || 0)}</TableCell>
+         <TableCell className="text-green-600 font-medium text-start">{formatPrice(affiliate.stats?.approvedEarnings || 0)}</TableCell>
+         <TableCell className="text-blue-600 font-medium text-start">{formatPrice(affiliate.stats?.paidEarnings || 0)}</TableCell>
          <TableCell className="text-end space-x-2">
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
                <DialogTrigger asChild>

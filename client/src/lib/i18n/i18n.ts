@@ -87,6 +87,7 @@ const resources = {
       currency: "USD",
       statusLabels: {
         pending: "Pending",
+        pending_payment: "Pending Payment",
         confirmed: "Confirmed",
         processing: "Processing",
         shipped: "Shipped",
@@ -545,6 +546,8 @@ const resources = {
         id: "Order ID",
         amount: "Amount",
         date: "Date",
+        payNow: "Complete Payment",
+        paying: "Redirecting...",
         details: {
           title: "Order Details #{{id}}",
           date: "Order Date",
@@ -819,6 +822,7 @@ const resources = {
       currency: "$",
       statusLabels: {
         pending: "قيد الانتظار",
+        pending_payment: "بانتظار الدفع",
         confirmed: "تم التأكيد",
         processing: "قيد التنفيذ",
         shipped: "تم الشحن",
@@ -1277,6 +1281,8 @@ const resources = {
         id: "رقم الطلب",
         amount: "المبلغ",
         date: "التاريخ",
+        payNow: "إكمال الدفع",
+        paying: "جاري التحويل...",
         details: {
           title: "تفاصيل الطلب #{{id}}",
           date: "تاريخ الطلب",

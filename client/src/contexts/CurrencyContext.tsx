@@ -106,7 +106,10 @@ export const CurrencyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     localStorage.setItem("preferredDisplayCurrency", code);
   };
 
-  const formatPrice = (amountInUsd: number) => {
+  const formatPrice = (amountInCents: number) => {
+    // Convert cents to main currency unit (dollars)
+    const amountInUsd = amountInCents / 100;
+    
     // Main price is ALWAYS USD ($X.XX)
     const main = `$${amountInUsd.toFixed(2)}`;
     

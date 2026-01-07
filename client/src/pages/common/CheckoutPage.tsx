@@ -19,26 +19,33 @@ const CheckoutPage = () => {
   const { t, i18n } = useTranslation(["checkout", "common"]);
   const isRtl = i18n.language === "ar";
   const [loading, setLoading] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("card");
   const [taxRate, setTaxRate] = useState<number>(15);
+  const [payoneerEnabled, setPayoneerEnabled] = useState(true);
+  const paymentMethod = "payoneer"; // Forced single method
 
   const paymentMethodsList = [
-    { id: "card", label: t("payment.methods.card.label"), description: t("payment.methods.card.description"), icon: CreditCard },
-    { id: "apple", label: t("payment.methods.apple.label"), description: t("payment.methods.apple.description"), icon: Smartphone },
-    { id: "stc", label: t("payment.methods.stc.label"), description: t("payment.methods.stc.description"), icon: Smartphone },
-    { id: "bank", label: t("payment.methods.bank.label"), description: t("payment.methods.bank.description"), icon: Building },
+    { id: "payoneer", label: t("payment.methods.payoneer.label", { defaultValue: "Payoneer" }), description: t("payment.methods.payoneer.description", { defaultValue: "Secure payment via Payoneer Gateway" }), icon: CreditCard },
   ];
 
   useEffect(() => {
-    const fetchTaxRate = async () => {
+    const fetchSettings = async () => {
       try {
         const { data } = await apiClient.getSetting('taxRate');
         setTaxRate(parseFloat(data.value));
       } catch (error) {
         console.error('Failed to fetch tax rate:', error);
       }
+      
+      try {
+        const result = await apiClient.getConfig();
+        if (result.data.payoneerEnabled) {
+           setPayoneerEnabled(true);
+        }
+      } catch (error) {
+        console.error('Failed to fetch config:', error);
+      }
     };
-    fetchTaxRate();
+    fetchSettings();
   }, []);
 
   const subtotal = totalPrice;
@@ -71,15 +78,19 @@ const CheckoutPage = () => {
         paymentMethod,
         referralCode
       });
-      // Clear referral code after successful use if desired, 
-      // but usually we keep it for potential future orders or session persistence.
-      // localStorage.removeItem('referralCode'); 
-      refreshNotifications();
-      toast.success(t("messages.success"));
-      clearCart();
-      setTimeout(() => navigate('/client/orders'), 1500);
-    } catch (error) {
-      toast.error(t("messages.error"));
+
+      // Handle Redirection
+      if (result.success && result.redirectUrl) {
+         toast.success(t("messages.redirecting", { defaultValue: "Redirecting to Payoneer..." }));
+         clearCart();
+         refreshNotifications();
+         window.location.href = result.redirectUrl;
+         return;
+      } else {
+         throw new Error(result.error || "Failed to initiate payment redirection");
+      }
+    } catch (error: any) {
+      toast.error(error.message || t("messages.error"));
       console.error('Error:', error);
     } finally {
       setLoading(false);
@@ -158,7 +169,7 @@ const CheckoutPage = () => {
                             </button>
                           </div>
                           <PriceDisplay 
-                            amount={(item.price / 100) * (item.quantity / 1000)} 
+                            amount={(item.price) * (item.quantity / 1000)} 
                             isBold 
                             className="items-end"
                           />
@@ -184,26 +195,23 @@ const CheckoutPage = () => {
                 <h2 className="text-xl font-bold">{t("payment.title")}</h2>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+              <div className="grid grid-cols-1 gap-3 mb-6">
                 {paymentMethodsList.map((method) => (
-                  <label
+                  <div
                     key={method.id}
-                    className="relative flex items-center gap-3 p-4 rounded-lg border border-border hover:border-primary cursor-pointer transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary/5"
+                    className="relative flex items-center gap-3 p-4 rounded-lg border border-primary bg-primary/5"
                   >
-                    <input 
-                      type="radio" 
-                      name="payment" 
-                      value={method.id}
-                      checked={paymentMethod === method.id}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="sr-only" 
-                    />
-                    <method.icon className="w-5 h-5 text-muted-foreground shrink-0" />
+                    <CreditCard className="w-5 h-5 text-primary shrink-0" />
                     <div className="text-start">
                       <p className="font-medium text-sm">{method.label}</p>
                       <p className="text-xs text-muted-foreground">{method.description}</p>
                     </div>
-                  </label>
+                    <div className="ms-auto">
+                      <span className="text-xs font-bold text-primary px-2 py-1 bg-primary/10 rounded uppercase">
+                        {t("payment.required", { defaultValue: "Required" })}
+                      </span>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -242,9 +250,10 @@ const CheckoutPage = () => {
                 <button 
                   type="submit"
                   disabled={loading || !user || items.length === 0}
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-4 rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
                 >
-                  {loading ? t("summary.processing") : t("summary.placeOrder")}
+                  <CreditCard className="w-5 h-5" />
+                  {loading ? t("summary.processing") : t("summary.payWithPayoneer", { defaultValue: "Pay with Payoneer" })}
                 </button>
                 <Link to="/services" className="block w-full border border-primary text-primary hover:bg-primary/5 py-3 rounded-lg font-semibold text-center transition-colors">
                   {t("summary.continueShopping")}
