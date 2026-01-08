@@ -323,7 +323,7 @@ const AdminServices = () => {
 
       {/* Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 [html[dir=rtl]_&]:translate-x-[24rem] sm:[html[dir=rtl]_&]:translate-x-0">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 [html[dir=rtl]_&]:translate-x-[11rem] sm:[html[dir=rtl]_&]:translate-x-0">
           <div className="bg-card rounded-xl border border-border p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto ">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-foreground">

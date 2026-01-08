@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -94,7 +94,7 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Cairo', sans-serif;
+    font-family: "Cairo", sans-serif;
   }
 
   html[dir="rtl"] {
@@ -137,7 +137,8 @@
   }
 
   .card-shadow-lg {
-    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    box-shadow: 0 10px 25px -5px rgb(0 0 0 / 0.1),
+      0 8px 10px -6px rgb(0 0 0 / 0.1);
   }
 }
 
@@ -175,13 +176,93 @@
   }
 
   .sidebar-item {
-    @apply flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-foreground transition-all duration-200
+    @apply flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-sidebar-accent hover:text-sidebar-foreground transition-all duration-200;
   }
-
-
 
   .sidebar-item-active {
     @apply bg-primary text-primary-foreground hover:bg-primary/90;
+  }
+
+  /* Desktop Sidebar - Always visible */
+  .sidebar-desktop {
+    @apply hidden lg:flex;
+  }
+
+  /* Mobile Sidebar Base Styles */
+  .sidebar-mobile {
+    @apply fixed top-0 w-full max-w-xs bg-sidebar flex flex-col z-50;
+    height: 100vh;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* LTR: Slide from left */
+  .sidebar-ltr {
+    left: 0;
+  }
+
+  .sidebar-ltr.sidebar-closed {
+    transform: translateX(-100%);
+    visibility: hidden;
+  }
+
+  .sidebar-ltr.sidebar-open {
+    transform: translateX(0);
+    visibility: visible;
+  }
+
+  /* RTL: Slide from right */
+  .sidebar-rtl {
+    right: 0;
+  }
+
+  .sidebar-rtl.sidebar-closed {
+    transform: translateX(100%);
+    visibility: hidden;
+  }
+
+  .sidebar-rtl.sidebar-open {
+    transform: translateX(0);
+    visibility: visible;
+  }
+
+  /* Backdrop overlay for mobile */
+  .sidebar-backdrop {
+    @apply fixed inset-0 bg-black/30 backdrop-blur-sm z-40 lg:hidden;
+    animation: fadeIn 0.2s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Close button in mobile sidebar */
+  .sidebar-close-btn {
+    @apply absolute top-4 p-2 rounded-lg hover:bg-sidebar-accent transition-colors;
+    right: 1rem;
+  }
+
+  /* RTL: Adjust close button position */
+  html[dir="rtl"] .sidebar-close-btn {
+    right: auto;
+    left: 1rem;
+  }
+
+  /* Hide sidebar on mobile by default, show on desktop */
+  @media (max-width: 1023px) {
+    .sidebar-desktop {
+      @apply hidden;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .sidebar-mobile {
+      @apply hidden;
+    }
   }
 
   .stat-card {

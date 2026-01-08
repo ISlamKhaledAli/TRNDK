@@ -19,7 +19,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 [html[dir=rtl]_&]:translate-x-[17rem] sm:[html[dir=rtl]_&]:translate-x-0",
+      "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 [html[dir=rtl]_&]:translate-x-[0.8rem] sm:[html[dir=rtl]_&]:translate-x-0",
       className,
     )}
     {...props}
@@ -42,7 +42,7 @@ const DialogContent = React.forwardRef<
         
         // Structure overrides
         "flex flex-col",
-        "w-[140vw] max-h-[90vh]", // Dimensions (90vw mobile)
+        "w-[100vw] max-h-[90vh]", // Dimensions (90vw mobile)
         "gap-0 p-0", 
         "overflow-hidden",
         "sm:rounded-lg",
@@ -55,7 +55,7 @@ const DialogContent = React.forwardRef<
         
         // RTL Center Override (Move Right)
         // Using multiple selectors to catch standard dir usage
-        "[dir=rtl]_&]:translate-x-[50%] [.rtl_&]:translate-x-[50%] [html[dir=rtl]_&]:translate-x-[50%]",
+        "[dir=rtl]_&]:translate-x-[50%] [.rtl_&]:translate-x-[50%] [html[dir=rtl]_&]:translate-x-[1%] xl:[html[dir=rtl]_&]:translate-x-[50%]",
 
         // Animations
         "data-[state=open]:animate-in data-[state=closed]:animate-out",

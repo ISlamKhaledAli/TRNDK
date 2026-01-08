@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import ClientSidebar from "../common/ClientSidebar";
 import DashboardTopbar from "../common/DashboardTopbar";
+import ResponsiveSidebar from "../common/ResponsiveSidebar";
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -9,12 +10,12 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   return (
     <div className="min-h-screen flex w-full">
-      <ClientSidebar />
+      <ResponsiveSidebar isAdmin={false}>
+        <ClientSidebar />
+      </ResponsiveSidebar>
       <div className="flex-1 flex flex-col bg-background">
         <DashboardTopbar />
-        <main className="flex-1 p-6 overflow-auto">
-          {children}
-        </main>
+        <main className="flex-1 p-6 overflow-auto">{children}</main>
       </div>
     </div>
   );
