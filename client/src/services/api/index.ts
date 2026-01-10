@@ -1,11 +1,11 @@
 const API_BASE = '/api/v1';
 
 export const apiClient = {
-  async login(email: string, password: string) {
+  async login(email: string, password: string, remember: boolean = false) {
     const res = await fetch(`${API_BASE}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, remember }),
     });
     if (!res.ok) throw new Error('Login failed');
     return res.json();

@@ -6,9 +6,11 @@ import { apiClient } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import Brand from "@/components/common/Brand";
+import PasswordStrength from "@/components/auth/PasswordStrength";
 
 const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [passwordValue, setPasswordValue] = useState("");
   const [loading, setLoading] = useState(false);
   const { t, i18n } = useTranslation(["auth", "common"]);
   const isRtl = i18n.language === "ar";
@@ -23,6 +25,10 @@ const RegisterPage = () => {
     const name = formData.get("name") as string;
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
+    // Update local state if needed via onChange, wait...
+    // The component 'RegisterPage' doesn't have local state for password string, only 'showPassword'.
+    // I need to add state for 'passwordValue' to pass it to PasswordStrength.
+    // See next replacement.
     const terms = formData.get("terms");
 
     if (!terms) {
@@ -70,7 +76,7 @@ const RegisterPage = () => {
         </div>
 
         {/* Card */}
-        <div className="bg-card rounded-2xl border border-border p-8">
+        <div className="bg-card rounded-2xl border border-border p-8 animate-in fade-in slide-in-from-bottom-8 duration-700 shadow-xl">
           <h1 className="text-2xl font-bold text-center mb-2">
             {t("register.title")}
           </h1>
@@ -168,6 +174,7 @@ const RegisterPage = () => {
                     isRtl ? "pr-10 pl-10" : "pl-10 pr-10"
                   }`}
                   dir="ltr"
+                  onChange={(e) => setPasswordValue(e.target.value)}
                   required
                 />
                 <button
@@ -184,6 +191,7 @@ const RegisterPage = () => {
                   )}
                 </button>
               </div>
+              <PasswordStrength password={passwordValue} />
             </div>
 
             {/* Terms */}

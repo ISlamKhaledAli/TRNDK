@@ -22,9 +22,10 @@ const LoginPage = () => {
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
+    const remember = formData.get("remember") === "on";
 
     try {
-      const response = await apiClient.login(email, password);
+      const response = await apiClient.login(email, password, remember);
       login(response.user);
 
       toast.success(t("common:messages.success"));
@@ -47,7 +48,7 @@ const LoginPage = () => {
         </div>
 
         {/* Card */}
-        <div className="bg-card rounded-2xl border border-border p-8">
+        <div className="bg-card rounded-2xl border border-border p-8 animate-in fade-in slide-in-from-bottom-8 duration-700 shadow-xl">
           <h1 className="text-2xl font-bold text-center mb-2">
             {t("login.title")}
           </h1>
@@ -120,6 +121,7 @@ const LoginPage = () => {
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
+                  name="remember"
                   className="w-4 h-4 rounded border-border text-primary focus:ring-primary"
                 />
                 <span className="text-sm text-muted-foreground">

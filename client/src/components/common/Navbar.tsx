@@ -23,7 +23,7 @@ import CurrencySelector from "./CurrencySelector";
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { t } = useTranslation("common");
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
   const { totalItems } = useCart();
   const { user, logout } = useAuth();
   const [mounted, setMounted] = useState(false);
@@ -87,11 +87,12 @@ const Navbar = () => {
 
             {/* Theme Toggle */}
             <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
               className="p-2 rounded-lg hover:bg-accent transition-colors "
-              title={theme === "dark" ? t("theme.switchToLight") : t("theme.switchToDark")}
+              title={resolvedTheme === "dark" ? t("theme.switchToLight") : t("theme.switchToDark")}
+              aria-label={resolvedTheme === "dark" ? t("theme.switchToLight") : t("theme.switchToDark")}
             >
-              {mounted && theme === "dark" ? (
+              {mounted && resolvedTheme === "dark" ? (
                 <Sun className="w-5 h-5 text-red-500 hover:text-red-600 transition-colors" />
               ) : (
                 <Moon className="w-5 h-5 text-red-500 hover:text-red-600 transition-colors" />

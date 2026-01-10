@@ -21,10 +21,13 @@ import AdminLayout from "@/components/layouts/AdminLayout";
 import { formatPrice } from "../../lib/utils";
 import { useTranslation } from "react-i18next";
 
+import { useLoaderData } from "react-router-dom";
+
 export default function AdminPayouts() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const loaderData = useLoaderData() as { requests: any } | null;
 
   const {
     data: requestsRes,
@@ -35,6 +38,7 @@ export default function AdminPayouts() {
     queryKey: ["admin-payout-requests"],
     queryFn: () => apiClient.getAdminPayoutRequests(),
     retry: 1,
+    initialData: loaderData?.requests
   });
 
   const payoutMutation = useMutation({

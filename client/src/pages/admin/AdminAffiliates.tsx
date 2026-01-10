@@ -22,12 +22,17 @@ import AdminLayout from "@/components/layouts/AdminLayout";
 import { formatPrice } from "../../lib/utils";
 import { useTranslation } from "react-i18next";
 
+import { useLoaderData } from "react-router-dom";
+
 export default function AdminAffiliates() {
   const { t } = useTranslation();
+  const loaderData = useLoaderData() as { affiliates: any } | null;
+  
   const { data: affiliatesRes, isLoading } = useQuery({
     queryKey: ['admin-affiliates'],
     queryFn: apiClient.getAdminAffiliates,
-    retry: false
+    retry: false,
+    initialData: loaderData?.affiliates
   });
 
   // Ensure data structure is correct

@@ -43,6 +43,12 @@ The system follows a streamlined flow: **Cart → Checkout → Orders**, where e
 - Request payouts when approved balance reaches $25 minimum
 - View referral statistics and performance
 
+### VIP User
+- Special status granted by administrators
+- Enhanced user privileges and priority support
+- Visible VIP badge in the system
+- Managed through Admin User Management panel
+
 ---
 
 ## 🛠️ Tech Stack
@@ -88,6 +94,16 @@ Services → Cart → Checkout → Orders (grouped by transactionId)
 2. **Checkout**: User provides details and payment method
 3. **Orders**: System creates **one Order per service** in the cart
 4. **Transaction Grouping**: All orders from a single checkout share the same `transactionId`
+
+### Order Status Values
+
+Orders progress through the following statuses:
+
+- **pending**: Order placed, awaiting processing
+- **processing**: Order is being worked on
+- **completed**: Order successfully fulfilled
+- **cancelled**: Order was cancelled
+- **refunded**: Payment was refunded to customer
 
 ### Key Architectural Rules
 
@@ -189,6 +205,37 @@ Referral Link → Order Placed → Order Completed → Commission Approved → P
 > - **Auto-Approval**: Commissions automatically move from `pending` to `approved` when order status changes to `completed`
 > - **Tracking**: Referral codes are stored in localStorage and attached to orders during checkout
 
+### Payout Model
+
+The system uses a dedicated `Payout` model to manage affiliate withdrawals:
+
+**Payout Statuses:**
+1. **pending**: Payout request submitted, awaiting admin review
+2. **processing**: Admin is processing the payment
+3. **completed**: Payment successfully sent to affiliate
+4. **failed**: Payment failed, requires admin intervention
+
+**Payout Flow:**
+```
+Affiliate Requests → Admin Reviews → Processing → Payment Gateway → Completed/Failed
+```
+
+**Database Structure:**
+- Amount stored in USD cents
+- Supports multiple payment methods (Payoneer, PayPal, etc.)
+- Tracks transaction IDs from payment providers
+- Links to multiple orders included in the payout
+
+### Commission Status Flow
+
+Each order tracks commission status independently:
+
+- **none**: No affiliate attached to this order
+- **pending**: Order placed but not yet completed
+- **approved**: Order completed, commission ready for withdrawal
+- **paid**: Commission included in a processed payout
+- **cancelled**: Order was cancelled, commission voided
+
 ### Affiliate Workflow
 
 1. **Join Program**: User enrolls and receives a unique referral code
@@ -204,6 +251,45 @@ Referral Link → Order Placed → Order Completed → Commission Approved → P
 - Adjust individual commission rates (0-100%)
 - Process payout requests from dedicated admin panel
 - Receive real-time notifications for new payout requests
+
+---
+
+## 💳 Payment Gateway Integration
+
+### Payoneer
+
+The platform supports Payoneer as a payment gateway for processing affiliate payouts.
+
+#### Configuration
+
+Add the following variables to your `.env` file:
+
+```env
+# Payoneer Configuration
+PAYONEER_ENABLED=false          # Set to true to enable Payoneer
+PAYONEER_ENV=sandbox            # 'sandbox' or 'production'
+PAYONEER_CLIENT_ID=             # Your Payoneer client ID
+PAYONEER_CLIENT_SECRET=         # Your Payoneer client secret
+```
+
+#### Setup Steps
+
+1. **Register with Payoneer**: Create a developer account at [Payoneer Developer Portal](https://developer.payoneer.com)
+2. **Get Credentials**: Obtain your Client ID and Client Secret
+3. **Configure Environment**: Update `.env` with your credentials
+4. **Enable Integration**: Set `PAYONEER_ENABLED=true`
+5. **Test in Sandbox**: Use `PAYONEER_ENV=sandbox` for testing
+6. **Go Live**: Switch to `PAYONEER_ENV=production` when ready
+
+#### Features
+
+- Automated payout processing for affiliates
+- Support for multiple currencies (converted from USD)
+- Transaction tracking and reconciliation
+- Sandbox mode for safe testing
+
+> [!WARNING]
+> Always test Payoneer integration in sandbox mode before enabling in production.
 
 ---
 
@@ -449,12 +535,50 @@ TRNDK/
 | `GOOGLE_CLIENT_SECRET` | Google OAuth secret | From Google Console |
 | `ADMIN_EMAIL` | Initial admin email | `admin@example.com` |
 | `ADMIN_PASSWORD` | Initial admin password | Strong password |
+| `PAYONEER_ENABLED` | Enable Payoneer integration | `false` |
+| `PAYONEER_ENV` | Payoneer environment | `sandbox` or `production` |
+| `PAYONEER_CLIENT_ID` | Payoneer client ID | From Payoneer Developer Portal |
+| `PAYONEER_CLIENT_SECRET` | Payoneer client secret | From Payoneer Developer Portal |
 
 ### Optional Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `SESSION_SECRET` | Session encryption key | Random string |
+
+---
+
+## ⚙️ Platform Settings
+
+The application uses a flexible key-value settings system for platform configuration.
+
+### Settings Model
+
+```prisma
+model Setting {
+  key       String   @id
+  value     String   @db.Text
+  updatedAt DateTime @default(now()) @updatedAt
+}
+```
+
+### Usage
+
+- **Admin Settings Page**: Manage platform-wide configurations
+- **Dynamic Configuration**: Update settings without code changes
+- **Key-Value Storage**: Flexible structure for any configuration need
+
+### Common Settings
+
+- Platform name and branding
+- Contact information
+- Feature flags
+- Business rules and limits
+- Email templates
+- Payment gateway preferences
+
+> [!TIP]
+> Settings are cached and updated in real-time across the application.
 
 ---
 
@@ -477,12 +601,54 @@ npm run db:push
 npx prisma generate
 ```
 
-### Type Checking
+### Available NPM Scripts
 
 ```bash
-# Run TypeScript type checking
-npm run check
+# Development
+npm run dev          # Start development server with hot reload
+
+# Production
+npm run build        # Build application for production
+npm start            # Start production server
+
+# Database
+npm run db:push      # Push Prisma schema changes to database
+
+# Type Checking
+npm run check        # Run TypeScript type checking
 ```
+
+### Verification Scripts
+
+The `/script` folder contains utility scripts for testing and verification:
+
+| Script | Purpose |
+|--------|----------|
+| `build.ts` | Custom production build script |
+| `check-config.ts` | Validate environment configuration |
+| `check-payout-type.ts` | Verify payout type definitions |
+| `e2e-payment.ts` | End-to-end payment flow testing |
+| `reset-db.ts` | Reset database to clean state |
+| `verify-delayed-notif.ts` | Test notification delay functionality |
+| `verify-enabled-payment.ts` | Check payment gateway status |
+| `verify-payment-gateway.ts` | Verify payment gateway integration |
+| `verify-payoneer.ts` | Test Payoneer integration |
+
+**Running Verification Scripts:**
+
+```bash
+# Example: Run payment gateway verification
+npx tsx script/verify-payment-gateway.ts
+
+# Example: Test Payoneer integration
+npx tsx script/verify-payoneer.ts
+
+# Example: Run end-to-end payment test
+npx tsx script/e2e-payment.ts
+```
+
+> [!TIP]
+> Run verification scripts before deploying to production to ensure all integrations are working correctly.
 
 ### Real-time Notifications
 

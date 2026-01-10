@@ -115,16 +115,20 @@ const DashboardTopbar = ({ isAdmin = false }: DashboardTopbarProps) => {
               asChild
               className="cursor-pointer justify-start gap-2 text-start"
             >
-              <Link to="/admin/dashboard">
+              <Link to={user?.role === "admin" ? "/admin/dashboard" : "/client/dashboard"}>
                 <LayoutDashboard className="w-4 h-4" />
-                <span>{t("userMenu.adminDashboard")}</span>
+                <span>
+                  {user?.role === "admin"
+                    ? t("userMenu.adminDashboard")
+                    : t("userMenu.dashboard", "Dashboard")}
+                </span>
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem
               asChild
               className="cursor-pointer justify-start gap-2 text-start"
             >
-              <Link to={isAdmin ? "/client/profile" : "/client/profile"}>
+              <Link to={user?.role === "admin" ? "/admin/profile" : "/client/profile"}>
                 <Settings className="w-4 h-4" />
                 <span>{t("userMenu.settings")}</span>
               </Link>

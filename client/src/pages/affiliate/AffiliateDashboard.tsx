@@ -16,6 +16,8 @@ import { useTranslation } from "react-i18next";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../../components/ui/dialog";
 import { useState } from "react";
 
+import { useLoaderData } from "react-router-dom";
+
 export default function AffiliateDashboard() {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -24,11 +26,14 @@ export default function AffiliateDashboard() {
   const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
   const [accountNumber, setAccountNumber] = useState("");
 
+  const loaderData = useLoaderData() as { affiliate: any } | null;
+
   // Fetch Affiliate Data
   const { data: affiliateData, isLoading, isFetching, error } = useQuery({
     queryKey: ['affiliate'],
     queryFn: () => apiClient.getAffiliateMe(),
-    retry: false
+    retry: false,
+    initialData: loaderData?.affiliate
   });
 
   // Join Mutation

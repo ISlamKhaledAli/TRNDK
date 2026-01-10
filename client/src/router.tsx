@@ -4,6 +4,7 @@ import { apiClient } from "@/services/api";
 // Layouts and Guards
 import PrivateRoute from "@/components/auth/PrivateRoute";
 import PublicRoute from "@/components/auth/PublicRoute";
+import RootLayout, { RootFallback } from "@/components/layouts/RootLayout";
 
 // Public Pages
 import HomePage from "@/pages/common/HomePage";
@@ -37,16 +38,12 @@ import AdminAffiliates from "./pages/admin/AdminAffiliates";
 import ReferralTracker from "@/components/common/ReferralTracker";
 
 
-const RootFallback = () => (
-  <div className="flex items-center justify-center min-h-screen bg-background">
-    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-  </div>
-);
+
 
 export const router = createBrowserRouter([
   {
     path: "/",
-    element: <><ReferralTracker /><Outlet /></>,
+    element: <RootLayout />,
     errorElement: <NotFound />,
     HydrateFallback: RootFallback,
     children: [
@@ -172,7 +169,15 @@ export const router = createBrowserRouter([
           },
           {
              path: "/client/affiliates",
-             element: <AffiliateDashboard />
+             element: <AffiliateDashboard />,
+             loader: async () => {
+               try {
+                 const res = await apiClient.getAffiliateMe();
+                 return { affiliate: res.data || res };
+               } catch (e) {
+                 return { affiliate: null };
+               }
+             }
           },
         ]
       },
@@ -253,11 +258,29 @@ export const router = createBrowserRouter([
           },
           {
              path: "/admin/affiliates",
-             element: <AdminAffiliates />
+             element: <AdminAffiliates />,
+             loader: async () => {
+               try {
+                 const res = await apiClient.getAdminAffiliates();
+                 return { affiliates: res.data || res };
+               } catch (e) {
+                 if ((e as any).response?.status === 401) return null;
+                 throw new Response("Failed to load affiliates", { status: 500 });
+               }
+             }
           },
           {
             path: "/admin/affiliate-payouts",
-            element: <AdminPayouts />
+            element: <AdminPayouts />,
+            loader: async () => {
+              try {
+                const res = await apiClient.getAdminPayoutRequests();
+                return { requests: res.data || res };
+              } catch (e) {
+                if ((e as any).response?.status === 401) return null;
+                throw new Response("Failed to load payouts", { status: 500 });
+              }
+            }
           },
         ]
       },

@@ -142,18 +142,17 @@ const CheckoutPage = () => {
 
         {!user && (
           <Alert type="info">
-            <Trans
-              i18nKey="loginAlert"
-              ns="checkout"
-              components={{
-                link: (
+              <Trans
+                i18nKey="loginAlert"
+                ns="checkout"
+                components={[
                   <Link
                     to="/login"
-                    className="text-primary font-medium hover:underline"
+                    key="0"
+                    className="text-primary font-bold hover:underline mx-1"
                   />
-                ),
-              }}
-            />
+                ]}
+              />
           </Alert>
         )}
 
@@ -325,9 +324,7 @@ const CheckoutPage = () => {
                   <CreditCard className="w-5 h-5" />
                   {loading
                     ? t("summary.processing")
-                    : t("summary.payWithPayoneer", {
-                        defaultValue: "Pay with Payoneer",
-                      })}
+                    : t("summary.payWithPayoneer")}
                 </button>
                 <Link
                   to="/services"

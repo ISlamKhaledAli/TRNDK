@@ -53,7 +53,7 @@ model Affiliate {
   id             Int      @id @default(autoincrement())
   userId         Int      @unique @map("user_id")
   referralCode   String   @unique @map("referral_code")
-  commissionRate Float    @default(10.0) @map("commission_rate")
+  commissionRate Float    @default(5.0) @map("commission_rate")
   isActive       Boolean  @default(true) @map("is_active")
   payoutMethod   String?  @map("payout_method")
   payoutEmail    String?  @map("payout_email")

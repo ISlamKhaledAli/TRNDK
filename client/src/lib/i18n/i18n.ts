@@ -136,6 +136,20 @@ const resources = {
         loginLink: "Login",
         orContinueWith: "Or continue with",
       },
+      passwordStrength: {
+        title: "Strength",
+        weak: "Weak",
+        fair: "Fair",
+        good: "Good",
+        strong: "Strong",
+        enterPassword: "Enter password",
+        requirements: {
+          length: "At least 8 characters",
+          number: "Contains number",
+          special: "Contains special char",
+          uppercase: "Contains uppercase",
+        },
+      },
     },
     admin: {
       sidebar: {
@@ -601,8 +615,8 @@ const resources = {
         cart: "Cart",
         checkout: "Checkout",
       },
-      loginAlert: "Already have an account? {{link}} to save and track your orders easily.",
-      loginLink: "Login now",
+      loginAlert: "Already have an account? <0>Log in now</0> to save and track your orders easily.",
+      loginLink: "Log in now",
       cart: {
         title: "Selected Items",
         empty: "Cart is empty",
@@ -628,6 +642,7 @@ const resources = {
         total: "Total",
         placeOrder: "Confirm Order",
         processing: "Processing...",
+        payWithPayoneer: "Pay with Payoneer",
         continueShopping: "Continue Shopping",
       },
       messages: {
@@ -870,6 +885,20 @@ const resources = {
         haveAccount: "لديك حساب بالفعل؟",
         loginLink: "تسجيل الدخول",
         orContinueWith: "أو المتابعة باستخدام",
+      },
+      passwordStrength: {
+        title: "قوة كلمة المرور",
+        weak: "ضعيفة",
+        fair: "متوسطة",
+        good: "جيدة",
+        strong: "قوية",
+        enterPassword: "أدخل كلمة المرور",
+        requirements: {
+          length: "8 أحرف على الأقل",
+          number: "رقم واحد على الأقل",
+          special: "رمز خاص واحد على الأقل",
+          uppercase: "حرف كبير واحد على الأقل",
+        },
       },
     },
     admin: {
@@ -1336,8 +1365,8 @@ const resources = {
         cart: "سلة المشتريات",
         checkout: "إتمام الطلب",
       },
-      loginAlert: "هل لديك حساب بالفعل؟ {{link}} لحفظ طلباتك وتتبعها بسهولة.",
-      loginLink: "سجل دخولك الآن",
+      loginAlert: "هل لديك حساب بالفعل؟ <0>سجل الدخول الآن</0> لحفظ طلباتك وتتبعها بسهولة.",
+      loginLink: "سجل الدخول الآن",
       cart: {
         title: "العناصر المختارة",
         empty: "السلة فارغة",
@@ -1363,6 +1392,7 @@ const resources = {
         total: "الإجمالي",
         placeOrder: "تأكيد الطلب",
         processing: "جاري المعالجة...",
+        payWithPayoneer: "الدفع عبر Payoneer",
         continueShopping: "متابعة التسوق",
       },
       messages: {
