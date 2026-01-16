@@ -59,7 +59,7 @@ async function main() {
       price: 500,
       category: "Instagram",
       duration: "1-2 hours",
-      imageUrl: "https://images.unsplash.com/photo-1611267254323-4db7b39c732c?w=400&h=400&fit=crop",
+      imagePath: "https://images.unsplash.com/photo-1611267254323-4db7b39c732c?w=400&h=400&fit=crop",
     },
     {
       name: "Facebook Page Likes",
@@ -67,7 +67,7 @@ async function main() {
       price: 800,
       category: "Facebook",
       duration: "6-12 hours",
-      imageUrl: "https://images.unsplash.com/photo-1543269865-cbf427ffebad?w=400&h=400&fit=crop",
+      imagePath: "https://images.unsplash.com/photo-1543269865-cbf427ffebad?w=400&h=400&fit=crop",
     },
     {
       name: "TikTok Views",
@@ -75,7 +75,7 @@ async function main() {
       price: 200,
       category: "TikTok",
       duration: "15-30 minutes",
-      imageUrl: "https://images.unsplash.com/photo-1598128558393-70ff21433be0?w=400&h=400&fit=crop",
+      imagePath: "https://images.unsplash.com/photo-1598128558393-70ff21433be0?w=400&h=400&fit=crop",
     },
     {
       name: "YouTube Subscribers",
@@ -83,7 +83,7 @@ async function main() {
       price: 1500,
       category: "YouTube",
       duration: "24-48 hours",
-      imageUrl: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=400&fit=crop",
+      imagePath: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=400&fit=crop",
     },
   ];
 

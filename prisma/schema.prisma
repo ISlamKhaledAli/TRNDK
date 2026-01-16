@@ -35,7 +35,7 @@ model Service {
   description String   @db.Text
   descriptionEn String? @map("description_en") @db.Text
   price       Int // in cents
-  imageUrl    String?  @map("image_url")
+  imagePath   String?  @map("image_path")
   category    String
   duration    String?
   isActive    Boolean  @default(true) @map("is_active")

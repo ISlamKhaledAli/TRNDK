@@ -29,7 +29,7 @@ interface Service {
   price: number;
   category?: string;
   duration?: string;
-  imageUrl?: string;
+  imagePath?: string;
   isActive?: boolean;
   quantity?: number;
 }
@@ -140,7 +140,7 @@ const ServiceDetailsPage = () => {
       price: service.price,
       quantity: quantity,
       link,
-      imageUrl: service.imageUrl,
+      imagePath: service.imagePath,
     });
 
     toast.success(t("serviceDetails:addedToCart"));
@@ -224,8 +224,7 @@ const ServiceDetailsPage = () => {
                 <div className="w-full md:w-64 h-48 md:h-auto rounded-lg overflow-hidden bg-muted shrink-0">
                   <img
                     src={
-                      service.imageUrl ||
-                      "https://images.unsplash.com/photo-1493711662062-fa541f7f3d24?w=400&h=400&fit=crop"
+                      (service.imagePath ? (service.imagePath.startsWith('http') ? service.imagePath : `/${service.imagePath}`) : "https://images.unsplash.com/photo-1493711662062-fa541f7f3d24?w=400&h=400&fit=crop")
                     }
                     alt={localizedName}
                     className={`w-full h-full object-cover ${
@@ -527,8 +526,7 @@ const ServiceDetailsPage = () => {
                   >
                     <img
                       src={
-                        svc.imageUrl ||
-                        "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=100&h=100&fit=crop"
+                        (svc.imagePath ? (svc.imagePath.startsWith('http') ? svc.imagePath : `/${svc.imagePath}`) : "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=100&h=100&fit=crop")
                       }
                       alt={svc.name}
                       className="w-12 h-12 rounded object-cover"

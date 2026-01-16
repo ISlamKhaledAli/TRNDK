@@ -77,8 +77,12 @@ export const router = createBrowserRouter([
         path: "/services/other",
         element: <OtherServicesPage />,
         loader: async () => {
-          const { data } = await apiClient.getServices();
-          return { services: data };
+          try {
+            const res = await apiClient.getServices();
+            return { services: res.data || res };
+          } catch (e) {
+            throw new Response("Failed to load other services", { status: 500 });
+          }
         },
       },
       {

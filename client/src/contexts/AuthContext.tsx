@@ -9,6 +9,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { apiClient } from "@/services/api";
 import { useQuery } from "@tanstack/react-query";
+import { RootFallback } from "@/components/layouts/RootLayout";
 
 export interface User {
   id: number;
@@ -70,7 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ user, isLoading, login, updateUser, logout, isAuthenticated, isAdmin }}>
-      {children}
+      {!isLoading ? children : <RootFallback />}
     </AuthContext.Provider>
   );
 }

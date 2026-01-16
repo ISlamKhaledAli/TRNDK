@@ -170,7 +170,7 @@ const CheckoutPage = () => {
                     <div key={item.id} className="p-4 flex gap-4">
                       <div className="w-20 h-20 rounded-lg bg-muted overflow-hidden shrink-0">
                         <img
-                          src={item.imageUrl}
+                          src={item.imagePath ? (item.imagePath.startsWith('http') ? item.imagePath : `/${item.imagePath}`) : "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=100&h=100&fit=crop"}
                           alt={item.name}
                           className="w-full h-full object-cover"
                         />

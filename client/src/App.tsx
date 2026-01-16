@@ -19,31 +19,38 @@ import { AuthProvider } from "./contexts/AuthContext";
 import { CartProvider } from "./contexts/CartContext";
 import { NotificationsProvider } from "./contexts/NotificationsContext";
 import { router } from "./router";
+import GlobalErrorBoundary from "./components/common/GlobalErrorBoundary";
+import { Suspense } from "react";
+import { RootFallback } from "./components/layouts/RootLayout";
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-      <LanguageProvider>
-        <SidebarProvider>
-          <AuthProvider>
-            <NotificationsProvider>
-              <CartProvider>
-                <CurrencyProvider>
-                  <TooltipProvider>
-                    <Toaster />
-                    <Sonner />
-                    <RouterProvider router={router} />
-                  </TooltipProvider>
-                </CurrencyProvider>
-              </CartProvider>
-            </NotificationsProvider>
-          </AuthProvider>
-        </SidebarProvider>
-      </LanguageProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
+  <GlobalErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <LanguageProvider>
+          <SidebarProvider>
+            <AuthProvider>
+              <NotificationsProvider>
+                <CartProvider>
+                  <CurrencyProvider>
+                    <TooltipProvider>
+                      <Toaster />
+                      <Sonner />
+                      <Suspense fallback={<RootFallback />}>
+                        <RouterProvider router={router} />
+                      </Suspense>
+                    </TooltipProvider>
+                  </CurrencyProvider>
+                </CartProvider>
+              </NotificationsProvider>
+            </AuthProvider>
+          </SidebarProvider>
+        </LanguageProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  </GlobalErrorBoundary>
 );
 
 export default App;

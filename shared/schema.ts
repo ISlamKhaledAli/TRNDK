@@ -47,7 +47,7 @@ export interface Service {
   description: string;
   descriptionEn?: string | null;
   price: number;
-  imageUrl?: string | null;
+  imagePath?: string | null;
   category: string;
   duration?: string | null;
   isActive?: boolean | null;
@@ -142,7 +142,7 @@ export const insertServiceSchema = z.object({
   description: z.string().min(1, "Description is required"),
   descriptionEn: z.string().optional().nullable(),
   price: z.number().int().positive("Price must be a positive integer"),
-  imageUrl: z.string().optional().nullable(),
+  imagePath: z.string().optional().nullable(),
   category: z.enum(SERVICE_CATEGORIES, {
     required_error: "Category is required",
     invalid_type_error: "Invalid category",

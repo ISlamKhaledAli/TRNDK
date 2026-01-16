@@ -11,6 +11,8 @@ import { type User, type InsertUser, type Service, type InsertService, type Orde
 import { hashSync } from "bcryptjs";
 import { db } from "../config/db";
 import { Prisma } from "@prisma/client";
+import fs from "fs";
+import path from "path";
 
 export interface StorageResult<T> {
   success: boolean;
@@ -183,7 +185,7 @@ export class MemStorage implements IStorage {
       price: 500,
       category: "Instagram",
       duration: "1-2 hours",
-      imageUrl: "https://images.unsplash.com/photo-1611267254323-4db7b39c732c?w=400&h=400&fit=crop",
+      imagePath: "https://images.unsplash.com/photo-1611267254323-4db7b39c732c?w=400&h=400&fit=crop",
     });
 
     this.createService({
@@ -194,7 +196,7 @@ export class MemStorage implements IStorage {
       price: 800,
       category: "Facebook",
       duration: "6-12 hours",
-      imageUrl: "https://images.unsplash.com/photo-1543269865-cbf427ffebad?w=400&h=400&fit=crop",
+      imagePath: "https://images.unsplash.com/photo-1543269865-cbf427ffebad?w=400&h=400&fit=crop",
     });
 
     this.createService({
@@ -205,7 +207,7 @@ export class MemStorage implements IStorage {
       price: 200,
       category: "TikTok",
       duration: "15-30 minutes",
-      imageUrl: "https://images.unsplash.com/photo-1598128558393-70ff21433be0?w=400&h=400&fit=crop",
+      imagePath: "https://images.unsplash.com/photo-1598128558393-70ff21433be0?w=400&h=400&fit=crop",
     });
 
     this.createService({
@@ -216,7 +218,7 @@ export class MemStorage implements IStorage {
       price: 1500,
       category: "YouTube",
       duration: "24-48 hours",
-      imageUrl: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=400&fit=crop",
+      imagePath: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=400&fit=crop",
     });
 
     // Seed Payments
@@ -356,7 +358,7 @@ export class MemStorage implements IStorage {
       id, 
       nameEn: insertService.nameEn ?? null,
       descriptionEn: insertService.descriptionEn ?? null,
-      imageUrl: insertService.imageUrl ?? null,
+      imagePath: insertService.imagePath ?? null,
       duration: insertService.duration ?? null,
       isActive: insertService.isActive ?? true, 
       createdAt: new Date(), 
@@ -999,7 +1001,7 @@ export class DatabaseStorage implements IStorage {
         price: insertService.price,
         category: insertService.category,
         isActive: insertService.isActive ?? undefined,
-        imageUrl: insertService.imageUrl ?? undefined,
+        imagePath: insertService.imagePath ?? undefined,
         duration: insertService.duration ?? undefined,
       };
       const service = await db.service.create({ data });
@@ -1020,7 +1022,7 @@ export class DatabaseStorage implements IStorage {
         price: data.price,
         category: data.category,
         isActive: data.isActive,
-        imageUrl: data.imageUrl,
+        imagePath: data.imagePath,
         duration: data.duration,
         updatedAt: data.updatedAt ?? new Date(),
       };
@@ -1040,6 +1042,23 @@ export class DatabaseStorage implements IStorage {
 
   async deleteService(id: number): Promise<StorageResult<void>> {
     try {
+      // Get service first to find image path
+      const service = await db.service.findUnique({ where: { id } }) as Service | null;
+      
+      if (service && service.imagePath) {
+        // Only delete local files, not external URLs
+        if (!service.imagePath.startsWith('http')) {
+          const filePath = path.join(process.cwd(), service.imagePath);
+          if (fs.existsSync(filePath)) {
+            try {
+              fs.unlinkSync(filePath);
+            } catch (err) {
+              console.error(`Failed to delete image file: ${filePath}`, err);
+            }
+          }
+        }
+      }
+
       await db.service.delete({ where: { id } });
       return { success: true };
     } catch (e: any) {

@@ -18,6 +18,7 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import cookieParser from "cookie-parser";
 import passport from "passport";
+import path from "path";
 import { setupPassport } from "./config/passport";
 import { setupSocket } from "./services/socket";
 import { ensureAdminExists } from "./utils/admin-init";
@@ -70,6 +71,7 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {

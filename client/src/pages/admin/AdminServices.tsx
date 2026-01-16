@@ -24,7 +24,7 @@ interface Service {
   price: number;
   category?: string;
   duration?: string;
-  imageUrl?: string;
+  imagePath?: string;
   isActive?: boolean;
 }
 
@@ -36,7 +36,8 @@ interface FormData {
   price: string;
   category?: string;
   duration?: string;
-  imageUrl?: string;
+  imagePath?: string;
+  image?: File;
 }
 
 const AdminServices = () => {
@@ -58,7 +59,8 @@ const AdminServices = () => {
     price: '',
     category: '',
     duration: '',
-    imageUrl: '',
+    imagePath: '',
+    image: undefined,
   });
 
   // Fetch categories and sync state if loader data changes
@@ -109,7 +111,8 @@ const AdminServices = () => {
         price: (service.price / 100).toFixed(2),
         category: service.category || '',
         duration: service.duration || '',
-        imageUrl: service.imageUrl || '',
+        imagePath: service.imagePath || '',
+        image: undefined,
       });
     } else {
       setEditingId(null);
@@ -121,7 +124,8 @@ const AdminServices = () => {
         price: '',
         category: categories[0] || '', // Default to first category
         duration: '',
-        imageUrl: '',
+        imagePath: '',
+        image: undefined,
       });
     }
     setShowModal(true);
@@ -143,29 +147,27 @@ const AdminServices = () => {
 
     try {
       setLoading(true);
+      
+      const data = new FormData();
+      data.append('name', formData.name);
+      if (formData.nameEn) data.append('nameEn', formData.nameEn);
+      data.append('description', formData.description);
+      if (formData.descriptionEn) data.append('descriptionEn', formData.descriptionEn);
+      data.append('price', price.toString());
+      if (formData.category) data.append('category', formData.category);
+      if (formData.duration) data.append('duration', formData.duration);
+      if (formData.image) {
+        data.append('image', formData.image);
+      } else if (formData.imagePath) {
+        // preserve existing path if no new image
+        data.append('imagePath', formData.imagePath);
+      }
+
       if (editingId) {
-        await apiClient.updateService(editingId, { 
-          name: formData.name,
-          nameEn: formData.nameEn,
-          description: formData.description,
-          descriptionEn: formData.descriptionEn,
-          price,
-          category: formData.category,
-          duration: formData.duration,
-          imageUrl: formData.imageUrl,
-        });
+        await apiClient.updateService(editingId, data);
         toast.success(t("services.updateSuccess"));
       } else {
-        await apiClient.createService({
-          name: formData.name,
-          nameEn: formData.nameEn,
-          description: formData.description,
-          descriptionEn: formData.descriptionEn,
-          price,
-          category: formData.category,
-          duration: formData.duration,
-          imageUrl: formData.imageUrl,
-        });
+        await apiClient.createService(data);
         toast.success(t("services.createSuccess"));
       }
       
@@ -262,6 +264,7 @@ const AdminServices = () => {
               <thead>
                 <tr className="border-b border-border bg-secondary/50">
                   <th className="text-start text-xs font-medium text-muted-foreground p-4">#</th>
+                  <th className="text-start text-xs font-medium text-muted-foreground p-4">{t("services.fields.image")}</th>
                   <th className="text-start text-xs font-medium text-muted-foreground p-4">{t("services.fields.name")}</th>
                   <th className="text-start text-xs font-medium text-muted-foreground p-4">{t("services.fields.category")}</th>
                   <th className="text-start text-xs font-medium text-muted-foreground p-4">{t("services.fields.price")}</th>
@@ -274,6 +277,19 @@ const AdminServices = () => {
                 {filteredServices.map((service) => (
                   <tr key={service.id} className="border-b border-border last:border-0 hover:bg-secondary/30">
                     <td className="p-4 text-sm text-muted-foreground">{service.id}</td>
+                    <td className="p-4 text-start">
+                      {service.imagePath ? (
+                        <img 
+                          src={service.imagePath.startsWith('http') ? service.imagePath : `/${service.imagePath}`} 
+                          alt={service.name} 
+                          className="w-10 h-10 object-cover rounded-md"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 bg-secondary rounded-md flex items-center justify-center">
+                           <span className="text-xs text-muted-foreground">No img</span>
+                        </div>
+                      )}
+                    </td>
                     <td className="p-4 text-sm font-medium text-foreground text-start">{service.name}</td>
                     <td className="p-4 text-start">
                       <span className="px-2 py-1 text-xs rounded-full bg-secondary text-foreground">
@@ -424,14 +440,31 @@ const AdminServices = () => {
               </div>
 
               <div className="text-start">
-                <label className="block text-sm font-medium text-foreground mb-1">{t("services.fields.imageUrl")}</label>
-                <input
-                  type="url"
-                  value={formData.imageUrl}
-                  onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                  placeholder="https://..."
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
+                <label className="block text-sm font-medium text-foreground mb-1">{t("services.fields.image")}</label>
+                <div className="flex flex-col gap-2">
+                  {formData.imagePath && !formData.image && (
+                     <div className="mb-2">
+                        <p className="text-xs text-muted-foreground mb-1">{t("services.fields.currentImage")}</p>
+                        <img 
+                          src={formData.imagePath.startsWith('http') ? formData.imagePath : `/${formData.imagePath}`} 
+                          alt="Current" 
+                          className="w-20 h-20 object-cover rounded-md border border-border" 
+                        />
+                     </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setFormData({ ...formData, image: file });
+                      }
+                    }}
+                    className="w-full text-foreground text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                  />
+                  <p className="text-xs text-muted-foreground">{t("services.fields.imageValidation")}</p>
+                </div>
               </div>
 
               <div className="flex gap-2 pt-4 col-span-1 md:col-span-2">

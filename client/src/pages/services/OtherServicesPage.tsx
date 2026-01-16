@@ -9,7 +9,7 @@ interface Service {
   name: string;
   nameEn?: string;
   price: number;
-  imageUrl?: string;
+  imagePath?: string;
   category: string;
   description: string;
   isActive?: boolean;
@@ -34,7 +34,7 @@ const OtherServicesPage = () => {
       title: localizedName,
       titleEn: service.nameEn,
       price: service.price,
-      image: service.imageUrl || "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=400&fit=crop",
+      image: (service.imagePath ? (service.imagePath.startsWith('http') ? service.imagePath : `/${service.imagePath}`) : "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=400&fit=crop"),
       badge: service.category,
       badgeColor: "success" as const,
       isAvailable: service.isActive !== false,

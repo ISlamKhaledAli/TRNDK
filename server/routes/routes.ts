@@ -11,6 +11,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "../storage/storage";
+import { upload } from "../middleware/upload";
 import { z } from "zod";
 import { insertUserSchema, insertServiceSchema, checkoutSchema, insertOrderSchema, insertPaymentSchema, insertNotificationSchema, insertReviewSchema, insertSettingSchema, insertAffiliateSchema, SERVICE_CATEGORIES } from "@shared/schema";
 import { Router } from "express";
@@ -612,9 +613,19 @@ export async function registerRoutes(
   });
 
   // Admin Routes - Services
-  apiRouter.post('/admin/services', authMiddleware, async (req, res) => {
+  apiRouter.post('/admin/services', authMiddleware, upload.single('image'), async (req, res) => {
     try {
-      const rawData = req.body;
+      const rawData = { ...req.body };
+      
+      // Handle file upload
+      if (req.file) {
+        rawData.imagePath = `uploads/services/${req.file.filename}`;
+      }
+
+      // Convert number/boolean fields from string (FormData)
+      if (rawData.price) rawData.price = Number(rawData.price);
+      if (rawData.isActive) rawData.isActive = rawData.isActive === 'true';
+      
       // Normalize price before validation
       if (rawData.price !== undefined) {
         rawData.price = normalizePrice(rawData.price);
@@ -636,9 +647,19 @@ export async function registerRoutes(
     }
   });
 
-  apiRouter.put('/admin/services/:id', authMiddleware, async (req, res) => {
+  apiRouter.put('/admin/services/:id', authMiddleware, upload.single('image'), async (req, res) => {
     try {
-      const rawData = req.body;
+      const rawData = { ...req.body };
+
+      // Handle file upload
+      if (req.file) {
+        rawData.imagePath = `uploads/services/${req.file.filename}`;
+      }
+
+      // Convert number/boolean fields from string (FormData)
+      if (rawData.price) rawData.price = Number(rawData.price);
+      if (rawData.isActive) rawData.isActive = rawData.isActive === 'true';
+
       // Normalize price if provided
       if (rawData.price !== undefined) {
         rawData.price = normalizePrice(rawData.price);

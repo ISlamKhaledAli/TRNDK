@@ -69,9 +69,16 @@ export const apiClient = {
     if (category) {
       url += `&category=${encodeURIComponent(category)}`;
     }
-    const res = await fetch(url, { cache: 'no-store' });
-    if (!res.ok) throw new Error('Failed to fetch services');
-    return res.json();
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) {
+        throw new Response('Failed to fetch services', { status: res.status });
+      }
+      return res.json();
+    } catch (error) {
+      if (error instanceof Response) throw error;
+      throw new Response('Network error or server unreachable', { status: 503 });
+    }
   },
 
   async getServiceCategories() {
@@ -123,21 +130,33 @@ export const apiClient = {
 
 
 
-  async createService(service: { name: string; description: string; price: number; category?: string; duration?: string; imageUrl?: string; nameEn?: string; descriptionEn?: string }) {
+  async createService(service: FormData | { name: string; description: string; price: number; category?: string; duration?: string; imagePath?: string; nameEn?: string; descriptionEn?: string }) {
+    const isFormData = service instanceof FormData;
+    const headers: Record<string, string> = {};
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
+    }
+
     const res = await fetch(`${API_BASE}/admin/services`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(service),
+      headers,
+      body: isFormData ? service : JSON.stringify(service),
     });
     if (!res.ok) throw new Error('Failed to create service');
     return res.json();
   },
 
-  async updateService(id: number, service: Partial<{ name: string; description: string; price: number; category?: string; duration?: string; imageUrl?: string; isActive?: boolean; nameEn?: string; descriptionEn?: string }>) {
+  async updateService(id: number, service: FormData | Partial<{ name: string; description: string; price: number; category?: string; duration?: string; imagePath?: string; isActive?: boolean; nameEn?: string; descriptionEn?: string }>) {
+    const isFormData = service instanceof FormData;
+    const headers: Record<string, string> = {};
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json';
+    }
+
     const res = await fetch(`${API_BASE}/admin/services/${id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(service),
+      headers,
+      body: isFormData ? service : JSON.stringify(service),
     });
     if (!res.ok) throw new Error('Failed to update service');
     return res.json();

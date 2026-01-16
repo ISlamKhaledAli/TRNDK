@@ -41,7 +41,7 @@ export const OrderDetailsViewer = ({ data, label, isRoot = false, titleLink }: O
 
     // Special fields handling with common variations
     const name = data.name || data.title || data.productName || data.serviceName || data.service;
-    const image = data.imageUrl || data.image || data.img || data.thumbnail;
+    const image = data.imagePath || data.imageUrl || data.image || data.img || data.thumbnail;
     const link = data.link || data.url || data.targetUrl || data.website;
     // Use titleLink if provided, otherwise fallback to data.link
     const effectiveLink = titleLink || link;
@@ -52,7 +52,7 @@ export const OrderDetailsViewer = ({ data, label, isRoot = false, titleLink }: O
     // Filter out handled fields to avoid duplication
     const specialKeys = [
       'name', 'title', 'productName', 'serviceName', 'service',
-      'imageUrl', 'image', 'img', 'thumbnail', 
+      'imagePath', 'imageUrl', 'image', 'img', 'thumbnail', 
       'link', 'url', 'targetUrl', 'website',
       'price', 'amount', 'cost', 'total',
       'quantity', 'qty', 'count'
