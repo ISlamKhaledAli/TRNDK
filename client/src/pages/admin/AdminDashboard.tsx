@@ -22,48 +22,44 @@ const AdminDashboard = () => {
     const { revalidate } = useRevalidator();
     const { user } = useAuth();
     const { t } = useTranslation("admin");
-    const { on, off } = useSocket();
+    const { on, off, socket } = useSocket();
 
     useEffect(() => {
+        if (!socket) return;
+
         const handleNewOrder = (order: any) => {
-            console.log("[AdminDashboard] New order received via socket:", order);
+            console.log("[AdminDashboard] New order received via socket:", order.id);
             
-            // Play notification sound
             const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
             audio.play().catch(err => console.error("Error playing sound:", err));
 
-            // Show visual notification
             toast.success(t("dashboard.notifications.newOrder", { defaultValue: "New Order Received!" }), {
                 description: `${t("dashboard.recentOrders.service", { defaultValue: "Service" })}: ${order.serviceId} - ${formatPrice(order.totalAmount)}`,
                 duration: 5000,
             });
 
-            // Refresh dashboard data instantly
             revalidate();
         };
 
-        on("newOrder", handleNewOrder);
-
         const handleNewUser = (user: any) => {
-            console.log("[AdminDashboard] New user registered via socket:", user);
+            console.log("[AdminDashboard] New user registered via socket:", user.email);
             
-            // Show visual notification
             toast.info(t("dashboard.notifications.newUser", { defaultValue: "New User Registered!" }), {
                 description: `${user.name} (${user.email})`,
                 duration: 5000,
             });
 
-            // Refresh dashboard data instantly
             revalidate();
         };
 
+        on("newOrder", handleNewOrder);
         on("newUser", handleNewUser);
 
         return () => {
             off("newOrder", handleNewOrder);
             off("newUser", handleNewUser);
         };
-    }, [on, off, revalidate, t]);
+    }, [socket, on, off, revalidate, t]);
     
     if (!dashboard) return null;
 

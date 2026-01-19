@@ -45,35 +45,45 @@ const methodIcons: Record<string, { icon: typeof CreditCard; labelKey: string }>
 const AdminPayments = () => {
   const { payments: initialPayments, users: initialUsers } = useLoaderData() as { payments: Payment[]; users: any[] };
   const { revalidate } = useRevalidator();
-  const [payments, setPayments] = useState<Payment[]>(initialPayments);
   const [users, setUsers] = useState<Map<number, User>>(new Map());
   const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
   const [methodFilter, setMethodFilter] = useState('all');
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const { t, i18n } = useTranslation(["admin", "common"]);
-  const { on, off } = useSocket();
+  const { on, off, socket } = useSocket();
 
   useEffect(() => {
+    if (!socket) return;
+
     const handleNewOrder = (order: any) => {
-      console.log("[AdminPayments] New order received via socket, refreshing payments list");
+      console.log("[AdminPayments] New order received via socket:", order.id);
       
-      // Play notification sound
       const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
       audio.play().catch(err => console.error("Error playing sound:", err));
 
-      // Show toast
       toast.success(t("payments.notifications.newPayment", { defaultValue: "New Payment Received!" }), {
         description: `${t("payments.table.amount")}: ${formatPrice(order.totalAmount)}`,
       });
 
-      // Refresh data
       revalidate();
     };
 
-    on("NEW_ORDER", handleNewOrder);
-    return () => off("NEW_ORDER");
-  }, [on, off, revalidate, t]);
+    const handlePaymentUpdate = () => {
+      console.log("[AdminPayments] Payment status updated via socket, refreshing list");
+      revalidate();
+    };
+
+    on("newOrder", handleNewOrder);
+    on("paymentUpdate", handlePaymentUpdate);
+
+    return () => {
+      off("newOrder", handleNewOrder);
+      off("paymentUpdate", handlePaymentUpdate);
+    };
+  }, [socket, on, off, revalidate, t]);
+
+  const payments = initialPayments;
 
   // Helper to build user map
   const buildUserMap = (userData: any[]) => {
@@ -88,9 +98,8 @@ const AdminPayments = () => {
 
   // Sync state if loader data changes
   useEffect(() => {
-    setPayments(initialPayments);
     setUsers(buildUserMap(initialUsers));
-  }, [initialPayments, initialUsers]);
+  }, [initialUsers]);
 
   const handleStatusChange = async (paymentId: number, newStatus: string) => {
     try {

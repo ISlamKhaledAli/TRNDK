@@ -21,13 +21,30 @@ import AdminLayout from "@/components/layouts/AdminLayout";
 import { formatPrice } from "../../lib/utils";
 import { useTranslation } from "react-i18next";
 
-import { useLoaderData } from "react-router-dom";
+import { useLoaderData, useRevalidator } from "react-router-dom";
+import { useSocket } from "@/hooks/useSocket";
+import { useEffect } from "react";
 
 export default function AdminPayouts() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { revalidate } = useRevalidator();
+  const { on, off, socket } = useSocket();
   const loaderData = useLoaderData() as { requests: any } | null;
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handlePayoutUpdate = () => {
+      console.log("[AdminPayouts] Payout update received via socket, refreshing list");
+      queryClient.invalidateQueries({ queryKey: ["admin-payout-requests"] });
+      revalidate();
+    };
+
+    on("payoutUpdate", handlePayoutUpdate);
+    return () => off("payoutUpdate", handlePayoutUpdate);
+  }, [socket, on, off, queryClient, revalidate]);
 
   const {
     data: requestsRes,

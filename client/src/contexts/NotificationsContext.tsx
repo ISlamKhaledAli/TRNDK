@@ -39,7 +39,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  const { on, off } = useSocket();
+  const { on, off, socket } = useSocket();
   const { t } = useTranslation("common");
 
   const fetchNotifications = async () => {
@@ -69,12 +69,14 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       setNotifications(prev => [notification, ...prev]);
     };
 
-    on("NEW_NOTIFICATION", handleNewNotification);
+    if (!socket) return;
+
+    on("notification", handleNewNotification);
 
     return () => {
-      off("NEW_NOTIFICATION");
+      off("notification", handleNewNotification);
     };
-  }, [user, on, off]);
+  }, [user, socket, on, off]);
 
   const markAsRead = async (id: number) => {
     try {

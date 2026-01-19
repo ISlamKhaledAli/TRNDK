@@ -13,71 +13,83 @@ const SocketContext = createContext<SocketContextType | undefined>(undefined);
 
 export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const socketRef = useRef<Socket | null>(null);
+  const [socket, setSocket] = React.useState<Socket | null>(null);
 
   useEffect(() => {
     if (!user) {
-      if (socketRef.current) {
+      if (socket) {
         console.log("[SocketContext] Disconnecting socket due to logout");
-        socketRef.current.disconnect();
-        socketRef.current = null;
+        socket.disconnect();
+        setSocket(null);
       }
       return;
     }
 
-    if (!socketRef.current) {
+    if (!socket) {
       console.log("[SocketContext] Initializing socket connection");
-      socketRef.current = io({
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
+      const newSocket = io({
+        reconnectionAttempts: 10,
+        reconnectionDelay: 2000,
+        autoConnect: true
       });
 
-      socketRef.current.on("connect", () => {
+      newSocket.on("connect", () => {
         console.log("[SocketContext] Connected to server");
-        
-        if (user.id) {
-          socketRef.current?.emit("join_user", user.id);
-        }
-
-        if (user.role === "admin") {
-          socketRef.current?.emit("join_admins", user);
-        }
+        if (user.id) newSocket.emit("join_user", user.id);
+        if (user.role === "admin") newSocket.emit("join_admins", user);
       });
 
-      socketRef.current.on("disconnect", (reason) => {
+      // Handle reconnection logic specifically to re-join rooms
+      newSocket.on("reconnect", () => {
+        console.log("[SocketContext] Reconnected to server");
+        if (user.id) newSocket.emit("join_user", user.id);
+        if (user.role === "admin") newSocket.emit("join_admins", user);
+      });
+
+      newSocket.on("disconnect", (reason) => {
         console.log("[SocketContext] Disconnected from server:", reason);
       });
 
-      socketRef.current.on("connect_error", (error) => {
+      newSocket.on("connect_error", (error) => {
         console.error("[SocketContext] Connection error:", error);
       });
+
+      setSocket(newSocket);
     }
 
     return () => {
-      // We don't necessarily want to disconnect on every re-render, 
-      // but if the provider unmounts or user changes, we might.
-      // The current logic handles user change via the dependency array.
+      // Keep alive unless user changes or unmounts completely
     };
-  }, [user]);
+  }, [user, socket]);
 
-  const on = (event: string, callback: (data: any) => void) => {
-    socketRef.current?.on(event, callback);
-  };
-
-  const off = (event: string, callback?: (data: any) => void) => {
-    if (callback) {
-      socketRef.current?.off(event, callback);
-    } else {
-      socketRef.current?.off(event);
+  const on = React.useCallback((event: string, callback: (data: any) => void) => {
+    if (socket) {
+      console.log(`[SocketContext] Attaching listener for: ${event}`);
+      socket.on(event, callback);
     }
-  };
+  }, [socket]);
 
-  const emit = (event: string, data: any) => {
-    socketRef.current?.emit(event, data);
-  };
+  const off = React.useCallback((event: string, callback?: (data: any) => void) => {
+    if (socket) {
+      console.log(`[SocketContext] Removing listener for: ${event}`);
+      if (callback) {
+        socket.off(event, callback);
+      } else {
+        socket.off(event);
+      }
+    }
+  }, [socket]);
+
+  const emit = React.useCallback((event: string, data: any) => {
+    if (socket) {
+      socket.emit(event, data);
+    }
+  }, [socket]);
+
+  const contextValue = React.useMemo(() => ({ socket, on, off, emit }), [socket, on, off, emit]);
 
   return (
-    <SocketContext.Provider value={{ socket: socketRef.current, on, off, emit }}>
+    <SocketContext.Provider value={contextValue}>
       {children}
     </SocketContext.Provider>
   );

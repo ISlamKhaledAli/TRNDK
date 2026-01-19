@@ -31,56 +31,48 @@ interface Order {
 const AdminOrders = () => {
   const { orders: initialOrders } = useLoaderData() as { orders: Order[] };
   const { revalidate } = useRevalidator();
-  const [orders, setOrders] = useState<Order[]>(initialOrders);
   const [statusFilter, setStatusFilter] = useState('all');
   const [editingOrderId, setEditingOrderId] = useState<number | null>(null);
   const [editingStatus, setEditingStatus] = useState<string>('');
   const { t, i18n } = useTranslation(["admin", "common"]);
-  const { on, off } = useSocket();
+  const { on, off, socket } = useSocket();
 
   useEffect(() => {
+    if (!socket) return;
+
     const handleNewOrder = (order: any) => {
-      console.log("[AdminOrders] New order received via socket:", order);
+      console.log("[AdminOrders] New order received via socket:", order.id);
       
-      // Play notification sound
       const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3");
       audio.play().catch(err => console.error("Error playing sound:", err));
 
-      // Show visual notification
       toast.success(t("orders.notifications.newOrder", { defaultValue: "New Order Received!" }), {
         description: `#${order.id} - ${formatPrice(order.totalAmount)}`,
       });
 
-      // Refresh list instantly
       revalidate();
     };
 
-    on("newOrder", handleNewOrder);
-
     const handleStatusUpdate = (updatedOrder: any) => {
-      console.log("[AdminOrders] Order status update received via socket:", updatedOrder);
+      console.log("[AdminOrders] Order status update received via socket:", updatedOrder.id);
       
-      // Show notification if it's not the admin who made the change (or always for visibility)
       toast.info(t("orders.notifications.statusUpdated", { defaultValue: "Order Status Updated" }), {
         description: `#${updatedOrder.id}: ${updatedOrder.status}`,
       });
 
-      // Refresh list instantly
       revalidate();
     };
 
+    on("newOrder", handleNewOrder);
     on("orderStatusUpdate", handleStatusUpdate);
 
     return () => {
       off("newOrder", handleNewOrder);
       off("orderStatusUpdate", handleStatusUpdate);
     };
-  }, [on, off, revalidate, t]);
+  }, [socket, on, off, revalidate, t]);
 
-  // Sync state if loader data changes
-  useEffect(() => {
-    setOrders(initialOrders);
-  }, [initialOrders]);
+  const orders = initialOrders;
 
   const handleStatusChange = async (orderId: number, newStatus: string) => {
     try {

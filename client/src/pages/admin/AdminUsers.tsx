@@ -28,34 +28,39 @@ interface User {
 const AdminUsers = () => {
   const { users: initialUsers } = useLoaderData() as { users: User[] };
   const { revalidate } = useRevalidator();
-  const [users, setUsers] = useState<User[]>(initialUsers);
+  const users = initialUsers;
   const [statusFilter, setStatusFilter] = useState('all');
   const [vipFilter, setVipFilter] = useState('all');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const { t, i18n } = useTranslation(["admin", "common"]);
-  const { on, off } = useSocket();
+  const { on, off, socket } = useSocket();
 
   useEffect(() => {
+    if (!socket) return;
+
     const handleNewUser = (user: any) => {
-      console.log("[AdminUsers] New user registered via socket, refreshing list");
+      console.log("[AdminUsers] New user registered via socket:", user.email);
       
-      // Show toast
       toast.info(t("users.notifications.newUser", { defaultValue: "New User Registered!" }), {
         description: `${user.name} (${user.email})`,
       });
 
-      // Refresh data
       revalidate();
     };
 
-    on("NEW_USER", handleNewUser);
-    return () => off("NEW_USER");
-  }, [on, off, revalidate, t]);
+    const handleUserUpdate = () => {
+      console.log("[AdminUsers] User data updated via socket, refreshing list");
+      revalidate();
+    };
 
-  // Sync state if loader data changes
-  useEffect(() => {
-    setUsers(initialUsers);
-  }, [initialUsers]);
+    on("newUser", handleNewUser);
+    on("userUpdate", handleUserUpdate);
+
+    return () => {
+      off("newUser", handleNewUser);
+      off("userUpdate", handleUserUpdate);
+    };
+  }, [socket, on, off, revalidate, t]);
 
   const handleStatusChange = async (userId: number, newStatus: string) => {
     try {

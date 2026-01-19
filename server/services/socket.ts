@@ -63,17 +63,38 @@ export function emitNewUser(user: any) {
 
 export function emitOrderStatusUpdate(userId: number, order: any) {
   if (io) {
-    const room = `user_${userId}`;
-    console.log(`[Socket] Emitting orderStatusUpdate to room: ${room} and admins`);
-    io.to(room).emit("orderStatusUpdate", order);
+    // Notify specific user
+    io.to(`user_${userId}`).emit("orderStatusUpdate", order);
+    // Notify admins
     io.to("admins").emit("orderStatusUpdate", order);
+    console.log(`[Socket] Order status update emitted for user ${userId}`);
+  }
+}
+
+export function emitPayoutUpdate() {
+  if (io) {
+    io.to("admins").emit("payoutUpdate");
+    console.log("[Socket] Payout update emitted to admins");
+  }
+}
+
+export function emitPaymentUpdate() {
+  if (io) {
+    io.to("admins").emit("paymentUpdate");
+    console.log("[Socket] Payment update emitted to admins");
+  }
+}
+
+export function emitUserUpdate() {
+  if (io) {
+    io.to("admins").emit("userUpdate");
+    console.log("[Socket] User update emitted to admins");
   }
 }
 
 export function emitNotification(userId: number, notification: any) {
   if (io) {
-    const room = `user_${userId}`;
-    console.log(`[Socket] Emitting notification to room: ${room}`);
-    io.to(room).emit("notification", notification);
+    io.to(`user_${userId}`).emit("notification", notification);
+    console.log(`[Socket] Notification emitted for user ${userId}`);
   }
 }

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { db as prisma } from '../config/db';
 import { PayoneerProvider } from '../services/payments/payoneer.provider';
+import { emitPayoutUpdate } from '../services/socket';
 
 const router = Router();
 // Singleton or DI would be better, but simple instantiation is fine for now
@@ -72,6 +73,9 @@ router.post('/request', async (req: Request, res: Response): Promise<void> => {
         details: { email },
       }
     });
+
+    // Notify admins of new payout request
+    emitPayoutUpdate();
 
     // Call Provider (Mock)
     try {

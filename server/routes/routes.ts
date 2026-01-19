@@ -17,7 +17,7 @@ import { insertUserSchema, insertServiceSchema, checkoutSchema, insertOrderSchem
 import { Router } from "express";
 import { signToken, hashPassword, comparePassword, authMiddleware, adminMiddleware } from "../middleware/auth";
 import { NotificationService } from "../services/notification.service";
-import { emitNewOrder, emitNewUser, emitNotification, emitOrderStatusUpdate } from "../services/socket";
+import { emitNewOrder, emitNewUser, emitNotification, emitOrderStatusUpdate, emitUserUpdate, emitPaymentUpdate, emitPayoutUpdate } from "../services/socket";
 import passport from "passport";
 import payoutsRouter from "./payouts";
 import paymentsRouter from "./payments";
@@ -731,20 +731,24 @@ export async function registerRoutes(
 
   apiRouter.patch('/admin/users/:id/status', authMiddleware, async (req, res) => {
     const { status } = req.body;
-    const result = await storage.updateUserStatus(Number(req.params.id), status);
+    const id = Number(req.params.id);
+    const result = await storage.updateUserStatus(id, status);
     if (!result.success) {
       return res.status(400).json({ message: result.error });
     }
-    res.json({ data: result.data });
+    emitUserUpdate();
+    res.json({ success: true });
   });
 
   apiRouter.patch('/admin/users/:id/vip', authMiddleware, async (req, res) => {
     const { isVip } = req.body;
-    const result = await storage.updateUserVipStatus(Number(req.params.id), isVip);
+    const id = Number(req.params.id);
+    const result = await storage.updateUserVipStatus(id, isVip);
     if (!result.success) {
       return res.status(400).json({ message: result.error });
     }
-    res.json({ data: result.data });
+    emitUserUpdate();
+    res.json({ success: true });
   });
 
   // Admin Routes - Payments
@@ -755,11 +759,13 @@ export async function registerRoutes(
 
   apiRouter.patch('/admin/payments/:id/status', authMiddleware, async (req, res) => {
     const { status } = req.body;
-    const result = await storage.updatePaymentStatus(Number(req.params.id), status);
+    const id = Number(req.params.id);
+    const result = await storage.updatePaymentStatus(id, status);
     if (!result.success) {
       return res.status(400).json({ message: result.error });
     }
-    res.json({ data: result.data });
+    emitPaymentUpdate();
+    res.json({ success: true });
   });
 
   // Payment Gateway Routes (Charging)
@@ -885,6 +891,7 @@ export async function registerRoutes(
       
       const result = await storage.payoutAffiliate(affiliateId);
       if (!result.success) return res.status(400).json({ message: result.error });
+      emitPayoutUpdate();
       res.json({ message: "Payout processed successfully" });
     } catch (err: any) {
       console.error("[Route] Payout error:", err);
