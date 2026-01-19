@@ -717,6 +717,9 @@ export async function registerRoutes(
     // Trigger notification
     await NotificationService.notifyOrderStatusChange(order, status, req.user!.id);
 
+    // Real-time Socket.IO update to user and admins
+    emitOrderStatusUpdate(order.userId, result.data);
+
     res.json({ data: result.data });
   });
 

@@ -55,8 +55,26 @@ const AdminOrders = () => {
       revalidate();
     };
 
-    on("NEW_ORDER", handleNewOrder);
-    return () => off("NEW_ORDER");
+    on("newOrder", handleNewOrder);
+
+    const handleStatusUpdate = (updatedOrder: any) => {
+      console.log("[AdminOrders] Order status update received via socket:", updatedOrder);
+      
+      // Show notification if it's not the admin who made the change (or always for visibility)
+      toast.info(t("orders.notifications.statusUpdated", { defaultValue: "Order Status Updated" }), {
+        description: `#${updatedOrder.id}: ${updatedOrder.status}`,
+      });
+
+      // Refresh list instantly
+      revalidate();
+    };
+
+    on("orderStatusUpdate", handleStatusUpdate);
+
+    return () => {
+      off("newOrder", handleNewOrder);
+      off("orderStatusUpdate", handleStatusUpdate);
+    };
   }, [on, off, revalidate, t]);
 
   // Sync state if loader data changes

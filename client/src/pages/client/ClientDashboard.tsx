@@ -33,10 +33,10 @@ const ClientDashboard = () => {
       revalidate();
     };
 
-    on("STATUS_UPDATE", handleStatusUpdate);
+    on("orderStatusUpdate", handleStatusUpdate);
 
     return () => {
-      off("STATUS_UPDATE");
+      off("orderStatusUpdate", handleStatusUpdate);
     };
   }, [on, off, revalidate, t]);
 

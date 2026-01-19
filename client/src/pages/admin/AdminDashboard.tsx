@@ -42,7 +42,7 @@ const AdminDashboard = () => {
             revalidate();
         };
 
-        on("NEW_ORDER", handleNewOrder);
+        on("newOrder", handleNewOrder);
 
         const handleNewUser = (user: any) => {
             console.log("[AdminDashboard] New user registered via socket:", user);
@@ -57,11 +57,11 @@ const AdminDashboard = () => {
             revalidate();
         };
 
-        on("NEW_USER", handleNewUser);
+        on("newUser", handleNewUser);
 
         return () => {
-            off("NEW_ORDER");
-            off("NEW_USER");
+            off("newOrder", handleNewOrder);
+            off("newUser", handleNewUser);
         };
     }, [on, off, revalidate, t]);
     

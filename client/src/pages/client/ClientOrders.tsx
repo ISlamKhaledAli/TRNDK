@@ -84,8 +84,8 @@ const ClientOrders = () => {
       revalidate();
     };
 
-    on("STATUS_UPDATE", handleStatusUpdate);
-    return () => off("STATUS_UPDATE");
+    on("orderStatusUpdate", handleStatusUpdate);
+    return () => off("orderStatusUpdate", handleStatusUpdate);
   }, [on, off, revalidate, t]);
 
   // Sync state if loader data changes

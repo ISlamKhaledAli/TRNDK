@@ -16,6 +16,7 @@ import { LanguageProvider } from "./contexts/LanguageContext";
 import { SidebarProvider } from "./contexts/SidebarContext";
 import { CurrencyProvider } from "./contexts/CurrencyContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { SocketProvider } from "./contexts/SocketContext";
 import { CartProvider } from "./contexts/CartContext";
 import { NotificationsProvider } from "./contexts/NotificationsContext";
 import { router } from "./router";
@@ -32,19 +33,21 @@ const App = () => (
         <LanguageProvider>
           <SidebarProvider>
             <AuthProvider>
-              <NotificationsProvider>
-                <CartProvider>
-                  <CurrencyProvider>
-                    <TooltipProvider>
-                      <Toaster />
-                      <Sonner />
-                      <Suspense fallback={<RootFallback />}>
-                        <RouterProvider router={router} />
-                      </Suspense>
-                    </TooltipProvider>
-                  </CurrencyProvider>
-                </CartProvider>
-              </NotificationsProvider>
+              <SocketProvider>
+                <NotificationsProvider>
+                  <CartProvider>
+                    <CurrencyProvider>
+                      <TooltipProvider>
+                        <Toaster />
+                        <Sonner />
+                        <Suspense fallback={<RootFallback />}>
+                          <RouterProvider router={router} />
+                        </Suspense>
+                      </TooltipProvider>
+                    </CurrencyProvider>
+                  </CartProvider>
+                </NotificationsProvider>
+              </SocketProvider>
             </AuthProvider>
           </SidebarProvider>
         </LanguageProvider>

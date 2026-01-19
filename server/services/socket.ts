@@ -49,30 +49,31 @@ export function setupSocket(server: HttpServer) {
 
 export function emitNewOrder(order: any) {
   if (io) {
-    console.log("[Socket] Emitting NEW_ORDER to admins");
-    io.to("admins").emit("NEW_ORDER", order);
+    console.log("[Socket] Emitting newOrder to admins");
+    io.to("admins").emit("newOrder", order);
   }
 }
 
 export function emitNewUser(user: any) {
   if (io) {
-    console.log("[Socket] Emitting NEW_USER to admins");
-    io.to("admins").emit("NEW_USER", user);
+    console.log("[Socket] Emitting newUser to admins");
+    io.to("admins").emit("newUser", user);
   }
 }
 
 export function emitOrderStatusUpdate(userId: number, order: any) {
   if (io) {
     const room = `user_${userId}`;
-    console.log(`[Socket] Emitting STATUS_UPDATE to room: ${room}`);
-    io.to(room).emit("STATUS_UPDATE", order);
+    console.log(`[Socket] Emitting orderStatusUpdate to room: ${room} and admins`);
+    io.to(room).emit("orderStatusUpdate", order);
+    io.to("admins").emit("orderStatusUpdate", order);
   }
 }
 
 export function emitNotification(userId: number, notification: any) {
   if (io) {
     const room = `user_${userId}`;
-    console.log(`[Socket] Emitting NEW_NOTIFICATION to room: ${room}`);
-    io.to(room).emit("NEW_NOTIFICATION", notification);
+    console.log(`[Socket] Emitting notification to room: ${room}`);
+    io.to(room).emit("notification", notification);
   }
 }
