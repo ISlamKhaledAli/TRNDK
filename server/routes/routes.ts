@@ -17,7 +17,7 @@ import { insertUserSchema, insertServiceSchema, checkoutSchema, insertOrderSchem
 import { Router } from "express";
 import { signToken, hashPassword, comparePassword, authMiddleware, adminMiddleware } from "../middleware/auth";
 import { NotificationService } from "../services/notification.service";
-import { emitNewOrder, emitNewUser, emitNotification } from "../services/socket";
+import { emitNewOrder, emitNewUser, emitNotification, emitOrderStatusUpdate } from "../services/socket";
 import passport from "passport";
 import payoutsRouter from "./payouts";
 import paymentsRouter from "./payments";
