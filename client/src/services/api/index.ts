@@ -422,6 +422,32 @@ export const apiClient = {
     return res.json();
   },
 
+  async createPayPalOrder(transactionId: string) {
+    const res = await fetch(`${API_BASE}/payments/paypal/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ transactionId }),
+    });
+    if (!res.ok) {
+       const error = await res.json();
+       throw new Error(error.message || 'PayPal initiation failed');
+    }
+    return res.json();
+  },
+
+  async capturePayPalOrder(orderId: string) {
+    const res = await fetch(`${API_BASE}/payments/paypal/capture`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId }),
+    });
+    if (!res.ok) {
+       const error = await res.json();
+       throw new Error(error.message || 'PayPal capture failed');
+    }
+    return res.json();
+  },
+
   async getPaymentDetails(transactionId: string) {
     const res = await fetch(`${API_BASE}/payments/payoneer/details/${transactionId}`);
     if (!res.ok) throw new Error('Failed to fetch payment details');

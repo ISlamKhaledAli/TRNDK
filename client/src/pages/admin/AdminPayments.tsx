@@ -40,6 +40,7 @@ const methodIcons: Record<string, { icon: typeof CreditCard; labelKey: string }>
   stc: { icon: Smartphone, labelKey: "payments.methodStc" },
   bank: { icon: Building, labelKey: "payments.methodBank" },
   payoneer: { icon: CreditCard, labelKey: "payments.methodPayoneer" },
+  paypal: { icon: CreditCard, labelKey: "payments.methodPaypal" }, // Added to prevent crash
 };
 
 const AdminPayments = () => {
@@ -150,7 +151,7 @@ const AdminPayments = () => {
       headers.join(","),
       ...filteredPayments.map(payment => {
         const user = users.get(payment.userId);
-        const method = methodIcons[payment.method];
+        const method = methodIcons[payment.method] || { labelKey: payment.method }; // Fallback to raw method name
         return [
           `#${payment.id}`,
           `"${user?.name || 'Unknown'}"`,
@@ -291,7 +292,7 @@ const AdminPayments = () => {
               </thead>
               <tbody>
                 {filteredPayments.map((payment) => {
-                  const method = methodIcons[payment.method];
+                  const method = methodIcons[payment.method] || { icon: CreditCard, labelKey: "common.unknown" };
                   const user = users.get(payment.userId);
                   const locale = i18n.language === 'ar' ? 'ar-SA' : 'en-US';
                   return (
@@ -305,7 +306,7 @@ const AdminPayments = () => {
                       <td className="p-4">
                         <div className="flex items-center gap-2">
                           <method.icon className="w-4 h-4 text-muted-foreground" />
-                          <span className="text-sm text-foreground">{t(method.labelKey)}</span>
+                          <span className="text-sm text-foreground">{method.labelKey === "common.unknown" ? payment.method : t(method.labelKey)}</span>
                         </div>
                       </td>
                       <td className="p-4 text-sm text-muted-foreground text-start">
@@ -423,7 +424,7 @@ const AdminPayments = () => {
                 </div>
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-1">{t("payments.modal.method")}</p>
-                  <p className="text-sm text-foreground">{t(methodIcons[selectedPayment.method].labelKey)}</p>
+                  <p className="text-sm text-foreground">{methodIcons[selectedPayment.method] ? t(methodIcons[selectedPayment.method].labelKey) : selectedPayment.method}</p>
                 </div>
                 <div>
                   <p className="text-xs font-medium text-muted-foreground mb-1">{t("payments.modal.date")}</p>

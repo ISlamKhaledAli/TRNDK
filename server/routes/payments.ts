@@ -7,6 +7,10 @@ import { emitNewOrder } from '../services/socket';
 const router = Router();
 const payoneerGateway = new PayoneerGateway();
 
+import { PayPalGateway } from '../services/payments/paypal-gateway';
+
+const paypalGateway = new PayPalGateway();
+
 /**
  * POST /api/payments/payoneer/create
  * Initiate a payment via Payoneer
@@ -59,6 +63,155 @@ router.post('/payoneer/create', async (req: Request, res: Response): Promise<voi
     console.error('Payment Create Error:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
+});
+
+/**
+ * POST /api/payments/paypal/create
+ * Initiate a payment via PayPal
+ */
+router.post('/paypal/create', async (req: Request, res: Response): Promise<void> => {
+    try {
+      const { transactionId } = req.body;
+      const userId = req.user!.id;
+  
+      if (!transactionId) {
+        res.status(400).json({ error: 'Missing transaction ID' });
+        return;
+      }
+  
+      const payment = await prisma.payment.findFirst({
+          where: { transactionId, userId }
+      });
+  
+      if (!payment) {
+          res.status(404).json({ error: 'Payment record not found' });
+          return;
+      }
+
+      if (payment.status === 'completed' || payment.status === 'paid') {
+        res.status(400).json({ error: 'Payment already completed' });
+        return;
+      }
+  
+      const intent = await paypalGateway.createPaymentIntent(
+          payment.amount, 
+          payment.currency || 'USD', 
+          payment.transactionId!, 
+          req.user
+      );
+  
+      res.json({ 
+          success: true,
+          orderId: intent.transactionId // This is the PayPal Order ID
+      });
+  
+    } catch (error: any) {
+      console.error('PayPal Create Route Error');
+      res.status(500).json({ 
+          error: 'PayPal Error', 
+          details: 'Could not initiate PayPal payment' 
+      });
+    }
+});
+
+/**
+ * POST /api/payments/paypal/capture
+ * Capture a PayPal payment after user approval
+ */
+router.post('/paypal/capture', async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { orderId } = req.body; // PayPal Order ID
+
+        if (!orderId) {
+            res.status(400).json({ error: 'Missing PayPal Order ID' });
+            return;
+        }
+
+        // 1. Get PayPal Order Details
+        const paypalOrder = await paypalGateway.getOrderDetails(orderId);
+        
+        // 2. Extract Reference ID (Our Transaction ID)
+        const referenceId = paypalOrder.purchase_units?.[0]?.reference_id;
+        if (!referenceId) {
+            res.status(400).json({ error: 'Invalid PayPal Order: Missing Reference ID' });
+            return;
+        }
+
+        // 3. Find Local Payment
+        const payment = await prisma.payment.findFirst({
+            where: { transactionId: referenceId }
+        });
+
+        if (!payment) {
+            res.status(404).json({ error: 'Payment record not found' });
+            return;
+        }
+
+        if (payment.status === 'paid' || payment.status === 'completed') {
+            res.json({ success: true, status: 'paid' });
+            return;
+        }
+
+        // 4. Validate Amount and Currency
+        const paypalAmount = parseFloat(paypalOrder.purchase_units[0].amount.value);
+        const paypalCurrency = paypalOrder.purchase_units[0].amount.currency_code;
+
+        // DB amount is in CENTS. Convert to UNITS.
+        const expectedAmount = (payment.amount / 100).toFixed(2);
+        const actualAmount = paypalAmount.toFixed(2);
+
+        if (expectedAmount !== actualAmount || (payment.currency || 'USD') !== paypalCurrency) {
+             res.status(400).json({ error: 'Payment validation failed: Amount mismatch' });
+             return;
+        }
+
+        // 5. Capture Payment
+        const captureResult = await paypalGateway.capturePayment(orderId);
+        
+        // Check both the ok flag and the status inside data if available
+        if (!captureResult.ok || (captureResult.data && captureResult.data.status !== 'COMPLETED')) {
+            const errorName = captureResult.data?.name || 'UnknownError';
+            const errorDesc = captureResult.data?.details?.[0]?.issue || captureResult.data?.message || 'Payment could not be captured';
+            
+            console.error(`[PayPal Route] Capture Failed: ${errorName} - ${errorDesc}`);
+            
+            res.status(500).json({ 
+                message: `PayPal Capture Failed`,
+                // Do not return raw external API details to client in production
+            });
+            return;
+        }
+
+        // 6. Update Database
+        await prisma.payment.update({
+            where: { id: payment.id },
+            data: { status: 'paid', updatedAt: new Date(), transactionId: captureResult.data.id || payment.transactionId }
+        });
+
+        // Update Orders to 'processing' (or 'paid' depending on logic)
+        // Original logic checked payment.transactionId (referenceId)
+        if (payment.transactionId) {
+            await prisma.order.updateMany({
+                where: { transactionId: payment.transactionId },
+                data: { status: 'processing' }
+            });
+
+             const updatedOrders = await prisma.order.findMany({
+                where: { transactionId: payment.transactionId }
+            });
+
+            for (const order of updatedOrders) {
+                 await NotificationService.notifyOrderCreated(order);
+                 emitNewOrder(order);
+            }
+        }
+
+        res.json({ success: true, status: 'paid' });
+
+    } catch (error: any) {
+        console.error('PayPal Capture Error');
+        res.status(500).json({ error: 'Capture failed' });
+    }
 });
 
 /**

@@ -11,7 +11,7 @@ import {
   Plus,
   Minus,
 } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { apiClient } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
@@ -19,6 +19,7 @@ import { useNotifications } from "@/contexts/NotificationsContext";
 import { toast } from "sonner";
 import { useTranslation, Trans } from "react-i18next";
 import PriceDisplay from "@/components/common/PriceDisplay";
+import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js";
 
 const CheckoutPage = () => {
   const { user } = useAuth();
@@ -31,18 +32,9 @@ const CheckoutPage = () => {
   const [loading, setLoading] = useState(false);
   const [taxRate, setTaxRate] = useState<number>(15);
   const [payoneerEnabled, setPayoneerEnabled] = useState(true);
-  const paymentMethod = "payoneer"; // Forced single method
-
-  const paymentMethodsList = [
-    {
-      id: "payoneer",
-      label: t("payment.methods.payoneer.label", { defaultValue: "Payoneer" }),
-      description: t("payment.methods.payoneer.description", {
-        defaultValue: "Secure payment via Payoneer Gateway",
-      }),
-      icon: CreditCard,
-    },
-  ];
+  const [paypalEnabled, setPaypalEnabled] = useState(true);
+  const [selectedMethod, setSelectedMethod] = useState<string>("payoneer");
+  const [paypalClientId, setPaypalClientId] = useState<string>(""); 
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -58,8 +50,11 @@ const CheckoutPage = () => {
         if (result.data.payoneerEnabled) {
           setPayoneerEnabled(true);
         }
+        if (result.data.paypalClientId) {
+            setPaypalClientId(result.data.paypalClientId);
+        }
       } catch (error) {
-        console.error("Failed to fetch config:", error);
+        // Silent fail for config fetch
       }
     };
     fetchSettings();
@@ -69,7 +64,9 @@ const CheckoutPage = () => {
   const tax = subtotal * (taxRate / 100);
   const total = subtotal + tax;
 
-  const handleSubmitOrder = async (e: React.FormEvent) => {
+
+
+  const handlePayoneerCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!user) {
@@ -92,7 +89,7 @@ const CheckoutPage = () => {
           link: item.link,
           price: item.price,
         })),
-        paymentMethod,
+        paymentMethod: "payoneer",
         referralCode,
       });
 
@@ -114,10 +111,84 @@ const CheckoutPage = () => {
       }
     } catch (error: any) {
       toast.error(error.message || t("messages.error"));
-      console.error("Error:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Memoize PayPal options to prevent unnecessary script reloads
+  const paypalOptions = useMemo(() => ({
+      clientId: paypalClientId,
+      currency: "USD",
+      intent: "capture" // Explicitly set intent
+  }), [paypalClientId]);
+
+  const isCreatingOrder = useRef(false);
+
+  const createPayPalOrder = async (data: any, actions: any) => {
+    if (isCreatingOrder.current) {
+        return ""; // Return empty string or handle as per SDK expectation for 'do nothing'
+    }
+    
+    isCreatingOrder.current = true;
+
+    try {
+      if (!user) {
+         toast.error(t("messages.loginRequired"));
+         throw new Error("Login required");
+      }
+       
+      const referralCode = localStorage.getItem("referralCode") || undefined;
+      
+      const result = await apiClient.checkout({
+        items: items.map((item) => ({
+            serviceId: item.serviceId,
+            quantity: item.quantity,
+            link: item.link,
+            price: item.price,
+        })),
+        paymentMethod: "paypal",
+        referralCode,
+      });
+      
+      if (!result.success || !result.transactionId) {
+          throw new Error("Failed to create local order");
+      }
+
+      const paypalOrder = await apiClient.createPayPalOrder(result.transactionId);
+      
+      if (!paypalOrder.orderId) {
+          throw new Error("Invalid response from backend: missing orderId");
+      }
+
+      return paypalOrder.orderId;
+
+    } catch (err: any) {
+        const msg = err.message || "Could not initiate PayPal Checkout";
+        toast.error(msg);
+        isCreatingOrder.current = false; // Reset lock on error
+        throw err;
+    } 
+    // Note: We do NOT reset isCreatingOrder.current = false on success immediately 
+    // because the flow moves to onApprove. However, if the user closes the popup, 
+    // the SDK might not give us a clean way to reset. 
+    // Better strategy: Use a timeout or rely on SDK 'onCancel' to reset.
+    // For now, let's keep it simple: reset after a short delay to allow re-tries if needed,
+    // but long enough to block double clicks.
+    setTimeout(() => { isCreatingOrder.current = false; }, 5000);
+  };
+
+  const onPayPalApprove = async (data: any, actions: any) => {
+      try {
+          await apiClient.capturePayPalOrder(data.orderID);
+          toast.success("Payment successful!");
+          clearCart();
+          refreshNotifications();
+          navigate("/client/orders");
+      } catch (err: any) {
+          // Show the specific error message from the backend (e.g. "Compliance Violation")
+          toast.error(err.message || "Payment capture failed. Please contact support.");
+      }
   };
 
   return (
@@ -251,25 +322,56 @@ const CheckoutPage = () => {
               </div>
 
               <div className="grid grid-cols-1 gap-3 mb-6">
-                {paymentMethodsList.map((method) => (
-                  <div
-                    key={method.id}
-                    className="relative flex items-center gap-3 p-4 rounded-lg border border-primary bg-primary/5"
+                 {/* Payoneer Option */}
+                 {payoneerEnabled && (
+                  <label
+                    className={`relative flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                      selectedMethod === "payoneer"
+                        ? "border-primary bg-primary/5 ring-1 ring-primary"
+                        : "border-border hover:border-primary/50"
+                    }`}
                   >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="payoneer"
+                      checked={selectedMethod === "payoneer"}
+                      onChange={(e) => setSelectedMethod(e.target.value)}
+                      className="w-4 h-4 text-primary"
+                    />
                     <CreditCard className="w-5 h-5 text-primary shrink-0" />
                     <div className="text-start">
-                      <p className="font-medium text-sm">{method.label}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {method.description}
-                      </p>
+                      <p className="font-medium text-sm">Payoneer</p>
+                      <p className="text-xs text-muted-foreground">Secure payment via Payoneer Gateway</p>
                     </div>
-                    <div className="ms-auto">
-                      <span className="text-xs font-bold text-primary px-2 py-1 bg-primary/10 rounded uppercase">
-                        {t("payment.required", { defaultValue: "Required" })}
-                      </span>
+                  </label>
+                 )}
+
+                 {/* PayPal Option */}
+                 {paypalEnabled && (
+                  <label
+                    className={`relative flex items-center gap-3 p-4 rounded-lg border cursor-pointer transition-all ${
+                        selectedMethod === "paypal"
+                          ? "border-primary bg-primary/5 ring-1 ring-primary"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                  >
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="paypal"
+                      checked={selectedMethod === "paypal"}
+                      onChange={(e) => setSelectedMethod(e.target.value)}
+                      className="w-4 h-4 text-primary"
+                    />
+                    {/* PayPal Logic Icon or Text */}
+                    <div className="font-bold text-blue-700 italic w-5 h-5 flex items-center justify-center">P</div>
+                    <div className="text-start">
+                      <p className="font-medium text-sm">PayPal</p>
+                      <p className="text-xs text-muted-foreground">Pay safely with your PayPal account</p>
                     </div>
-                  </div>
-                ))}
+                  </label>
+                 )}
               </div>
             </div>
 
@@ -315,24 +417,63 @@ const CheckoutPage = () => {
                 </div>
               </div>
 
-              <form onSubmit={handleSubmitOrder} className="mt-6 space-y-3">
-                <button
-                  type="submit"
-                  disabled={loading || !user || items.length === 0}
-                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-4 rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
-                >
-                  <CreditCard className="w-5 h-5" />
-                  {loading
-                    ? t("summary.processing")
-                    : t("summary.payWithPayoneer")}
-                </button>
+              <div className="mt-6">
+                {selectedMethod === "payoneer" ? (
+                  <button
+                    onClick={handlePayoneerCheckout}
+                    disabled={loading || !user || items.length === 0}
+                    className="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-4 rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
+                  >
+                    <CreditCard className="w-5 h-5" />
+                    {loading
+                      ? t("summary.processing")
+                      : t("summary.payWithPayoneer")}
+                  </button>
+                ) : (
+                  <div className="w-full">
+                     {paypalClientId ? (
+                         <div className="w-full relative z-0"> 
+                             {/* Wrapper to ensure isolation and proper stacking context */}
+                             <PayPalScriptProvider options={paypalOptions}>
+                                 <PayPalButtons 
+                                    style={{ 
+                                        layout: "horizontal", 
+                                        color: "gold", 
+                                        shape: "rect", 
+                                        label: "paypal",
+                                        tagline: false, // Disable the tagline text
+                                        height: 45      // Match height of other buttons
+                                    }}
+                                    className="paypal-button-container"
+                                    disabled={!user || items.length === 0}
+                                    createOrder={createPayPalOrder}
+                                    onApprove={onPayPalApprove}
+                                    onCancel={() => {
+                                        isCreatingOrder.current = false;
+                                        toast.info(t("messages.paymentCancelled", { defaultValue: "Payment cancelled" }));
+                                    }}
+                                    onError={(err) => {
+                                        isCreatingOrder.current = false;
+                                        toast.error(t("messages.error", { defaultValue: "An error occurred with PayPal" }));
+                                    }}
+                                 />
+                             </PayPalScriptProvider>
+                         </div>
+                     ) : (
+                         <div className="text-center text-red-500 text-sm p-2 border border-red-200 bg-red-50 rounded">
+                             PayPal Client ID is missing.
+                         </div>
+                     )}
+                  </div>
+                )}
+              </div>
                 <Link
                   to="/services"
                   className="block w-full border border-primary text-primary hover:bg-primary/5 py-3 rounded-lg font-semibold text-center transition-colors"
                 >
                   {t("summary.continueShopping")}
                 </Link>
-              </form>
+
             </div>
           </div>
         </div>

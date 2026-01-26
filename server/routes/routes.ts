@@ -65,7 +65,8 @@ export async function registerRoutes(
   apiRouter.get('/config', (req, res) => {
     res.json({
       data: {
-        payoneerEnabled: process.env.PAYONEER_ENABLED === 'true'
+        payoneerEnabled: process.env.PAYONEER_ENABLED === 'true',
+        paypalClientId: process.env.PAYPAL_CLIENT_ID
       }
     });
   });
@@ -255,10 +256,13 @@ export async function registerRoutes(
     try {
       const checkoutData = checkoutSchema.parse(req.body);
       const userId = req.user!.id;
+      const requestedMethod = (req.body.paymentMethod || 'payoneer').toLowerCase();
 
       // 1. Transaction & Payment Setup
       const transactionId = `TXN-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
       
+      console.log(`[Checkout] Initiating checkout. Method: ${requestedMethod}, Tx: ${transactionId}`);
+
       // Calculate Affiliate Logic
       let affiliateId: number | undefined;
       let commissionRate = 0;
@@ -271,7 +275,6 @@ export async function registerRoutes(
         }
       }
 
-      const orders = [];
       let calculatedTotal = 0;
 
       // 2. Fetch service prices and calculate total (SERVER-SIDE ONLY)
@@ -314,7 +317,6 @@ export async function registerRoutes(
         });
 
         if (!orderResult.success) throw new Error(orderResult.error);
-        orders.push(orderResult.data!);
       }
 
       // 3. Apply Tax (Fetched from DB)
@@ -323,16 +325,29 @@ export async function registerRoutes(
       const taxAmount = Math.round(calculatedTotal * (taxRate / 100));
       const finalTotal = calculatedTotal + taxAmount;
 
-      // 4. Create One Payment Record (Enforce Payoneer)
+      // 4. Create Payment Record
       await storage.createPayment({
         userId,
         amount: finalTotal,
-        method: 'payoneer', // Force Payoneer
+        method: requestedMethod, // Use requested method
         status: 'pending',
         transactionId
       });
 
-      // 5. Initiate Payoneer Payment Intent Immediately
+      // 5. Handle Payment Method Specifics
+      if (requestedMethod === 'paypal') {
+          // For PayPal, we just return the transactionId. 
+          // The frontend will then call /payments/paypal/create to actually init with PayPal Gateway.
+          console.log(`[Checkout] PayPal Flow. Returning transactionId: ${transactionId}`);
+          res.status(201).json({ 
+            success: true,
+            transactionId,
+            method: 'paypal'
+          });
+          return;
+      }
+
+      // Default / Payoneer Flow
       try {
         const intent = await payoneerGateway.createPaymentIntent(
             finalTotal, 
@@ -341,7 +356,7 @@ export async function registerRoutes(
             req.user
         );
         
-        console.log(`[Checkout] Success. Transaction: ${transactionId}. Total: ${finalTotal}. Redirecting...`);
+        console.log(`[Checkout] Success (Payoneer). Transaction: ${transactionId}. Redirecting...`);
         res.status(201).json({ 
           success: true,
           redirectUrl: intent.url,
@@ -349,8 +364,6 @@ export async function registerRoutes(
         });
       } catch (e: any) {
         console.error('[Checkout] Payoneer Error:', e);
-        // We still created the pending orders, but payment failed to initiate.
-        // Return 201 because records exist, but indicate redirect failure.
         res.status(201).json({ 
           success: false,
           error: "Failed to initiate Payoneer payment: " + e.message,

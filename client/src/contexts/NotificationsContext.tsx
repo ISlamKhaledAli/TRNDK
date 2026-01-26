@@ -65,7 +65,6 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     fetchNotifications();
 
     const handleNewNotification = (notification: Notification) => {
-      console.log("[NotificationsContext] New notification received:", notification);
       setNotifications(prev => [notification, ...prev]);
     };
 

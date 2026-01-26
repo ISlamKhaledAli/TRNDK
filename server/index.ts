@@ -31,7 +31,9 @@ const app = express();
 
 // Security Hardening
 app.use(helmet({
-  contentSecurityPolicy: false, // Disabled to allow external assets if needed, or configure strictly
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" }, 
 }));
 app.use(cors());
 app.use(compression());
