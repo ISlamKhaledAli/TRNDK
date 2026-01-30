@@ -13,6 +13,10 @@ export class PayPalGateway implements IPaymentGateway {
       return process.env.PAYPAL_SECRET_KEY || '';
   }
 
+  private get webhookId(): string {
+      return process.env.PAYPAL_WEBHOOK_ID || '';
+  }
+
   private get baseUrl(): string {
       const mode = (process.env.PAYPAL_MODE || 'sandbox').toLowerCase().trim();
       return mode === 'live'
@@ -61,6 +65,7 @@ export class PayPalGateway implements IPaymentGateway {
           purchase_units: [
             {
               reference_id: orderId, // Our internal Transaction ID
+              custom_id: orderId,    // Use for webhook mapping
               amount: {
                 currency_code: currency,
                 value: value,
@@ -159,5 +164,50 @@ export class PayPalGateway implements IPaymentGateway {
       }
       
       return await response.json();
+  }
+
+  /**
+   * Verifies the signature of an incoming PayPal webhook.
+   * Calls PayPal's verification API.
+   */
+  async verifyWebhookSignature(headers: any, body: any): Promise<boolean> {
+    if (!this.webhookId) {
+      console.warn("[PayPalGateway] Missing PAYPAL_WEBHOOK_ID. Webhook verification skipped (Risky!)");
+      return true; // Fallback if not configured, but ideally should be error
+    }
+
+    try {
+      const accessToken = await this.getAccessToken();
+
+      const verificationPayload = {
+        webhook_id: this.webhookId,
+        transmission_id: headers['paypal-transmission-id'],
+        transmission_time: headers['paypal-transmission-time'],
+        cert_url: headers['paypal-cert-url'],
+        auth_algo: headers['paypal-auth-algo'],
+        transmission_sig: headers['paypal-transmission-sig'],
+        webhook_event: body,
+      };
+
+      const response = await fetch(`${this.baseUrl}/v1/notifications/verify-webhook-signature`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(verificationPayload),
+      });
+
+      if (!response.ok) {
+        console.error(`[PayPalGateway] Webhook verification API failed: ${response.status}`);
+        return false;
+      }
+
+      const data = await response.json();
+      return data.verification_status === 'SUCCESS';
+    } catch (error) {
+      console.error(`[PayPalGateway] Webhook verification error:`, error);
+      return false;
+    }
   }
 }

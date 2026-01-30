@@ -292,16 +292,23 @@ const ServiceDetailsPage = () => {
                       <div className="flex items-center gap-2 border border-border rounded-lg p-1 bg-secondary/30 w-fit">
                         <button
                           onClick={() =>
-                            setQuantity(Math.max(100, quantity - 100))
+                            setQuantity(Math.max(0, quantity - 100))
                           }
                           disabled={service.isActive === false}
                           className="p-1 hover:bg-card rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Minus className="w-3 h-3" />
                         </button>
-                        <span className="text-xs font-medium w-12 text-center">
-                          {quantity}
-                        </span>
+                        <input
+                          type="number"
+                          value={quantity}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value);
+                            setQuantity(isNaN(val) ? 0 : val);
+                          }}
+                          disabled={service.isActive === false}
+                          className="text-xs font-medium w-16 text-center bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-primary/30 rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        />
                         <button
                           onClick={() => setQuantity(quantity + 100)}
                           disabled={service.isActive === false}

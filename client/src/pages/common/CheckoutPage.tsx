@@ -31,9 +31,9 @@ const CheckoutPage = () => {
   const isRtl = i18n.language === "ar";
   const [loading, setLoading] = useState(false);
   const [taxRate, setTaxRate] = useState<number>(15);
-  const [payoneerEnabled, setPayoneerEnabled] = useState(true);
+  const [payoneerEnabled, setPayoneerEnabled] = useState(false);
   const [paypalEnabled, setPaypalEnabled] = useState(true);
-  const [selectedMethod, setSelectedMethod] = useState<string>("payoneer");
+  const [selectedMethod, setSelectedMethod] = useState<string>("paypal");
   const [paypalClientId, setPaypalClientId] = useState<string>(""); 
 
   useEffect(() => {
@@ -48,7 +48,7 @@ const CheckoutPage = () => {
       try {
         const result = await apiClient.getConfig();
         if (result.data.payoneerEnabled) {
-          setPayoneerEnabled(true);
+          setPayoneerEnabled(!true);
         }
         if (result.data.paypalClientId) {
             setPaypalClientId(result.data.paypalClientId);

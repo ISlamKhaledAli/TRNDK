@@ -21,6 +21,7 @@ import { emitNewOrder, emitNewUser, emitNotification, emitOrderStatusUpdate, emi
 import passport from "passport";
 import payoutsRouter from "./payouts";
 import paymentsRouter from "./payments";
+import webhooksRouter from "./webhooks";
 import { normalizePrice, validatePrice } from "../utils/price";
 import { PayoneerGateway } from "../services/payments/payoneer-gateway";
 
@@ -42,6 +43,9 @@ export async function registerRoutes(
       uptime: process.uptime()
     });
   });
+
+  // --- Webhooks (Public) ---
+  apiRouter.use('/webhooks', webhooksRouter);
 
   // --- Public Routes ---
 

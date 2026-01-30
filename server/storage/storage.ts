@@ -68,6 +68,8 @@ export interface IStorage {
   createOrder(order: InsertOrder): Promise<StorageResult<Order>>;
   updateOrderStatus(id: number, status: string): Promise<StorageResult<Order>>;
   deleteOrder(id: number, userId: number): Promise<StorageResult<void>>;
+  getOrdersByTransactionId(transactionId: string): Promise<Order[]>;
+  updateOrdersByTransactionId(transactionId: string, status: string): Promise<StorageResult<void>>;
 
   // Payments
   getAllPayments(): Promise<Payment[]>;
@@ -408,6 +410,21 @@ export class MemStorage implements IStorage {
     return Array.from(this.orders.values())
       .filter(o => o.status !== 'pending_payment')
       .sort((a, b) => b.id - a.id);
+  }
+
+  async getOrdersByTransactionId(transactionId: string): Promise<Order[]> {
+    return Array.from(this.orders.values())
+      .filter(o => o.transactionId === transactionId);
+  }
+
+  async updateOrdersByTransactionId(transactionId: string, status: string): Promise<StorageResult<void>> {
+    const orders = Array.from(this.orders.entries())
+      .filter(([id, o]) => o.transactionId === transactionId);
+    
+    for (const [id, order] of orders) {
+      this.orders.set(id, { ...order, status, updatedAt: new Date() });
+    }
+    return { success: true };
   }
 
   // Payments
@@ -1076,12 +1093,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getAllOrders(): Promise<Order[]> {
-    return await db.order.findMany({
+    return db.order.findMany({
       where: {
         NOT: { status: 'pending_payment' }
       },
       orderBy: { id: 'desc' }
     });
+  }
+
+  async getOrdersByTransactionId(transactionId: string): Promise<Order[]> {
+    return db.order.findMany({
+      where: { transactionId },
+    }) as unknown as Order[];
+  }
+
+  async updateOrdersByTransactionId(transactionId: string, status: string): Promise<StorageResult<void>> {
+    try {
+      await db.order.updateMany({
+        where: { transactionId },
+        data: { status, updatedAt: new Date() },
+      });
+      return { success: true };
+    } catch (error) {
+      console.error("[Storage] Failed to update orders by transactionId:", error);
+      return { success: false, error: "Database update failed" };
+    }
   }
 
   async createOrder(insertOrder: InsertOrder): Promise<StorageResult<Order>> {

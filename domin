@@ -1,0 +1,59 @@
+ nano /etc/nginx/sites-available/trndk.com.conf
+
+
+ server {
+    listen 80;
+    server_name trndk.com www.trndk.com;
+
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+
+
+
+
+
+# 1) HTTP -> HTTPS
+server {
+    listen 80;
+    server_name app.trndk.com web.trndk.com;
+
+    return 301 https://$host$request_uri;
+}
+
+# 2) HTTPS reverse proxy to Node app
+server {
+    listen 443 ssl http2;
+    server_name app.trndk.com web.trndk.com;
+
+    # Certbot paths (لازم تكون الشهادة موجودة للدومينين)
+    ssl_certificate     /etc/letsencrypt/live/web.trndk.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/web.trndk.com/privkey.pem;
+
+    client_max_body_size 50m;
+
+    location / {
+        proxy_pass http://127.0.0.1:5000;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # WebSocket (socket.io)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+}
+
+
+
+ln -s /etc/nginx/sites-available/trndk.com.conf /etc/nginx/sites-enabled/
+
+certbot --nginx -d trndk.com -d www.trndk.com 
