@@ -11,8 +11,29 @@
 import { z } from "zod";
 
 // === CONSTANTS ===
-export const SERVICE_CATEGORIES = ["Instagram", "Facebook", "TikTok", "YouTube", "Other Services"] as const;
+export const SERVICE_CATEGORIES = [
+  "Business Solutions",
+  "Best Sellers",
+  "Creative Design",
+  "Video Production",
+  "Web Design",
+  "Growth Services",
+  "Digital Library"
+] as const;
 export type ServiceCategory = (typeof SERVICE_CATEGORIES)[number];
+
+export const PLATFORMS = [
+  "Instagram",
+  "Facebook",
+  "TikTok",
+  "YouTube",
+  "Twitter",
+  "Snapchat",
+  "Telegram",
+  "Threads",
+  "None"
+] as const;
+export type Platform = (typeof PLATFORMS)[number];
 
 export const COMMISSION_STATUS = {
   NONE: "none",
@@ -49,7 +70,9 @@ export interface Service {
   price: number;
   imagePath?: string | null;
   category: string;
+  platform?: string | null;
   duration?: string | null;
+  downloadPath?: string | null;
   isActive?: boolean | null;
   createdAt?: Date | null;
   updatedAt?: Date | null;
@@ -147,7 +170,9 @@ export const insertServiceSchema = z.object({
     required_error: "Category is required",
     invalid_type_error: "Invalid category",
   }),
+  platform: z.enum(PLATFORMS).optional().nullable(),
   duration: z.string().optional().nullable(),
+  downloadPath: z.string().optional().nullable(),
   isActive: z.boolean().optional().default(true),
 });
 

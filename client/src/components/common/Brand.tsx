@@ -1,5 +1,5 @@
-import { Link, useLocation } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
+import { useSidebar } from "@/contexts/SidebarContext";
 
 interface BrandProps {
   className?: string;
@@ -12,8 +12,20 @@ const Brand = ({
   logoSize = "w-10 h-10", 
   scale = 2.5
 }: BrandProps) => {
+  const { isMobile, closeSidebar } = useSidebar();
+
+  const handleClick = () => {
+    if (isMobile) {
+      closeSidebar();
+    }
+  };
+
   return (
-    <Link to="/" className={`inline-flex items-center justify-center ${className}`}>
+    <Link 
+      to="/" 
+      onClick={handleClick}
+      className={`inline-flex items-center justify-center ${className}`}
+    >
       <img 
         src="/TRNDK.svg" 
         alt="TRNDK" 

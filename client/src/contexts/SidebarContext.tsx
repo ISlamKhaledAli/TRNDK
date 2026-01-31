@@ -51,7 +51,7 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
     return () => window.removeEventListener("resize", handleResize);
   }, [isOpen]);
 
-  // Handle ESC key to close sidebar
+  // Handle ESC key and scroll lock
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isOpen && isMobile) {
@@ -63,11 +63,16 @@ export const SidebarProvider: React.FC<{ children: React.ReactNode }> = ({
       document.addEventListener("keydown", handleEsc);
       // Prevent body scroll when sidebar is open
       document.body.style.overflow = "hidden";
-      return () => {
-        document.removeEventListener("keydown", handleEsc);
-        document.body.style.overflow = "auto";
-      };
+    } else {
+      // Ensure body scroll is restored when sidebar is closed
+      document.body.style.overflow = "auto";
     }
+
+    return () => {
+      document.removeEventListener("keydown", handleEsc);
+      // Always restore scroll on unmount for safety
+      document.body.style.overflow = "auto";
+    };
   }, [isOpen, isMobile]);
 
   const toggleSidebar = useCallback(() => {

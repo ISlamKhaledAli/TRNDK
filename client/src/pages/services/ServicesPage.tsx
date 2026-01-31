@@ -20,7 +20,7 @@ interface Service {
 const ServicesPage = () => {
   const { services } = useLoaderData() as { services: Service[] };
   const [searchParams, setSearchParams] = useSearchParams();
-  const { t, i18n } = useTranslation("home");
+  const { t, i18n } = useTranslation(["home", "common"]);
   const { t: ts } = useTranslation("services");
   const isRtl = i18n.language === "ar";
   const categoryParam = searchParams.get("category");
@@ -31,12 +31,14 @@ const ServicesPage = () => {
     const fetchCategories = async () => {
       try {
         const { data } = await apiClient.getServiceCategories();
-        const formatted = data
-          .filter((cat: string) => cat !== "Other Services")
-          .map((cat: string) => ({
-          id: cat,
-          label: cat
-        }));
+        const formatted = data.map((cat: string) => {
+          // Map category name to camelCase key for translation
+          const key = cat.charAt(0).toLowerCase() + cat.slice(1).replace(/\s+/g, '');
+          return {
+            id: cat,
+            label: t(`common:categories.${key}`) || cat
+          };
+        });
         setCategories([{ id: "all", label: ts("allCategories") }, ...formatted]);
       } catch (error) {
         console.error('Failed to fetch categories:', error);
@@ -67,9 +69,6 @@ const ServicesPage = () => {
   }, [searchParams, selectedCategory]);
 
   const filteredServices = services.filter((service) => {
-    // Strict exclusion of 'Other Services'
-    if (service.category === "Other Services") return false;
-    
     return selectedCategory === "all" || service.category === selectedCategory;
   });
 

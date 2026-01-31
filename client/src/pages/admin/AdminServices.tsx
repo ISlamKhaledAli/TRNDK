@@ -26,6 +26,8 @@ interface Service {
   duration?: string;
   imagePath?: string;
   isActive?: boolean;
+  downloadPath?: string;
+  platform?: string;
 }
 
 interface FormData {
@@ -38,6 +40,9 @@ interface FormData {
   duration?: string;
   imagePath?: string;
   image?: File;
+  downloadPath?: string;
+  digitalFile?: File;
+  platform?: string;
 }
 
 const AdminServices = () => {
@@ -61,6 +66,9 @@ const AdminServices = () => {
     duration: '',
     imagePath: '',
     image: undefined,
+    downloadPath: '',
+    digitalFile: undefined,
+    platform: '',
   });
 
   // Fetch categories and sync state if loader data changes
@@ -113,6 +121,9 @@ const AdminServices = () => {
         duration: service.duration || '',
         imagePath: service.imagePath || '',
         image: undefined,
+        downloadPath: service.downloadPath || '',
+        digitalFile: undefined,
+        platform: service.platform || '',
       });
     } else {
       setEditingId(null);
@@ -126,6 +137,9 @@ const AdminServices = () => {
         duration: '',
         imagePath: '',
         image: undefined,
+        downloadPath: '',
+        digitalFile: undefined,
+        platform: '',
       });
     }
     setShowModal(true);
@@ -148,18 +162,52 @@ const AdminServices = () => {
     try {
       setLoading(true);
       
+      const category = formData.category;
+      const isDigitalLibrary = category === "Digital Library";
+      const isGrowthService = category === "Growth Services";
+      const isProfessionalService = ["Business Solutions", "Creative Design", "Video Production", "Web Design"].includes(category || "");
+
+      // 1. Handle Digital File Upload if present
+      let currentDownloadPath = formData.downloadPath;
+      if (isDigitalLibrary && formData.digitalFile) {
+        // Enforce 500MB limit on frontend
+        const maxSize = 500 * 1024 * 1024;
+        if (formData.digitalFile.size > maxSize) {
+          toast.error("File size exceeds the maximum allowed limit (500 MB). Please upload a smaller file.");
+          setLoading(false);
+          return;
+        }
+
+        toast.info("Uploading digital file...");
+        const uploadResult = await apiClient.uploadDigitalFile(formData.digitalFile);
+        currentDownloadPath = uploadResult.path;
+      }
+
       const data = new FormData();
-      data.append('name', formData.name);
+      data.append('name', formData.name ?? '');
       if (formData.nameEn) data.append('nameEn', formData.nameEn);
-      data.append('description', formData.description);
+      data.append('description', formData.description ?? '');
       if (formData.descriptionEn) data.append('descriptionEn', formData.descriptionEn);
       data.append('price', price.toString());
-      if (formData.category) data.append('category', formData.category);
-      if (formData.duration) data.append('duration', formData.duration);
+
+      if (category) data.append('category', category);
+      
+      // Conditionally append fields based on category
+      if (isGrowthService || isProfessionalService) {
+        if (formData.duration) data.append('duration', formData.duration);
+      }
+      
+      if (isGrowthService) {
+        if (formData.platform) data.append('platform', formData.platform);
+      }
+      
+      if (isDigitalLibrary) {
+        if (currentDownloadPath) data.append('downloadPath', currentDownloadPath);
+      }
+
       if (formData.image) {
         data.append('image', formData.image);
       } else if (formData.imagePath) {
-        // preserve existing path if no new image
         data.append('imagePath', formData.imagePath);
       }
 
@@ -173,7 +221,7 @@ const AdminServices = () => {
       
       revalidate();
       handleCloseModal();
-    } catch (error) {
+    } catch (error: any) {
       toast.error(editingId ? t("services.updateError") : t("services.createError"));
       console.error('Error:', error);
     } finally {
@@ -292,9 +340,16 @@ const AdminServices = () => {
                     </td>
                     <td className="p-4 text-sm font-medium text-foreground text-start">{service.name}</td>
                     <td className="p-4 text-start">
-                      <span className="px-2 py-1 text-xs rounded-full bg-secondary text-foreground">
-                        {service.category || t("services.fields.noCategory")}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className="px-2 py-1 text-xs rounded-full bg-secondary text-foreground w-fit">
+                          {service.category || t("services.fields.noCategory")}
+                        </span>
+                        {service.platform && (
+                          <span className="px-2 py-0.5 text-[10px] rounded-full bg-primary/10 text-primary w-fit font-bold uppercase">
+                            {service.platform}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="p-4 text-sm text-foreground text-start">{formatPrice(service.price)}</td>
                     <td className="p-4 text-sm text-foreground text-start">{service.duration || '-'}</td>
@@ -428,16 +483,75 @@ const AdminServices = () => {
                 </select>
               </div>
 
-              <div className="text-start">
-                <label className="block text-sm font-medium text-foreground mb-1">{t("services.fields.duration")}</label>
-                <input
-                  type="text"
-                  value={formData.duration}
-                  onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                  placeholder={t("services.fields.durationPlaceholder")}
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
+              {/* Conditional Fields */}
+              {formData.category === "Growth Services" && (
+                <div className="text-start">
+                  <label className="block text-sm font-medium text-foreground mb-1">{t("services.fields.platform") || "Platform"}</label>
+                  <select
+                    value={formData.platform}
+                    onChange={(e) => setFormData({ ...formData, platform: e.target.value })}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                    required
+                  >
+                    <option value="" disabled>{t("services.fields.selectPlatform") || "Select Platform"}</option>
+                    {[
+                      "Instagram",
+                      "Facebook",
+                      "TikTok",
+                      "YouTube",
+                      "Twitter",
+                      "Snapchat",
+                      "Telegram",
+                      "Threads"
+                    ].map((plt) => (
+                      <option key={plt} value={plt}>{plt}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {(formData.category === "Growth Services" || 
+                ["Business Solutions", "Creative Design", "Video Production", "Web Design"].includes(formData.category || "")) && (
+                <div className="text-start">
+                  <label className="block text-sm font-medium text-foreground mb-1">{t("services.fields.duration")}</label>
+                  <input
+                    type="text"
+                    value={formData.duration}
+                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                    placeholder={t("services.fields.durationPlaceholder")}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+              )}
+
+              {formData.category === "Digital Library" && (
+                <div className="text-start col-span-1 md:col-span-2 bg-secondary/20 p-4 rounded-lg border border-primary/20">
+                  <label className="block text-sm font-medium text-foreground mb-1">{t("services.fields.digitalFile")}</label>
+                  <div className="flex flex-col gap-2">
+                    {formData.downloadPath && (
+                      <div className="flex items-center gap-2 mb-2 p-2 bg-primary/5 rounded border border-primary/10">
+                        <span className="text-xs text-primary font-medium">{t("services.fields.currentImage").replace(':', '')} {t("common:file") || "file"}:</span>
+                        <span className="text-xs text-muted-foreground truncate max-w-xs">{formData.downloadPath.split('/').pop()}</span>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept=".pdf,.zip"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setFormData({ ...formData, digitalFile: file });
+                        }
+                      }}
+                      className="w-full text-foreground text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                      required={!formData.downloadPath}
+                    />
+                    <p className="text-xs text-muted-foreground mt-1 italic">
+                      {t("services.fields.digitalFileHint")}
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <div className="text-start">
                 <label className="block text-sm font-medium text-foreground mb-1">{t("services.fields.image")}</label>

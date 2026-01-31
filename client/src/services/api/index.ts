@@ -170,6 +170,20 @@ export const apiClient = {
     return res.json();
   },
 
+  async uploadDigitalFile(file: File) {
+    const data = new FormData();
+    data.append('file', file);
+    const res = await fetch(`${API_BASE}/admin/services/upload-digital`, {
+      method: 'POST',
+      body: data,
+    });
+    if (!res.ok) {
+      const error = await res.json();
+      throw new Error(error.message || 'Failed to upload digital file');
+    }
+    return res.json();
+  },
+
   async deleteOrder(id: number) {
     const res = await fetch(`${API_BASE}/orders/${id}`, {
       method: 'DELETE',

@@ -1,6 +1,6 @@
-import { Eye, CreditCard, Loader2, Filter } from "lucide-react";
+import { Eye, CreditCard, Loader2, Filter, Plus, Download, CheckCircle2 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useLoaderData, useRevalidator } from "react-router-dom";
+import { useNavigate, useLoaderData, useRevalidator } from "react-router-dom";
 import { useSocket } from "@/hooks/useSocket";
 import { apiClient } from "@/services/api";
 import { toast } from "sonner";
@@ -33,6 +33,8 @@ interface Order {
   service?: {
     name: string;
     duration?: string;
+    category?: string;
+    downloadUrl?: string;
   };
 }
 
@@ -70,6 +72,7 @@ const ClientOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const { t, i18n } = useTranslation(["client", "common"]);
   const { on, off } = useSocket();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleStatusUpdate = (order: any) => {
@@ -242,6 +245,17 @@ const ClientOrders = () => {
                             {t("orders.payNow")}
                           </button>
                         )}
+
+                        {order.service?.category === "Digital Library" && order.status === 'completed' && (
+                          <button
+                            onClick={() => navigate(`/client/orders/${order.id}/download`)}
+                            className="inline-flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-bold"
+                            title={t("client:digitalDownload.download")}
+                          >
+                            <Download className="w-4 h-4" /> 
+                            {t("client:digitalDownload.download")}
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -309,6 +323,22 @@ const ClientOrders = () => {
                               titleLink={`/services/${selectedOrder.serviceId}`} 
                           />
                        </div>
+                    </div>
+                 )}
+
+                 {selectedOrder.service?.category === "Digital Library" && selectedOrder.status === 'completed' && (
+                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-6 text-center shadow-inner">
+                       <p className="text-sm text-foreground mb-4 font-medium flex items-center justify-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-success" />
+                        {t("client:digitalDownload.downloadReady")}
+                       </p>
+                       <button 
+                          onClick={() => navigate(`/client/orders/${selectedOrder.id}/download`)}
+                          className="flex items-center justify-center gap-2 bg-primary text-primary-foreground px-8 py-3 rounded-xl font-bold hover:bg-primary/90 transition-all w-full shadow-lg shadow-primary/20"
+                       >
+                          <Download className="w-5 h-5" />
+                          {t("client:digitalDownload.downloadFiles")}
+                       </button>
                     </div>
                  )}
                 

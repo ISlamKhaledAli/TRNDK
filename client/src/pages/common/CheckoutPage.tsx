@@ -238,62 +238,85 @@ const CheckoutPage = () => {
               <div className="divide-y divide-border">
                 {items.length > 0 ? (
                   items.map((item) => (
-                    <div key={item.id} className="p-4 flex gap-4">
-                      <div className="w-20 h-20 rounded-lg bg-muted overflow-hidden shrink-0">
+                    <div key={item.id} className="group/item p-4 sm:p-6 flex flex-col sm:flex-row gap-4 sm:gap-6 hover:bg-secondary/20 transition-colors relative">
+                      <div className="w-full sm:w-24 h-40 sm:h-24 rounded-xl bg-muted overflow-hidden shrink-0 shadow-sm border border-border/50 group-hover/item:border-primary/20 transition-colors">
                         <img
                           src={item.imagePath ? (item.imagePath.startsWith('http') ? item.imagePath : `/${item.imagePath}`) : "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=100&h=100&fit=crop"}
                           alt={item.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-500"
                         />
                       </div>
-                      <div className="flex-1 min-w-0 text-start">
-                        <div className="flex justify-between items-start mb-1 gap-2">
-                          <h3 className="font-semibold text-sm line-clamp-1">
-                            {item.name}
-                          </h3>
-                          <button
-                            onClick={() => removeItem(item.id)}
-                            className="text-muted-foreground hover:text-destructive shrink-0"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                        <p
-                          className="text-xs text-muted-foreground mb-3 truncate"
-                          dir="ltr"
-                        >
-                          {item.link}
-                        </p>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 border border-border rounded-lg p-1 bg-secondary/30">
+                      <div className="flex-1 min-w-0 flex flex-col justify-between">
+                        <div>
+                          <div className="flex justify-between items-start mb-1.5 gap-2">
+                            <h3 className="font-bold text-base text-foreground line-clamp-1">
+                              {item.name}
+                            </h3>
                             <button
-                              onClick={() =>
-                                updateQuantity(
-                                  item.id,
-                                  Math.max(100, item.quantity - 100)
-                                )
-                              }
-                              className="p-1 hover:bg-card rounded transition-colors"
+                              onClick={() => removeItem(item.id)}
+                              className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all active:scale-90"
+                              aria-label="Remove item"
                             >
-                              <Minus className="w-3 h-3" />
-                            </button>
-                            <span className="text-xs font-medium w-12 text-center">
-                              {item.quantity}
-                            </span>
-                            <button
-                              onClick={() =>
-                                updateQuantity(item.id, item.quantity + 100)
-                              }
-                              className="p-1 hover:bg-card rounded transition-colors"
-                            >
-                              <Plus className="w-3 h-3" />
+                              <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
-                          <PriceDisplay
-                            amount={item.price * (item.quantity / 1000)}
-                            isBold
-                            className="items-end"
-                          />
+                          <p
+                            className="text-xs text-muted-foreground/80 mb-4 bg-muted/50 px-2 py-1 rounded inline-block max-w-full truncate"
+                            dir="ltr"
+                          >
+                            {item.link}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-4 mt-auto">
+                          {/* Premium Quantity Selector - Visible for Growth Services ONLY */}
+                          {item.category === "Growth Services" ? (
+                            <div className="flex items-center gap-1 p-0.5 bg-secondary/50 rounded-lg border border-border/50 backdrop-blur-sm group/quantity focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-primary/5 transition-all">
+                              <button
+                                onClick={() =>
+                                  updateQuantity(
+                                    item.id,
+                                    Math.max(100, item.quantity - 100)
+                                  )
+                                }
+                                className="flex items-center justify-center w-7 h-7 rounded-md text-foreground hover:bg-primary hover:text-primary-foreground active:scale-90 transition-all"
+                              >
+                                <Minus className="w-3 h-3 stroke-[2.5]" />
+                              </button>
+                              
+                              <input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => {
+                                  const val = parseInt(e.target.value);
+                                  if (!isNaN(val)) {
+                                    updateQuantity(item.id, val);
+                                  }
+                                }}
+                                className="text-xs font-bold w-12 text-center bg-transparent border-none focus:outline-none focus:ring-0 p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                              />
+
+                              <button
+                                onClick={() =>
+                                  updateQuantity(item.id, item.quantity + 100)
+                                }
+                                className="flex items-center justify-center w-7 h-7 rounded-md text-foreground hover:bg-primary hover:text-primary-foreground active:scale-90 transition-all font-bold"
+                              >
+                                <Plus className="w-3 h-3 stroke-[2.5]" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="h-[34px]" /> /* Hidden spacer to prevent layout shift */
+                          )}
+
+                          <div className="text-end">
+                            <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mb-0.5">Subtotal</p>
+                            <PriceDisplay
+                              amount={item.category === "Growth Services" ? item.price * (item.quantity / 1000) : item.price}
+                              isBold
+                              className="items-end text-lg"
+                            />
+                          </div>
                         </div>
                       </div>
                     </div>

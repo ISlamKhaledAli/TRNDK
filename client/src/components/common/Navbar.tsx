@@ -1,4 +1,4 @@
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { ShoppingCart, User, Globe, Menu, X, Sun, Moon, LogOut, LayoutDashboard } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -40,11 +40,24 @@ const Navbar = () => {
     setMounted(true);
   }, []);
 
-  const navLinks = [
-    { href: "/", label: t("nav.home") },
-    { href: "/services", label: t("nav.services") },
-    { href: "/services/other", label: t("nav.otherServices") },
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const currentCategory = searchParams.get("category");
+
+  const allNavLinks = [
+    { href: "/services?category=Business Solutions", label: t("common:categories.businessSolutions"), category: "Business Solutions" },
+    { href: "/services?category=Best Sellers", label: t("common:categories.bestSellers"), category: "Best Sellers" },
+    { href: "/services?category=Creative Design", label: t("common:categories.creativeDesign"), category: "Creative Design" },
+    { href: "/services?category=Video Production", label: t("common:categories.videoProduction"), category: "Video Production" },
+    { href: "/services?category=Web Design", label: t("common:categories.webDesign"), category: "Web Design" },
+    { href: "/services?category=Growth Services", label: t("common:categories.growthServices"), category: "Growth Services" },
+    { href: "/services?category=Digital Library", label: t("common:categories.digitalLibrary"), category: "Digital Library" },
   ];
+
+  const isLinkActive = (category?: string) => {
+    if (location.pathname !== "/services") return false;
+    return currentCategory === category;
+  };
 
   return (
     <header className="sticky top-0 z-50 bg-card border-b border-border">
@@ -56,23 +69,23 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <NavLink
-                key={link.href}
-                to={link.href}
-                end={link.href === "/" || link.href === "/services"}
-                className={({ isActive }) =>
-                  `relative px-4 py-2 text-sm transition-all rounded-lg ${
-                    isActive
+          <nav className="hidden xl:flex items-center gap-0.5">
+            {allNavLinks.map((link) => {
+              const active = isLinkActive(link.category);
+              return (
+                <NavLink
+                  key={link.href}
+                  to={link.href}
+                  className={`relative px-1.5 py-2 text-sm transition-all rounded-lg whitespace-nowrap ${
+                    active
                       ? "font-bold text-primary bg-primary/15 shadow-sm border-b-2 border-primary"
                       : "font-medium text-foreground/70 hover:text-foreground hover:bg-accent/50"
-                  }`
-                }
-              >
-                {link.label}
-              </NavLink>
-            ))}
+                  }`}
+                >
+                  {link.label}
+                </NavLink>
+              );
+            })}
           </nav>
 
           {/* Actions */}
@@ -171,7 +184,7 @@ const Navbar = () => {
 
             {/* Mobile Menu Toggle */}
             <button
-              className="lg:hidden p-2 rounded-lg hover:bg-accent transition-colors"
+              className="xl:hidden p-2 rounded-lg hover:bg-accent transition-colors"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               {isMobileMenuOpen ? (
@@ -185,24 +198,24 @@ const Navbar = () => {
 
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
-          <nav className="lg:hidden py-4 border-t border-border animate-fade-in">
-            {navLinks.map((link) => (
-              <NavLink
-                key={link.href}
-                to={link.href}
-                end={link.href === "/" || link.href === "/services"}
-                className={({ isActive }) =>
-                  `relative block px-4 py-3 text-sm transition-all rounded-lg ${
-                    isActive
+          <nav className="xl:hidden py-4 border-t border-border animate-fade-in">
+            {allNavLinks.map((link) => {
+              const active = isLinkActive(link.category);
+              return (
+                <NavLink
+                  key={link.href}
+                  to={link.href}
+                  className={`relative block px-4 py-3 text-sm transition-all rounded-lg ${
+                    active
                       ? "font-bold text-primary bg-primary/15 shadow-sm border-s-4 border-primary"
                       : "font-medium text-foreground/70 hover:text-foreground hover:bg-accent/50"
-                  }`
-                }
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                {link.label}
-              </NavLink>
-            ))}
+                  }`}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {link.label}
+                </NavLink>
+              );
+            })}
             {user ? (
               <div className="sm:hidden border-t border-border mt-2 pt-2">
                 <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 mb-1">

@@ -22,7 +22,7 @@ import NotFound from "@/pages/common/NotFound";
 // Client Pages
 import ClientDashboard from "@/pages/client/ClientDashboard";
 import ClientOrders from "@/pages/client/ClientOrders";
-
+import DownloadPage from "@/pages/client/DownloadPage";
 import ClientProfile from "@/pages/client/ClientProfile";
 
 // Admin Pages
@@ -157,6 +157,10 @@ export const router = createBrowserRouter([
                 throw new Response("Failed to load orders", { status: 500 });
               }
             }
+          },
+          {
+            path: "/client/orders/:orderId/download",
+            element: <DownloadPage />
           },
 
           {

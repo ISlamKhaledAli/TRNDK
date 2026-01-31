@@ -12,6 +12,7 @@ import {
   CheckCircle,
   Plus,
   Minus,
+  Send,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { apiClient } from "@/services/api";
@@ -123,7 +124,11 @@ const ServiceDetailsPage = () => {
     : [];
 
   const handleAddToCart = () => {
-    if (!link.trim()) {
+    const isBusinessCategory = ["Business Solutions", "Creative Design", "Video Production", "Web Design"].includes(service.category || "");
+    const isDigitalLibrary = service.category === "Digital Library";
+    
+    // For business categories, link is optional
+    if (!isBusinessCategory && !link.trim()) {
       toast.error(t("serviceDetails:linkError"));
       return;
     }
@@ -138,9 +143,10 @@ const ServiceDetailsPage = () => {
       serviceId: service.id,
       name: service.name,
       price: service.price,
-      quantity: quantity,
-      link,
+      quantity: service.category === "Growth Services" ? quantity : 1,
+      link: isBusinessCategory && !link.trim() ? "N/A" : link,
       imagePath: service.imagePath,
+      category: service.category,
     });
 
     toast.success(t("serviceDetails:addedToCart"));
@@ -267,62 +273,103 @@ const ServiceDetailsPage = () => {
 
                   {/* Order Form */}
                   <div className="space-y-4">
+                    {/* Link / Order Description Field */}
                     <div className="text-start">
                       <label className="block text-sm font-medium mb-2">
-                        {t("serviceDetails:linkPlaceholder")}
+                        {["Business Solutions", "Creative Design", "Video Production", "Web Design"].includes(service.category || "") 
+                          ? "Order Description" 
+                          : t("serviceDetails:linkPlaceholder")}
                       </label>
-                      <input
-                        type="url"
-                        placeholder="https://youtube.com/channel/..."
-                        value={link}
-                        onChange={(e) => setLink(e.target.value)}
-                        className="input-base w-full bg-secondary text-foreground rounded-lg px-4 py-3 text-sm border border-border focus:outline-none focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                        dir="ltr"
-                        disabled={service.isActive === false}
-                      />
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {t("serviceDetails:linkHint")}
-                      </p>
+                      {["Business Solutions", "Creative Design", "Video Production", "Web Design"].includes(service.category || "") ? (
+                        <textarea
+                          placeholder="Describe your project requirements here... (Optional)"
+                          value={link}
+                          onChange={(e) => setLink(e.target.value)}
+                          className="input-base w-full bg-secondary text-foreground rounded-lg px-4 py-3 text-sm border border-border focus:outline-none focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed min-h-[100px]"
+                          disabled={service.isActive === false}
+                        />
+                      ) : (
+                        <input
+                          type="url"
+                          placeholder="https://youtube.com/channel/..."
+                          value={link}
+                          onChange={(e) => setLink(e.target.value)}
+                          className="input-base w-full bg-secondary text-foreground rounded-lg px-4 py-3 text-sm border border-border focus:outline-none focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                          dir="ltr"
+                          disabled={service.isActive === false}
+                        />
+                      )}
+                      {!["Business Solutions", "Creative Design", "Video Production", "Web Design"].includes(service.category || "") && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {t("serviceDetails:linkHint")}
+                        </p>
+                      )}
                     </div>
 
-                    <div className="text-start">
-                      <p className="text-sm font-medium mb-2">
-                        {t("serviceDetails:quantityLabel")}
-                      </p>
-                      <div className="flex items-center gap-2 border border-border rounded-lg p-1 bg-secondary/30 w-fit">
-                        <button
-                          onClick={() =>
-                            setQuantity(Math.max(0, quantity - 100))
-                          }
-                          disabled={service.isActive === false}
-                          className="p-1 hover:bg-card rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <Minus className="w-3 h-3" />
-                        </button>
-                        <input
-                          type="number"
-                          value={quantity}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value);
-                            setQuantity(isNaN(val) ? 0 : val);
-                          }}
-                          disabled={service.isActive === false}
-                          className="text-xs font-medium w-16 text-center bg-transparent border-none focus:outline-none focus:ring-1 focus:ring-primary/30 rounded [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                        />
-                        <button
-                          onClick={() => setQuantity(quantity + 100)}
-                          disabled={service.isActive === false}
-                          className="p-1 hover:bg-card rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <Plus className="w-3 h-3" />
-                        </button>
+                    {/* File Upload for Digital Library */}
+                    {service.category === "Digital Library" && (
+                      <div className="text-start">
+                        <label className="block text-sm font-medium mb-2">
+                          Upload Design Assets / Reference Files
+                        </label>
+                        <div className="flex items-center justify-center w-full">
+                          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-border border-dashed rounded-lg cursor-pointer bg-secondary/30 hover:bg-secondary/50 transition-colors">
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                              <Plus className="w-8 h-8 mb-3 text-muted-foreground" />
+                              <p className="mb-2 text-sm text-muted-foreground font-semibold">Click to upload or drag and drop</p>
+                              <p className="text-xs text-muted-foreground">PDF, PNG, JPG or ZIP (MAX. 10MB)</p>
+                            </div>
+                            <input type="file" className="hidden" disabled={service.isActive === false} />
+                          </label>
+                        </div>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {t("serviceDetails:quantityNote", {
-                          defaultValue: "Quantity in increments of 100",
-                        })}
-                      </p>
-                    </div>
+                    )}
+
+                    {/* Quantity Selector - Visible for Growth Services ONLY */}
+                    {(service.category === "Growth Services") && (
+                      <div className="text-start">
+                        <p className="text-sm font-medium mb-2">
+                          {t("serviceDetails:quantityLabel")}
+                        </p>
+                        <div className="flex items-center gap-1.5 p-1 bg-secondary/50 rounded-xl border border-border/50 w-fit backdrop-blur-sm shadow-sm group/quantity focus-within:border-primary/30 focus-within:ring-4 focus-within:ring-primary/5 transition-all">
+                          <button
+                            onClick={() =>
+                              setQuantity(Math.max(0, quantity - 100))
+                            }
+                            disabled={service.isActive === false}
+                            className="flex items-center justify-center w-8 h-8 rounded-lg text-foreground hover:bg-primary hover:text-primary-foreground active:scale-90 transition-all disabled:opacity-30 disabled:pointer-events-none"
+                            aria-label="Decrease quantity"
+                          >
+                            <Minus className="w-3.5 h-3.5 stroke-[2.5]" />
+                          </button>
+                          
+                          <input
+                            type="number"
+                            value={quantity}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value);
+                              setQuantity(isNaN(val) ? 0 : val);
+                            }}
+                            disabled={service.isActive === false}
+                            className="text-sm font-bold w-20 text-center bg-transparent border-none focus:outline-none focus:ring-0 p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none placeholder:text-muted-foreground/50"
+                          />
+
+                          <button
+                            onClick={() => setQuantity(quantity + 100)}
+                            disabled={service.isActive === false}
+                            className="flex items-center justify-center w-8 h-8 rounded-lg text-foreground hover:bg-primary hover:text-primary-foreground active:scale-90 transition-all disabled:opacity-30 disabled:pointer-events-none"
+                            aria-label="Increase quantity"
+                          >
+                            <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                          </button>
+                        </div>
+                        <p className="text-[11px] font-medium text-muted-foreground/80 mt-1.5 ps-1">
+                          {t("serviceDetails:quantityNote", {
+                            defaultValue: "Minimum order: 100 items",
+                          })}
+                        </p>
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-between py-4 border-t border-border">
                       <div className="text-start">
@@ -339,44 +386,58 @@ const ServiceDetailsPage = () => {
                           {t("serviceDetails:totalPrice")}
                         </p>
                         <PriceDisplay
-                          amount={service.price * (quantity / 1000)}
+                          amount={service.category === "Growth Services" ? service.price * (quantity / 1000) : service.price}
                           isBold
                           className="items-end text-lg"
                         />
                       </div>
                     </div>
 
-                    <div className="flex gap-3">
-                      <button
-                        onClick={handleToggleWishlist}
-                        disabled={service.isActive === false}
-                        className="p-3 rounded-lg border border-border hover:bg-accent transition-colors group/heart disabled:opacity-50 disabled:cursor-not-allowed"
-                        title={
-                          isLoved
-                            ? t("serviceDetails:wishlistRemove")
-                            : t("serviceDetails:wishlistAdd")
-                        }
-                      >
-                        <Heart
-                          className={`w-5 h-5 transition-colors ${
+                    <div className="flex flex-col gap-3">
+                      <div className="flex gap-3">
+                        <button
+                          onClick={handleToggleWishlist}
+                          disabled={service.isActive === false}
+                          className="p-3 rounded-lg border border-border hover:bg-accent transition-colors group/heart disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={
                             isLoved
-                              ? "fill-destructive text-destructive"
-                              : "text-muted-foreground group-hover/heart:text-destructive"
-                          }`}
-                        />
-                      </button>
-                      <button
-                        onClick={handleAddToCart}
-                        disabled={service.isActive === false}
-                        className="flex-1 bg-primary text-primary-foreground py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <ShoppingCart className="w-5 h-5" />
-                        {service.isActive === false
-                          ? t("common:status.unavailable", {
-                              defaultValue: "Unavailable",
-                            })
-                          : t("serviceDetails:addToCart")}
-                      </button>
+                              ? t("serviceDetails:wishlistRemove")
+                              : t("serviceDetails:wishlistAdd")
+                          }
+                        >
+                          <Heart
+                            className={`w-5 h-5 transition-colors ${
+                              isLoved
+                                ? "fill-destructive text-destructive"
+                                : "text-muted-foreground group-hover/heart:text-destructive"
+                            }`}
+                          />
+                        </button>
+                        <button
+                          onClick={handleAddToCart}
+                          disabled={service.isActive === false}
+                          className="flex-1 bg-primary text-primary-foreground py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <ShoppingCart className="w-5 h-5" />
+                          {service.isActive === false
+                            ? t("common:status.unavailable", {
+                                defaultValue: "Unavailable",
+                              })
+                            : t("serviceDetails:addToCart")}
+                        </button>
+                      </div>
+                      
+                      {["Business Solutions", "Creative Design", "Video Production", "Web Design"].includes(service.category || "") && (
+                        <a
+                          href="https://t.me/trndk_support"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-full bg-[#0088cc] text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-[#0077b3] transition-colors shadow-sm"
+                        >
+                          <Send className="w-5 h-5" />
+                          {t("serviceDetails:discussTelegram")}
+                        </a>
+                      )}
                     </div>
                   </div>
                 </div>

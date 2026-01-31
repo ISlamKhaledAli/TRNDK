@@ -1,10 +1,21 @@
-import { Outlet, useNavigation } from "react-router-dom";
+import { Outlet, useNavigation, useLocation } from "react-router-dom";
 import ReferralTracker from "@/components/common/ReferralTracker";
 import { Loader2 } from "lucide-react";
+import { useEffect } from "react";
+import { useSidebar } from "@/contexts/SidebarContext";
 
 export default function RootLayout() {
   const navigation = useNavigation();
+  const location = useLocation();
+  const { closeSidebar, isMobile } = useSidebar();
   const isLoading = navigation.state === "loading";
+
+  // Universal fail-safe: Close sidebar on any navigation
+  useEffect(() => {
+    if (isMobile) {
+      closeSidebar();
+    }
+  }, [location.pathname, isMobile, closeSidebar]);
 
   return (
     <>

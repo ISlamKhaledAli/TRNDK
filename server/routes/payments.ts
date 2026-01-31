@@ -3,6 +3,7 @@ import { db as prisma } from '../config/db';
 import { PayoneerGateway } from '../services/payments/payoneer-gateway';
 import { NotificationService } from '../services/notification.service';
 import { emitNewOrder } from '../services/socket';
+import { storage } from '../storage/storage';
 
 const router = Router();
 const payoneerGateway = new PayoneerGateway();
@@ -196,10 +197,7 @@ router.post('/paypal/capture', async (req: Request, res: Response): Promise<void
         // Update Orders to 'processing' (or 'paid' depending on logic)
         // Original logic checked payment.transactionId (referenceId)
         if (payment.transactionId) {
-            await prisma.order.updateMany({
-                where: { transactionId: payment.transactionId },
-                data: { status: 'processing' }
-            });
+            await storage.updateOrdersByTransactionId(payment.transactionId, 'processing');
 
              const updatedOrders = await prisma.order.findMany({
                 where: { transactionId: payment.transactionId }
@@ -319,10 +317,7 @@ router.get('/payoneer/callback', async (req: Request, res: Response): Promise<vo
             });
 
             if (payment.transactionId) {
-                await prisma.order.updateMany({
-                    where: { transactionId: payment.transactionId },
-                    data: { status: 'processing' }
-                });
+                await storage.updateOrdersByTransactionId(payment.transactionId, 'processing');
 
                 const updatedOrders = await prisma.order.findMany({
                     where: { transactionId: payment.transactionId }

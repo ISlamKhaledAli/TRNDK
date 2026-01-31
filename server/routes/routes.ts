@@ -9,9 +9,13 @@
  */
 
 import type { Express } from "express";
+import multer from "multer";
 import { createServer, type Server } from "http";
 import { storage } from "../storage/storage";
 import { upload } from "../middleware/upload";
+import { uploadDigital } from "../middleware/upload-digital";
+import fs from "fs";
+import path from "path";
 import { z } from "zod";
 import { insertUserSchema, insertServiceSchema, checkoutSchema, insertOrderSchema, insertPaymentSchema, insertNotificationSchema, insertReviewSchema, insertSettingSchema, insertAffiliateSchema, SERVICE_CATEGORIES } from "@shared/schema";
 import { Router } from "express";
@@ -478,6 +482,61 @@ export async function registerRoutes(
     res.json({ message: 'Order deleted' });
     res.json({ message: 'Order deleted' });
   });
+  
+  // SECURE DOWNLOAD ENDPOINT
+  apiRouter.get('/orders/:id/download', authMiddleware, async (req, res) => {
+    try {
+      const orderId = Number(req.params.id);
+      const userId = req.user!.id;
+
+      // 1. Fetch Order with Service
+      const result = await storage.getOrders(userId); 
+      const order = result.find(o => o.id === orderId);
+
+      if (!order) {
+        return res.status(404).json({ message: "Order not found or permission denied" });
+      }
+
+      // 2. Security Checks
+      // Order belongs to user? (Already checked via result.find)
+      // Order status is completed?
+      if (order.status !== 'completed') {
+        return res.status(403).json({ message: "Order is not completed yet" });
+      }
+
+      const service = (order as any).service;
+      // Is it a Digital Library service?
+      if (!service || service.category !== "Digital Library") {
+        return res.status(403).json({ message: "This service does not have a digital download" });
+      }
+
+      // Has a download path?
+      if (!service.downloadPath) {
+        return res.status(404).json({ message: "No file associated with this service" });
+      }
+
+      // 3. Prevent Directory Traversal & Get Absolute Path
+      const fileName = path.basename(service.downloadPath);
+      const absolutePath = path.join(process.cwd(), "storage", "digital-library", fileName);
+
+      // Verify file exists
+      if (!fs.existsSync(absolutePath)) {
+        console.error(`[Download] File not found on disk: ${absolutePath}`);
+        return res.status(404).json({ message: "File missing on server" });
+      }
+
+      // 4. Stream File
+      res.setHeader('Content-Type', fileName.endsWith('.pdf') ? 'application/pdf' : 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      
+      const fileStream = fs.createReadStream(absolutePath);
+      fileStream.pipe(res);
+
+    } catch (e: any) {
+      console.error("[Download Error]", e);
+      res.status(500).json({ message: "Error initiating download" });
+    }
+  });
 
   // Report Delay
   apiRouter.post('/orders/:id/report-delay', authMiddleware, async (req, res) => {
@@ -642,6 +701,7 @@ export async function registerRoutes(
       // Convert number/boolean fields from string (FormData)
       if (rawData.price) rawData.price = Number(rawData.price);
       if (rawData.isActive) rawData.isActive = rawData.isActive === 'true';
+      if (rawData.downloadPath === 'null' || rawData.downloadPath === '') rawData.downloadPath = null;
       
       // Normalize price before validation
       if (rawData.price !== undefined) {
@@ -664,20 +724,68 @@ export async function registerRoutes(
     }
   });
 
+  // Admin Upload Digital File
+  apiRouter.post('/admin/services/upload-digital', authMiddleware, adminMiddleware, (req, res, next) => {
+    uploadDigital.single('file')(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({ 
+            message: "File size exceeds the maximum allowed limit (500 MB). Please upload a smaller file." 
+          });
+        }
+        return res.status(400).json({ message: err.message });
+      } else if (err) {
+        return res.status(400).json({ message: err.message });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({ message: "No file uploaded" });
+      }
+      
+      const relativePath = `storage/digital-library/${req.file.filename}`;
+      res.json({ success: true, path: relativePath });
+    });
+  });
+
   apiRouter.put('/admin/services/:id', authMiddleware, upload.single('image'), async (req, res) => {
     try {
+      const serviceId = Number(req.params.id);
+      const existingService = await storage.getService(serviceId);
+      
+      if (!existingService) {
+        return res.status(404).json({ message: "Service not found" });
+      }
+
       const rawData = { ...req.body };
 
-      // Handle file upload
+      // 1. Handle image replacement/cleanup
       if (req.file) {
+        // Delete old image if it was a local file
+        if (existingService.imagePath && !existingService.imagePath.startsWith('http')) {
+          const oldImagePath = path.join(process.cwd(), existingService.imagePath);
+          if (fs.existsSync(oldImagePath)) {
+            try { fs.unlinkSync(oldImagePath); } catch (e) { console.error("Failed to delete old image:", e); }
+          }
+        }
         rawData.imagePath = `uploads/services/${req.file.filename}`;
+      }
+
+      // 2. Handle digital file replacement/cleanup
+      if (rawData.downloadPath && existingService.downloadPath && rawData.downloadPath !== existingService.downloadPath) {
+        const oldDigitalPath = path.join(process.cwd(), existingService.downloadPath);
+        if (fs.existsSync(oldDigitalPath)) {
+          try { fs.unlinkSync(oldDigitalPath); } catch (e) { console.error("Failed to delete old digital file:", e); }
+        }
       }
 
       // Convert number/boolean fields from string (FormData)
       if (rawData.price) rawData.price = Number(rawData.price);
       if (rawData.isActive) rawData.isActive = rawData.isActive === 'true';
+      if (rawData.downloadPath === 'null' || rawData.downloadPath === '') {
+        delete rawData.downloadPath; // Preserve existing if empty string sent
+      }
 
-      // Normalize price if provided
+      // Normalize price
       if (rawData.price !== undefined) {
         rawData.price = normalizePrice(rawData.price);
       }
@@ -688,13 +796,13 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Invalid price value" });
       }
 
-      const result = await storage.updateService(Number(req.params.id), updates);
+      const result = await storage.updateService(serviceId, updates);
       if (!result.success) {
-        return res.status(404).json({ message: result.error });
+        return res.status(400).json({ message: result.error });
       }
       res.json({ data: result.data });
-    } catch (e) {
-      res.status(400).json({ message: 'Validation error', errors: e });
+    } catch (e: any) {
+      res.status(400).json({ message: 'Update failed', error: e.message });
     }
   });
 

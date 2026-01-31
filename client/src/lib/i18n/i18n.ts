@@ -12,11 +12,21 @@ const resources = {
       nav: {
         home: "Home",
         services: "Services",
-        youtubeServices: "YouTube Services",
-        instagramServices: "Instagram Services",
-        tiktokServices: "TikTok Services",
-        otherServices: "Other Services",
+        youtubeServices: "Business Solutions",
+        instagramServices: "Best Sellers",
+        tiktokServices: "Creative Design",
+        otherServices: "Web Design",
+        allServices: "All Services",
         login: "Login",
+      },
+      categories: {
+        businessSolutions: "Business Solutions",
+        bestSellers: "Best Sellers",
+        creativeDesign: "Creative Design",
+        videoProduction: "Video Production",
+        webDesign: "Web Design",
+        growthServices: "Growth Services",
+        digitalLibrary: "Digital Library",
       },
       search: {
         placeholder: "Search for service, order, or question...",
@@ -65,8 +75,9 @@ const resources = {
         ourServices: "Our Services",
         contactUs: "Contact Us",
         whatsappSupport: "WhatsApp Support",
+        telegramSupport: "Telegram Support",
         taxNumber: "Tax Number: 310413597400003",
-        allRightsReserved: "© 2025 TRNDK. All rights reserved.",
+        allRightsReserved: "© TRNDK 2026",
         allServices: "All Services",
       },
       status: "Status",
@@ -288,6 +299,10 @@ const resources = {
           imageValidation: "Allowed: JPG, PNG, WEBP. Max 5MB.",
           selectCategory: "Select Category",
           noCategory: "No Category",
+          platform: "Platform",
+          noPlatform: "None / Manual",
+          digitalFile: "Secure Digital Product File (PDF/ZIP)",
+          digitalFileHint: "Files are stored securely in a non-public directory and served only to authorized customers.",
         },
         tax: {
           title: "Tax Rate (%)",
@@ -610,6 +625,20 @@ const resources = {
           linkCopied: "Referral link copied to clipboard."
         }
       },
+      digitalDownload: {
+        title: "Digital Product Ready",
+        subtitle: "Thank you for your purchase. Your digital file is now available for secure download.",
+        verified: "Payment Verified",
+        downloadButton: "Download Securely",
+        download: "Download",
+        downloadReady: "Your digital product is ready for download!",
+        downloadFiles: "Download Files",
+        securityTitle: "Security Notice",
+        securityDesc: "This download link is private and tied to your account. Sharing this link or account access is strictly prohibited. The file is served over an encrypted connection from our secure storage.",
+        errorTitle: "Download Error",
+        backToOrders: "Back to Orders",
+        orderId: "Order ID",
+      },
     },
     checkout: {
       title: "Checkout",
@@ -656,9 +685,9 @@ const resources = {
     },
     home: {
       hero: {
-        title: "Social Media Account Support",
-        subtitle: "With High Quality and Real Guarantee",
-        description: "Leading platform for digital marketing services. Increase followers, views, and engagement on all social media platforms.",
+        title: "We build your digital presence… from idea to impact",
+        subtitle: "Integrated partner for business growth",
+        description: "TRNDK is your integrated partner for business growth. We provide creative solutions in design and production, along with strategic advertising plans that guarantee maximum reach and engagement for your brand.",
         browseServices: "Browse Services",
         createAccount: "Create Free Account",
       },
@@ -677,14 +706,8 @@ const resources = {
         },
       },
       categories: {
-        title: "Choose Your Favorite Platform",
-        subtitle: "We offer diverse services for all social media platforms",
-        youtubeServices: "YouTube Services",
-        instagramServices: "Instagram Services",
-        twitterServices: "Twitter Services",
-        facebookServices: "Facebook Services",
-        tiktokServices: "TikTok Services",
-        otherServices: "Other Services",
+        title: "Choose Your Favorite Category",
+        subtitle: "We offer professional creative and strategic services to grow your business",
       },
       popularServices: {
         title: "Most Requested Services",
@@ -752,7 +775,8 @@ const resources = {
         "All services are 100% guaranteed",
         "Execution starts within 24 hours",
         "No drop guaranteed"
-      ]
+      ],
+      discussTelegram: "Discuss your project on Telegram"
     },
   },
   ar: {
@@ -764,11 +788,21 @@ const resources = {
       nav: {
         home: "الرئيسية",
         services: "خدمات وسائل التواصل الاجتماعي",
-        youtubeServices: "خدمات يوتيوب",
-        instagramServices: "خدمات انستقرام",
-        tiktokServices: "خدمات تيك توك",
-        otherServices: "خدمات أخرى",
+        youtubeServices: "حلول الأعمال",
+        instagramServices: "الأكثر مبيعاً",
+        tiktokServices: "التصميم الإبداعي",
+        otherServices: "تصميم المواقع",
+        allServices: "جميع الخدمات",
         login: "تسجيل الدخول",
+      },
+      categories: {
+        businessSolutions: "حلول الأعمال",
+        bestSellers: "الأكثر مبيعًا",
+        creativeDesign: "التصميم الإبداعي",
+        videoProduction: "إنتاج الفيديو",
+        webDesign: "تصميم المتاجر والمواقع",
+        growthServices: "خدمات النمو السريع",
+        digitalLibrary: "المكتبة الرقمية",
       },
       search: {
         placeholder: "ابحث عن خدمة، طلب، أو سؤال...",
@@ -812,13 +846,14 @@ const resources = {
         payoutRequestedMessage: "طلب المسوق {{name}} سحب أرباحه المعتمدة.",
       },
       footer: {
-        brandDescription: "متجر رائد لخدمات التسويق الإلكتروني ودعم حسابات التواصل الاجتماعي بجودة عالية وضمان حقيقي.",
+        brandDescription: "TRNDK شريكك المتكامل لنمو أعمالك. نقدم حلولاً إبداعية في التصميم والإنتاج، بالإضافة إلى خطط إعلانية استراتيجية تضمن أقصى قدر من الوصول والتفاعل لعلامتك التجارية.",
         quickLinks: "روابط سريعة",
         ourServices: "خدماتنا",
         contactUs: "تواصل معنا",
         whatsappSupport: "واتساب للدعم الفني",
+        telegramSupport: "تواصل معنا",
         taxNumber: "الرقم الضريبي: 310413597400003",
-        allRightsReserved: "© 2025 TRNDK. جميع الحقوق محفوظة.",
+        allRightsReserved: "© 2026 TRNDK. جميع الحقوق محفوظة.",
         allServices: "جميع الخدمات",
       },
       status: "الحالة",
@@ -1040,6 +1075,10 @@ const resources = {
           imageValidation: "المسموح به: JPG، PNG، WEBP. بحد أقصى 5 ميجابايت.",
           selectCategory: "اختر الفئة",
           noCategory: "بدون فئة",
+          platform: "المنصة",
+          noPlatform: "بدون / يدوي",
+          digitalFile: "ملف المنتج الرقمي المؤمن (PDF/ZIP)",
+          digitalFileHint: "يتم تخزين الملفات بشكل آمن في دليل غير عام ويتم تقديمها فقط للعملاء المصرح لهم.",
         },
         tax: {
           title: "نسبة الضريبة (%)",
@@ -1362,6 +1401,20 @@ const resources = {
           linkCopied: "تم نسخ رابط الإحالة إلى الحافظة."
         }
       },
+      digitalDownload: {
+        title: "المنتج الرقمي جاهز",
+        subtitle: "شكراً لك على الشراء. ملفك الرقمي متاح الآن للتحميل الآمن.",
+        verified: "تم التحقق من الدفع",
+        downloadButton: "تحميل بآمان",
+        download: "تحميل",
+        downloadReady: "منتجك الرقمي جاهز للتحميل!",
+        downloadFiles: "تحميل الملفات",
+        securityTitle: "تنبيه أمني",
+        securityDesc: "رابط التحميل هذا خاص ومرتبط بحسابك. مشاركة هذا الرابط أو الوصول إلى الحساب محظور تماماً. يتم تقديم الملف عبر اتصال مشفر من مخزننا الآمن.",
+        errorTitle: "خطأ في التحميل",
+        backToOrders: "العودة إلى طلباتي",
+        orderId: "رقم الطلب",
+      },
     },
     checkout: {
       title: "إتمام الطلب",
@@ -1408,9 +1461,9 @@ const resources = {
     },
     home: {
       hero: {
-        title: "دعم حسابات التواصل الاجتماعي",
-        subtitle: "بجودة عالية وضمان حقيقي",
-        description: "منصة رائدة لخدمات التسويق الإلكتروني. زيادة المتابعين والمشاهدات والتفاعل على جميع منصات التواصل الاجتماعي.",
+        title: "نبني حضورك الرقمي... من الفكرة إلى التأثير",
+        subtitle: "شريكك المتكامل لنمو أعمالك",
+        description: "TRNDK شريكك المتكامل لنمو أعمالك. نقدم حلولاً إبداعية في التصميم والإنتاج، بالإضافة إلى خطط إعلانية استراتيجية تضمن أقصى قدر من الوصول والتفاعل لعلامتك التجارية.",
         browseServices: "تصفح الخدمات",
         createAccount: "إنشاء حساب مجاني",
       },
@@ -1429,13 +1482,8 @@ const resources = {
         },
       },
       categories: {
-        title: "اختر منصتك المفضلة",
-        subtitle: "نقدم خدمات متنوعة لجميع منصات التواصل الاجتماعي",
-        youtubeServices: "خدمات يوتيوب",
-        instagramServices: "خدمات انستقرام",
-        twitterServices: "خدمات تويتر",
-        facebookServices: "خدمات فيسبوك",
-        tiktokServices: "خدمات تيك توك",
+        title: "اختر التصنيف المفضل لديك",
+        subtitle: "نقدم خدمات إبداعية واستراتيجية احترافية لتنمية أعمالك",
       },
       popularServices: {
         title: "الخدمات الأكثر طلباً",
@@ -1503,7 +1551,8 @@ const resources = {
         "جميع الخدمات مضمونة 100%",
         "بدء التنفيذ خلال 24 ساعة",
         "عدم النقص مضمون"
-      ]
+      ],
+      discussTelegram: "ناقش مشروعك عبر تلجرام"
     },
   },
 };

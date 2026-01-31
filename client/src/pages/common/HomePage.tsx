@@ -1,7 +1,7 @@
 import PublicLayout from "@/components/layouts/PublicLayout";
 import ServiceCard from "@/components/common/ServiceCard";
 import { Link, useLoaderData } from "react-router-dom";
-import { ArrowLeft, Shield, Zap, Headphones, Youtube, Instagram, Music, Facebook } from "lucide-react";
+import { ArrowLeft, Shield, Zap, Headphones, Briefcase, Star, Palette, Video, Layout, TrendingUp, Library } from "lucide-react";
 import { useState } from "react";
 import { apiClient } from "@/services/api";
 import { toast } from "sonner";
@@ -11,7 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 
 const HomePage = () => {
   const { services } = useLoaderData() as { services: any[] };
-  const { t, i18n } = useTranslation("home");
+  const { t, i18n } = useTranslation(["home", "common"]);
   const { user } = useAuth();
   const isRtl = i18n.language === "ar";
   
@@ -22,10 +22,13 @@ const HomePage = () => {
   ];
 
   const categoriesList = [
-    { icon: Youtube, label: t("categories.youtubeServices"), href: "/services?category=YouTube", color: "bg-red-500" },
-    { icon: Instagram, label: t("categories.instagramServices"), href: "/services?category=Instagram", color: "bg-gradient-to-br from-purple-500 to-pink-500" },
-    { icon: Facebook, label: t("categories.facebookServices"), href: "/services?category=Facebook", color: "bg-blue-600" },
-    { icon: Music, label: t("categories.tiktokServices"), href: "/services?category=TikTok", color: "bg-black" },
+    { icon: Briefcase, label: t("common:categories.businessSolutions"), href: "/services?category=Business Solutions", color: "bg-blue-500" },
+    { icon: Star, label: t("common:categories.bestSellers"), href: "/services?category=Best Sellers", color: "bg-yellow-500" },
+    { icon: Palette, label: t("common:categories.creativeDesign"), href: "/services?category=Creative Design", color: "bg-purple-500" },
+    { icon: Video, label: t("common:categories.videoProduction"), href: "/services?category=Video Production", color: "bg-red-500" },
+    { icon: Layout, label: t("common:categories.webDesign"), href: "/services?category=Web Design", color: "bg-indigo-500" },
+    { icon: TrendingUp, label: t("common:categories.growthServices"), href: "/services?category=Growth Services", color: "bg-green-500" },
+    { icon: Library, label: t("common:categories.digitalLibrary"), href: "/services?category=Digital Library", color: "bg-amber-600" },
   ];
   // Taking first 4 services as "Popular"
   const popularServices = Array.isArray(services) ? services.slice(0, 4) : [];
@@ -99,17 +102,17 @@ const HomePage = () => {
             <h2 className="text-3xl font-bold mb-4">{t("categories.title")}</h2>
             <p className="text-muted-foreground">{t("categories.subtitle")}</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
             {categoriesList.map((cat, index) => (
               <Link
                 key={index}
                 to={cat.href}
-                className="group p-8 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all hover:shadow-lg text-center"
+                className="group p-6 rounded-2xl bg-card border border-border hover:border-primary/50 transition-all hover:shadow-lg text-center"
               >
-                <div className={`w-16 h-16 mx-auto rounded-2xl ${cat.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
-                  <cat.icon className="w-8 h-8 text-white" />
+                <div className={`w-14 h-14 mx-auto rounded-2xl ${cat.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                  <cat.icon className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="font-semibold text-lg">{cat.label}</h3>
+                <h3 className="font-semibold text-sm">{cat.label}</h3>
               </Link>
             ))}
           </div>

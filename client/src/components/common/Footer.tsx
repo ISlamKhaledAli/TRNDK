@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Mail, Phone, MessageCircle } from "lucide-react";
+import { Mail, Phone, MessageCircle, Youtube, Instagram, Facebook, Music, Twitter, Ghost, Linkedin, Send } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Brand from "./Brand";
 
@@ -24,16 +24,6 @@ const Footer = () => {
             <h4 className="font-semibold mb-4 text-primary">{t("footer.quickLinks")}</h4>
             <ul className="space-y-2">
               <li>
-                <Link to="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  {t("nav.home")}
-                </Link>
-              </li>
-              <li>
-                <Link to="/services" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  {t("footer.allServices")}
-                </Link>
-              </li>
-              <li>
                 <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                   {t("nav.login")}
                 </Link>
@@ -51,23 +41,38 @@ const Footer = () => {
             <h4 className="font-semibold mb-4 text-primary">{t("footer.ourServices")}</h4>
             <ul className="space-y-2">
               <li>
-                <Link to="/services/youtube" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  {t("nav.youtubeServices")}
+                <Link to="/services?category=Business Solutions" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  {t("common:categories.businessSolutions")}
                 </Link>
               </li>
               <li>
-                <Link to="/services/instagram" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  {t("nav.instagramServices")}
+                <Link to="/services?category=Best Sellers" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  {t("common:categories.bestSellers")}
                 </Link>
               </li>
               <li>
-                <Link to="/services/tiktok" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  {t("nav.tiktokServices")}
+                <Link to="/services?category=Creative Design" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  {t("common:categories.creativeDesign")}
                 </Link>
               </li>
               <li>
-                <Link to="/services/twitter" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  {t("home:categories.twitterServices")}
+                <Link to="/services?category=Video Production" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  {t("common:categories.videoProduction")}
+                </Link>
+              </li>
+              <li>
+                <Link to="/services?category=Web Design" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  {t("common:categories.webDesign")}
+                </Link>
+              </li>
+              <li>
+                <Link to="/services?category=Growth Services" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  {t("common:categories.growthServices")}
+                </Link>
+              </li>
+              <li>
+                <Link to="/services?category=Digital Library" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  {t("common:categories.digitalLibrary")}
                 </Link>
               </li>
             </ul>
@@ -79,7 +84,7 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Phone className="w-4 h-4" />
-                <span dir="ltr">+966 59 798 8788</span>
+                <span dir="ltr">+966*******</span>
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Mail className="w-4 h-4" />
@@ -89,7 +94,31 @@ const Footer = () => {
                 <MessageCircle className="w-4 h-4" />
                 <span>{t("footer.whatsappSupport")}</span>
               </li>
+              <li className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Send className="w-4 h-4" />
+                <a href="https://t.me/trndk_support" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">{t("footer.telegramSupport")}</a>
+              </li>
             </ul>
+            <div className="flex items-center gap-3 mt-4">
+              {[
+                { icon: Youtube, label: "YouTube", href: "#" },
+                { icon: Instagram, label: "Instagram", href: "#" },
+                { icon: Facebook, label: "Facebook", href: "#" },
+                { icon: Music, label: "TikTok", href: "#" },
+                { icon: Twitter, label: "X (Twitter)", href: "#" },
+                { icon: Linkedin, label: "LinkedIn", href: "#" },
+              ].map((social) => (
+                <a 
+                  key={social.label}
+                  href={social.href} 
+                  className="p-2 rounded-full bg-muted hover:bg-primary/20 hover:text-primary transition-all"
+                  aria-label={social.label}
+                  title={social.label}
+                >
+                  <social.icon className="w-4 h-4" />
+                </a>
+              ))}
+            </div>
           </div>
         </div>
 

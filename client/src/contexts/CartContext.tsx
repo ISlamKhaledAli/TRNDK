@@ -16,6 +16,7 @@ export interface CartItem {
   quantity: number;
   link: string;
   imagePath?: string;
+  category?: string;
 }
 
 interface CartContextType {
@@ -48,21 +49,42 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     localStorage.setItem("cart", JSON.stringify(items));
   }, [items]);
 
+  // Sanitize existing cart items on mount
+  useEffect(() => {
+    const hasInvalidItems = items.some(
+      (item) => item.category !== "Growth Services" && item.quantity !== 1
+    );
+
+    if (hasInvalidItems) {
+      setItems((prev) =>
+        prev.map((item) =>
+          item.category !== "Growth Services" && item.quantity !== 1
+            ? { ...item, quantity: 1 }
+            : item
+        )
+      );
+    }
+  }, []);
+
   useEffect(() => {
     localStorage.setItem("wishlist", JSON.stringify(wishlist));
   }, [wishlist]);
 
   const addItem = (newItem: CartItem) => {
+    // Force quantity to 1 for all categories except Growth Services
+    const enforcedQuantity = newItem.category === "Growth Services" ? newItem.quantity : 1;
+    const itemToAdd = { ...newItem, quantity: enforcedQuantity };
+
     setItems((prev) => {
-      const existing = prev.find((item) => item.serviceId === newItem.serviceId && item.link === newItem.link);
+      const existing = prev.find((item) => item.serviceId === itemToAdd.serviceId && item.link === itemToAdd.link);
       if (existing) {
         return prev.map((item) =>
-          item.serviceId === newItem.serviceId && item.link === newItem.link
-            ? { ...item, quantity: item.quantity + newItem.quantity }
+          item.serviceId === itemToAdd.serviceId && item.link === itemToAdd.link
+            ? { ...item, quantity: item.category === "Growth Services" ? item.quantity + itemToAdd.quantity : 1 }
             : item
         );
       }
-      return [...prev, { ...newItem, id: Date.now() }];
+      return [...prev, { ...itemToAdd, id: Date.now() }];
     });
   };
 
@@ -72,7 +94,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const updateQuantity = (id: number, quantity: number) => {
     setItems((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, quantity } : item))
+      prev.map((item) => {
+        if (item.id === id) {
+          // Prevent manual modification for non-Growth items
+          if (item.category !== "Growth Services") return { ...item, quantity: 1 };
+          return { ...item, quantity: Math.max(1, quantity) };
+        }
+        return item;
+      })
     );
   };
 
@@ -89,7 +118,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const isInWishlist = (serviceId: number) => wishlist.includes(serviceId);
 
   const totalItems = items.reduce((sum, item) => sum + 1, 0);
-  const totalPrice = items.reduce((sum, item) => sum + (item.price) * (item.quantity / 1000), 0);
+  
+  // New pricing logic: (price * quantity) / 1000 for Growth, else just price
+  const totalPrice = items.reduce((sum, item) => {
+    const itemPrice = item.category === "Growth Services" 
+      ? (item.price * item.quantity) / 1000 
+      : item.price;
+    return sum + itemPrice;
+  }, 0);
 
   return (
     <CartContext.Provider

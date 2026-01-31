@@ -185,7 +185,8 @@ export class MemStorage implements IStorage {
       description: "High quality Instagram followers with fast delivery",
       descriptionEn: "High quality Instagram followers with fast delivery",
       price: 500,
-      category: "Instagram",
+      category: "Growth Services",
+      platform: "Instagram",
       duration: "1-2 hours",
       imagePath: "https://images.unsplash.com/photo-1611267254323-4db7b39c732c?w=400&h=400&fit=crop",
     });
@@ -196,7 +197,8 @@ export class MemStorage implements IStorage {
       description: "Organic Facebook page likes to boost your social proof",
       descriptionEn: "Organic Facebook page likes to boost your social proof",
       price: 800,
-      category: "Facebook",
+      category: "Growth Services",
+      platform: "Facebook",
       duration: "6-12 hours",
       imagePath: "https://images.unsplash.com/photo-1543269865-cbf427ffebad?w=400&h=400&fit=crop",
     });
@@ -207,7 +209,8 @@ export class MemStorage implements IStorage {
       description: "Instant TikTok views for your latest videos",
       descriptionEn: "Instant TikTok views for your latest videos",
       price: 200,
-      category: "TikTok",
+      category: "Growth Services",
+      platform: "TikTok",
       duration: "15-30 minutes",
       imagePath: "https://images.unsplash.com/photo-1598128558393-70ff21433be0?w=400&h=400&fit=crop",
     });
@@ -218,7 +221,8 @@ export class MemStorage implements IStorage {
       description: "Real YouTube subscribers to grow your channel",
       descriptionEn: "Real YouTube subscribers to grow your channel",
       price: 1500,
-      category: "YouTube",
+      category: "Growth Services",
+      platform: "YouTube",
       duration: "24-48 hours",
       imagePath: "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=400&fit=crop",
     });
@@ -361,7 +365,9 @@ export class MemStorage implements IStorage {
       nameEn: insertService.nameEn ?? null,
       descriptionEn: insertService.descriptionEn ?? null,
       imagePath: insertService.imagePath ?? null,
+      platform: insertService.platform ?? null,
       duration: insertService.duration ?? null,
+      downloadPath: insertService.downloadPath ?? null,
       isActive: insertService.isActive ?? true, 
       createdAt: new Date(), 
       updatedAt: new Date() 
@@ -380,6 +386,8 @@ export class MemStorage implements IStorage {
       ...updateData,
       nameEn: updateData.nameEn === undefined ? service.nameEn : updateData.nameEn,
       descriptionEn: updateData.descriptionEn === undefined ? service.descriptionEn : updateData.descriptionEn,
+      platform: updateData.platform === undefined ? service.platform : updateData.platform,
+      downloadPath: updateData.downloadPath === undefined ? service.downloadPath : updateData.downloadPath,
       updatedAt: new Date() 
     };
     this.services.set(id, updatedService);
@@ -422,7 +430,9 @@ export class MemStorage implements IStorage {
       .filter(([id, o]) => o.transactionId === transactionId);
     
     for (const [id, order] of orders) {
-      this.orders.set(id, { ...order, status, updatedAt: new Date() });
+      const service = this.services.get(order.serviceId);
+      const finalStatus = (service?.category === "Digital Library" && status === "processing") ? "completed" : status;
+      this.orders.set(id, { ...order, status: finalStatus, updatedAt: new Date() });
     }
     return { success: true };
   }
@@ -1019,7 +1029,9 @@ export class DatabaseStorage implements IStorage {
         category: insertService.category,
         isActive: insertService.isActive ?? undefined,
         imagePath: insertService.imagePath ?? undefined,
+        platform: insertService.platform ?? undefined,
         duration: insertService.duration ?? undefined,
+        downloadPath: insertService.downloadPath ?? undefined,
       };
       const service = await db.service.create({ data });
       return { success: true, data: service as unknown as Service };
@@ -1040,7 +1052,9 @@ export class DatabaseStorage implements IStorage {
         category: data.category,
         isActive: data.isActive,
         imagePath: data.imagePath,
+        platform: data.platform,
         duration: data.duration,
+        downloadPath: data.downloadPath,
         updatedAt: data.updatedAt ?? new Date(),
       };
 
@@ -1109,10 +1123,20 @@ export class DatabaseStorage implements IStorage {
 
   async updateOrdersByTransactionId(transactionId: string, status: string): Promise<StorageResult<void>> {
     try {
-      await db.order.updateMany({
+      // Fetch orders and their services to check categories
+      const orders = await db.order.findMany({
         where: { transactionId },
-        data: { status, updatedAt: new Date() },
+        include: { service: true }
       });
+
+      for (const order of orders) {
+        const finalStatus = (order.service.category === "Digital Library" && status === "processing") ? "completed" : status;
+        await db.order.update({
+          where: { id: order.id },
+          data: { status: finalStatus, updatedAt: new Date() }
+        });
+      }
+
       return { success: true };
     } catch (error) {
       console.error("[Storage] Failed to update orders by transactionId:", error);
