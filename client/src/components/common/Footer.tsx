@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
-import { Mail, Phone, MessageCircle, Youtube, Instagram, Facebook, Music, Twitter, Ghost, Linkedin, Send } from "lucide-react";
+import { Mail, Phone, MessageCircle, Youtube, Instagram, Facebook, Twitter, Send } from "lucide-react";
+import { FaTiktok } from "react-icons/fa";
+import { FaSnapchat } from "react-icons/fa6";
 import { useTranslation } from "react-i18next";
 import Brand from "./Brand";
 
@@ -96,21 +98,23 @@ const Footer = () => {
               </li>
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Send className="w-4 h-4" />
-                <a href="https://t.me/trndk_support" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">{t("footer.telegramSupport")}</a>
+                <a href="https://t.me/TrndkSupport" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">{t("footer.telegramSupport")}</a>
               </li>
             </ul>
             <div className="flex items-center gap-3 mt-4">
               {[
-                { icon: Youtube, label: "YouTube", href: "#" },
-                { icon: Instagram, label: "Instagram", href: "#" },
-                { icon: Facebook, label: "Facebook", href: "#" },
-                { icon: Music, label: "TikTok", href: "#" },
-                { icon: Twitter, label: "X (Twitter)", href: "#" },
-                { icon: Linkedin, label: "LinkedIn", href: "#" },
+                { icon: Youtube, label: "YouTube", href: "https://www.youtube.com/@trndk_CO" },
+                { icon: Instagram, label: "Instagram", href: "https://www.instagram.com/trndk.co/" },
+                { icon: Facebook, label: "Facebook", href: "https://www.facebook.com/trndk.co/" },
+                { icon: FaTiktok, label: "TikTok", href: "https://www.tiktok.com/@trndk.co?lang=ar" },
+                { icon: Twitter, label: "X (Twitter)", href: "https://x.com/trndk_co" },
+                { icon: FaSnapchat, label: "Snapchat", href: "https://snapchat.com/t/Ux4RFL8q" },
               ].map((social) => (
                 <a 
                   key={social.label}
                   href={social.href} 
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="p-2 rounded-full bg-muted hover:bg-primary/20 hover:text-primary transition-all"
                   aria-label={social.label}
                   title={social.label}

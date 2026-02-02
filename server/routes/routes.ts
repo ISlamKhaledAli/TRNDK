@@ -530,6 +530,10 @@ export async function registerRoutes(
       res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
       
       const fileStream = fs.createReadStream(absolutePath);
+      fileStream.on('error', (err) => {
+          console.error('[Stream Error]', err);
+          if (!res.headersSent) res.status(500).end();
+      });
       fileStream.pipe(res);
 
     } catch (e: any) {

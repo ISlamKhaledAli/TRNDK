@@ -79,12 +79,16 @@ const ServiceDetailsPage = () => {
 
   // Fetch reviews
   useEffect(() => {
+    if (!serviceId || isNaN(serviceId)) return;
+
     apiClient
       .getReviews(serviceId)
       .then((data) => {
         setReviews(data.data);
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.error("Failed to fetch reviews:", err);
+      })
       .finally(() => setLoadingReviews(false));
   }, [serviceId]);
 
@@ -124,11 +128,9 @@ const ServiceDetailsPage = () => {
     : [];
 
   const handleAddToCart = () => {
-    const isBusinessCategory = ["Business Solutions", "Creative Design", "Video Production", "Web Design"].includes(service.category || "");
-    const isDigitalLibrary = service.category === "Digital Library";
+    const isLinkRequired = service.category === "Growth Services";
     
-    // For business categories, link is optional
-    if (!isBusinessCategory && !link.trim()) {
+    if (isLinkRequired && !link.trim()) {
       toast.error(t("serviceDetails:linkError"));
       return;
     }
@@ -144,7 +146,7 @@ const ServiceDetailsPage = () => {
       name: service.name,
       price: service.price,
       quantity: service.category === "Growth Services" ? quantity : 1,
-      link: isBusinessCategory && !link.trim() ? "N/A" : link,
+      link: !isLinkRequired && !link.trim() ? "N/A" : link,
       imagePath: service.imagePath,
       category: service.category,
     });
@@ -276,13 +278,13 @@ const ServiceDetailsPage = () => {
                     {/* Link / Order Description Field */}
                     <div className="text-start">
                       <label className="block text-sm font-medium mb-2">
-                        {["Business Solutions", "Creative Design", "Video Production", "Web Design"].includes(service.category || "") 
-                          ? "Order Description" 
+                        {service.category !== "Growth Services"
+                          ? t("serviceDetails:orderDescription") 
                           : t("serviceDetails:linkPlaceholder")}
                       </label>
-                      {["Business Solutions", "Creative Design", "Video Production", "Web Design"].includes(service.category || "") ? (
+                      {service.category !== "Growth Services" ? (
                         <textarea
-                          placeholder="Describe your project requirements here... (Optional)"
+                          placeholder={t("serviceDetails:descriptionPlaceholder")}
                           value={link}
                           onChange={(e) => setLink(e.target.value)}
                           className="input-base w-full bg-secondary text-foreground rounded-lg px-4 py-3 text-sm border border-border focus:outline-none focus:border-primary disabled:opacity-50 disabled:cursor-not-allowed min-h-[100px]"
@@ -299,7 +301,7 @@ const ServiceDetailsPage = () => {
                           disabled={service.isActive === false}
                         />
                       )}
-                      {!["Business Solutions", "Creative Design", "Video Production", "Web Design"].includes(service.category || "") && (
+                      {service.category === "Growth Services" && (
                         <p className="text-xs text-muted-foreground mt-1">
                           {t("serviceDetails:linkHint")}
                         </p>
@@ -307,23 +309,7 @@ const ServiceDetailsPage = () => {
                     </div>
 
                     {/* File Upload for Digital Library */}
-                    {service.category === "Digital Library" && (
-                      <div className="text-start">
-                        <label className="block text-sm font-medium mb-2">
-                          Upload Design Assets / Reference Files
-                        </label>
-                        <div className="flex items-center justify-center w-full">
-                          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-border border-dashed rounded-lg cursor-pointer bg-secondary/30 hover:bg-secondary/50 transition-colors">
-                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                              <Plus className="w-8 h-8 mb-3 text-muted-foreground" />
-                              <p className="mb-2 text-sm text-muted-foreground font-semibold">Click to upload or drag and drop</p>
-                              <p className="text-xs text-muted-foreground">PDF, PNG, JPG or ZIP (MAX. 10MB)</p>
-                            </div>
-                            <input type="file" className="hidden" disabled={service.isActive === false} />
-                          </label>
-                        </div>
-                      </div>
-                    )}
+                    
 
                     {/* Quantity Selector - Visible for Growth Services ONLY */}
                     {(service.category === "Growth Services") && (
@@ -378,7 +364,7 @@ const ServiceDetailsPage = () => {
                         </p>
                         <p className="font-medium flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          {service.duration || "24 - 48 hours"}
+                          {service.duration || t("serviceDetails:defaultDuration")}
                         </p>
                       </div>
                       <div className="text-end">
@@ -427,9 +413,9 @@ const ServiceDetailsPage = () => {
                         </button>
                       </div>
                       
-                      {["Business Solutions", "Creative Design", "Video Production", "Web Design"].includes(service.category || "") && (
+                      {service.category !== "Growth Services" && (
                         <a
-                          href="https://t.me/trndk_support"
+                          href="https://t.me/TrndkSupport"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="w-full bg-[#0088cc] text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-[#0077b3] transition-colors shadow-sm"

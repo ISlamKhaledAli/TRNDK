@@ -1090,6 +1090,18 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
+      // Cleanup Digital Library file
+      if (service && service.category === "Digital Library" && service.downloadPath) {
+        const digitalPath = path.join(process.cwd(), service.downloadPath);
+        if (fs.existsSync(digitalPath)) {
+          try {
+             fs.unlinkSync(digitalPath);
+          } catch (err) {
+             console.error(`Failed to delete digital file: ${digitalPath}`, err);
+          }
+        }
+      }
+
       await db.service.delete({ where: { id } });
       return { success: true };
     } catch (e: any) {

@@ -1,5 +1,6 @@
 import { Outlet, useNavigation, useLocation } from "react-router-dom";
 import ReferralTracker from "@/components/common/ReferralTracker";
+import ScrollToTop from "@/components/common/ScrollToTop";
 import { Loader2 } from "lucide-react";
 import { useEffect } from "react";
 import { useSidebar } from "@/contexts/SidebarContext";
@@ -19,6 +20,7 @@ export default function RootLayout() {
 
   return (
     <>
+      <ScrollToTop />
       <ReferralTracker />
       
       {isLoading && (

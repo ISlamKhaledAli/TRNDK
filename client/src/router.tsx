@@ -90,9 +90,12 @@ export const router = createBrowserRouter([
         element: <ServiceDetailsPage />,
         loader: async ({ params }) => {
           try {
-            if (!params.id) throw new Response("Not Found", { status: 404 });
+            if (!params.id || isNaN(Number(params.id))) {
+               throw new Response("Not Found", { status: 404 });
+            }
+            const serviceId = Number(params.id);
             const [serviceRes, servicesRes] = await Promise.all([
-              apiClient.getService(Number(params.id)),
+              apiClient.getService(serviceId),
               apiClient.getServices()
             ]);
             return {
