@@ -1,5 +1,5 @@
 import { Link, NavLink, useNavigate, useLocation, useSearchParams } from "react-router-dom";
-import { ShoppingCart, User, Globe, Menu, X, Sun, Moon, LogOut, LayoutDashboard } from "lucide-react";
+import { ShoppingCart, User, Globe, Menu, X, Sun, Moon, LogOut, LayoutDashboard, Briefcase, Star, Palette, Video, Layout, TrendingUp, Library } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "react-i18next";
@@ -45,13 +45,13 @@ const Navbar = () => {
   const currentCategory = searchParams.get("category");
 
   const allNavLinks = [
-    { href: "/services?category=Business Solutions", label: t("common:categories.businessSolutions"), category: "Business Solutions" },
-    { href: "/services?category=Best Sellers", label: t("common:categories.bestSellers"), category: "Best Sellers" },
-    { href: "/services?category=Creative Design", label: t("common:categories.creativeDesign"), category: "Creative Design" },
-    { href: "/services?category=Video Production", label: t("common:categories.videoProduction"), category: "Video Production" },
-    { href: "/services?category=Web Design", label: t("common:categories.webDesign"), category: "Web Design" },
-    { href: "/services?category=Growth Services", label: t("common:categories.growthServices"), category: "Growth Services" },
-    { href: "/services?category=Digital Library", label: t("common:categories.digitalLibrary"), category: "Digital Library" },
+    { icon: Briefcase, href: "/services?category=Business Solutions", label: t("common:categories.businessSolutions"), category: "Business Solutions" },
+    { icon: Star, href: "/services?category=Best Sellers", label: t("common:categories.bestSellers"), category: "Best Sellers" },
+    { icon: Palette, href: "/services?category=Creative Design", label: t("common:categories.creativeDesign"), category: "Creative Design" },
+    { icon: Video, href: "/services?category=Video Production", label: t("common:categories.videoProduction"), category: "Video Production" },
+    { icon: Layout, href: "/services?category=Web Design", label: t("common:categories.webDesign"), category: "Web Design" },
+    { icon: TrendingUp, href: "/services?category=Growth Services", label: t("common:categories.growthServices"), category: "Growth Services" },
+    { icon: Library, href: "/services?category=Digital Library", label: t("common:categories.digitalLibrary"), category: "Digital Library" },
   ];
 
   const isLinkActive = (category?: string) => {
@@ -72,16 +72,18 @@ const Navbar = () => {
           <nav className="hidden xl:flex items-center gap-0.5">
             {allNavLinks.map((link) => {
               const active = isLinkActive(link.category);
+              const IconComponent = link.icon;
               return (
                 <NavLink
                   key={link.href}
                   to={link.href}
-                  className={`relative px-1.5 py-2 text-sm transition-all rounded-lg whitespace-nowrap ${
+                  className={`relative px-3 py-2 text-sm transition-all rounded-lg whitespace-nowrap flex flex-col items-center gap-1 ${
                     active
                       ? "font-bold text-primary bg-primary/15 shadow-sm border-b-2 border-primary"
                       : "font-medium text-foreground/70 hover:text-foreground hover:bg-accent/50"
                   }`}
                 >
+                  <IconComponent className="w-4 h-4" />
                   {link.label}
                 </NavLink>
               );
@@ -201,17 +203,19 @@ const Navbar = () => {
           <nav className="xl:hidden py-4 border-t border-border animate-fade-in">
             {allNavLinks.map((link) => {
               const active = isLinkActive(link.category);
+              const IconComponent = link.icon;
               return (
                 <NavLink
                   key={link.href}
                   to={link.href}
-                  className={`relative block px-4 py-3 text-sm transition-all rounded-lg ${
+                  className={`relative flex items-center gap-3 px-4 py-3 text-sm transition-all rounded-lg ${
                     active
                       ? "font-bold text-primary bg-primary/15 shadow-sm border-s-4 border-primary"
                       : "font-medium text-foreground/70 hover:text-foreground hover:bg-accent/50"
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
+                  <IconComponent className="w-5 h-5" />
                   {link.label}
                 </NavLink>
               );
