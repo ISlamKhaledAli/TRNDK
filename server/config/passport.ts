@@ -26,7 +26,7 @@ export function setupPassport() {
         clientID,
         clientSecret,
         // callbackURL: "/auth/google/callback",
-        callbackURL: "https://www.trndk.com/auth/google/callback",
+        callbackURL: "https://store.trndk.com/auth/google/callback",
         state: false
       },
       async (_accessToken, _refreshToken, profile, done) => {

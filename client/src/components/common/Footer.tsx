@@ -25,14 +25,15 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4 text-primary">{t("footer.quickLinks")}</h4>
             <ul className="space-y-2">
+
               <li>
-                <Link to="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  {t("nav.login")}
+                <Link to="https://trndk.com/about/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  {t("footer.aboutUs", "About Us")}
                 </Link>
               </li>
               <li>
-                <Link to="/register" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  {t("auth:register.title")}
+                <Link to="https://trndk.com/portfolio/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                   {t("footer.ourWorkGallery", "Business Gallery")}
                 </Link>
               </li>
             </ul>
