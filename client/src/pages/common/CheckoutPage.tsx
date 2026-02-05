@@ -250,7 +250,7 @@ const CheckoutPage = () => {
                         <div>
                           <div className="flex justify-between items-start mb-1.5 gap-2">
                             <h3 className="font-bold text-base text-foreground line-clamp-1">
-                              {item.name}
+                              {(!isRtl && item.nameEn) ? item.nameEn : item.name}
                             </h3>
                             <button
                               onClick={() => removeItem(item.id)}

@@ -144,6 +144,7 @@ const ServiceDetailsPage = () => {
       id: Date.now(),
       serviceId: service.id,
       name: service.name,
+      nameEn: service.nameEn,
       price: service.price,
       quantity: service.category === "Growth Services" ? quantity : 1,
       link: !isLinkRequired && !link.trim() ? "N/A" : link,
@@ -587,7 +588,7 @@ const ServiceDetailsPage = () => {
                     />
                     <div className="flex-1 text-end">
                       <p className="text-sm font-medium line-clamp-2 text-start">
-                        {svc.name}
+                        {(!isRtl && svc.nameEn) ? svc.nameEn : svc.name}
                       </p>
                       <PriceDisplay
                         amount={svc.price}

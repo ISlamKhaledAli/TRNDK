@@ -39,8 +39,13 @@ export const OrderDetailsViewer = ({ data, label, isRoot = false, titleLink }: O
     const entries = Object.entries(data);
     if (entries.length === 0) return <p className="text-sm text-muted-foreground italic text-start">{t('empty', { defaultValue: 'Empty' })}</p>;
 
+    const { i18n } = useTranslation();
+    const isRtl = i18n.language === "ar";
+    
     // Special fields handling with common variations
-    const name = data.name || data.title || data.productName || data.serviceName || data.service;
+    const nameEn = data.nameEn || data.titleEn || data.productNameEn || data.serviceNameEn;
+    const nameAr = data.name || data.title || data.productName || data.serviceName || data.service;
+    const name = (!isRtl && nameEn) ? nameEn : nameAr;
     const image = data.imagePath || data.imageUrl || data.image || data.img || data.thumbnail;
     const link = data.link || data.url || data.targetUrl || data.website;
     // Use titleLink if provided, otherwise fallback to data.link

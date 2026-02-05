@@ -85,10 +85,10 @@ const Footer = () => {
           <div>
             <h4 className="font-semibold mb-4 text-primary">{t("footer.contactUs")}</h4>
             <ul className="space-y-3">
-              <li className="flex items-center gap-2 text-sm text-muted-foreground">
+              {/* <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Phone className="w-4 h-4" />
                 <span dir="ltr">+966*******</span>
-              </li>
+              </li> */}
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Mail className="w-4 h-4" />
                 <span>support@trndk.com</span>

@@ -35,8 +35,8 @@ const HomePage = () => {
 
   const formattedServices = popularServices.map((service: any) => ({
     id: service.id?.toString() || service.name,
-    title: service.name,
-    titleEn: service.name,
+    title: (!isRtl && service.nameEn) ? service.nameEn : service.name,
+    titleEn: service.nameEn,
     price: service.price,
     image: (service.imagePath ? (service.imagePath.startsWith('http') ? service.imagePath : `/${service.imagePath}`) : "https://images.unsplash.com/photo-1611162616305-c69b3fa7fbe0?w=400&h=400&fit=crop"),
   }));

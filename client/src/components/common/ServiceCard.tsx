@@ -63,9 +63,9 @@ const ServiceCard = ({
         {/* Content */}
         <div className="p-4">
           <h3 className="font-semibold text-foreground mb-1 line-clamp-2">{title}</h3>
-          {isRtl && titleEn && (
-            <p className="text-sm text-muted-foreground mb-3 text-start" dir="ltr">{titleEn}</p>
-          )}
+        {isRtl && titleEn && titleEn !== title && (
+          <p className="text-sm text-muted-foreground mb-3 text-start" dir="ltr">{titleEn}</p>
+        )}
         </div>
       </Link>
       

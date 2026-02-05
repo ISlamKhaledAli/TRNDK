@@ -12,6 +12,7 @@ export interface CartItem {
   id: number;
   serviceId: number;
   name: string;
+  nameEn?: string;
   price: number;
   quantity: number;
   link: string;
@@ -80,7 +81,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       if (existing) {
         return prev.map((item) =>
           item.serviceId === itemToAdd.serviceId && item.link === itemToAdd.link
-            ? { ...item, quantity: item.category === "Growth Services" ? item.quantity + itemToAdd.quantity : 1 }
+            ? { ...item, quantity: item.category === "Growth Services" ? item.quantity + itemToAdd.quantity : 1, name: itemToAdd.name, nameEn: itemToAdd.nameEn }
             : item
         );
       }

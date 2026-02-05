@@ -32,6 +32,7 @@ interface Order {
   transactionId?: string;
   service?: {
     name: string;
+    nameEn?: string;
     duration?: string;
     category?: string;
     downloadUrl?: string;
