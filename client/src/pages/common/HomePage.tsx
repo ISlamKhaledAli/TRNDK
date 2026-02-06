@@ -46,7 +46,7 @@ const HomePage = () => {
       {/* Hero Section */}
       <section className="bg-gradient-to-b from-card to-background py-16 md:py-24">
         <div className="container text-center">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+<h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-normal md:leading-[1.5] lg:leading-[1.55]">
             {t("hero.title")}
             <span className="text-primary block mt-2">{t("hero.subtitle")}</span>
           </h1>
