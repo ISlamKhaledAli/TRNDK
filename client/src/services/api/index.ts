@@ -453,4 +453,85 @@ export const apiClient = {
     if (!res.ok) throw new Error('Failed to fetch payment details');
     return res.json();
   },
+
+  // Banners API
+  async getBanners() {
+    const res = await fetch(`${API_BASE}/banners`);
+    if (!res.ok) throw new Error('Failed to fetch banners');
+    return res.json();
+  },
+
+  async getAdminBanners() {
+    const res = await fetch(`${API_BASE}/admin/banners`);
+    if (!res.ok) throw new Error('Failed to fetch admin banners');
+    return res.json();
+  },
+
+  async createBanner(data: FormData) {
+    const res = await fetch(`${API_BASE}/admin/banners`, {
+      method: 'POST',
+      body: data,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Failed to create banner');
+    }
+    return res.json();
+  },
+
+  async updateBanner(id: string, data: FormData) {
+    const res = await fetch(`${API_BASE}/admin/banners/${id}`, {
+      method: 'PUT',
+      body: data,
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Failed to update banner');
+    }
+    return res.json();
+  },
+
+  async deleteBanner(id: string) {
+    const res = await fetch(`${API_BASE}/admin/banners/${id}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Failed to delete banner');
+    }
+    return res.json();
+  },
+
+  async reorderBanners(orderedIds: string[]) {
+    const res = await fetch(`${API_BASE}/admin/banners-reorder`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderedIds }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Failed to reorder banners');
+    }
+    return res.json();
+  },
+
+  // Announcement Bar API
+  async getAnnouncement() {
+    const res = await fetch(`${API_BASE}/announcement`);
+    if (!res.ok) throw new Error('Failed to fetch announcement');
+    return res.json();
+  },
+
+  async updateAnnouncement(data: any) {
+    const res = await fetch(`${API_BASE}/admin/announcement`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Failed to update announcement');
+    }
+    return res.json();
+  },
 };

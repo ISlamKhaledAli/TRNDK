@@ -185,7 +185,12 @@ router.post('/paypal/capture', async (req: Request, res: Response): Promise<void
         // 6. Update Database
         await prisma.payment.update({
             where: { id: payment.id },
-            data: { status: 'paid', updatedAt: new Date(), transactionId: captureResult.data.id || payment.transactionId }
+            data: { 
+                status: 'paid', 
+                updatedAt: new Date(),
+                // Store the internal paypal capture id in details if needed, but do NOT overwrite transactionId
+                // transactionId remains our 'TXN-...' internal reference used by webhooks custom_id
+            }
         });
 
         // Update Orders to 'processing' (or 'paid' depending on logic)

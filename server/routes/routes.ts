@@ -11,7 +11,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "../storage/storage";
-import { upload } from "../middleware/upload";
+import { upload, bannerUpload } from "../middleware/upload";
 import { z } from "zod";
 import { insertUserSchema, insertServiceSchema, checkoutSchema, insertOrderSchema, insertPaymentSchema, insertNotificationSchema, insertReviewSchema, insertSettingSchema, insertAffiliateSchema, SERVICE_CATEGORIES } from "@shared/schema";
 import { Router } from "express";
@@ -21,6 +21,7 @@ import { emitNewOrder, emitNewUser, emitNotification, emitOrderStatusUpdate, emi
 import passport from "passport";
 import payoutsRouter from "./payouts";
 import paymentsRouter from "./payments";
+import webhooksRouter from "./webhooks";
 import { normalizePrice, validatePrice } from "../utils/price";
 import { PayoneerGateway } from "../services/payments/payoneer-gateway";
 
@@ -42,6 +43,9 @@ export async function registerRoutes(
       uptime: process.uptime()
     });
   });
+
+  // --- Webhooks (Public) ---
+  apiRouter.use('/webhooks', webhooksRouter);
 
   // --- Public Routes ---
 
@@ -939,6 +943,267 @@ export async function registerRoutes(
       return res.status(400).json({ message: result.error });
     }
     res.json({ data: result.data });
+  });
+
+  // --- Banners Management ---
+  const getDefaultBanners = () => [
+    {
+      id: "default-1",
+      imageUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=1920&auto=format&fit=crop&q=80",
+      title: "دعم حسابات التواصل الاجتماعي",
+      subtitle: "بجودة عالية وضمان حقيقي - زيادة المتابعين والمشاهدات والتفاعل على جميع المنصات",
+      link: "/services",
+      buttonText: "تصفح الخدمات",
+      badgeText: "TRNDK VIP",
+      badgeIcon: "Sparkles",
+      isActive: true,
+      order: 1,
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: "default-2",
+      imageUrl: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=1920&auto=format&fit=crop&q=80",
+      title: "تنفيذ فوري وسرعة فائقة",
+      subtitle: "ابدأ في استلام خدماتك خلال دقائق مع دعم فني متواصل 24/7 لمساعدتك دائماً",
+      link: "/services",
+      buttonText: "ابدأ الآن",
+      badgeText: "تنفيذ فوري",
+      badgeIcon: "Zap",
+      isActive: true,
+      order: 2,
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: "default-3",
+      imageUrl: "https://images.unsplash.com/photo-1611162617474-5b21e879e113?w=1920&auto=format&fit=crop&q=80",
+      title: "عروض وباقات تسويقية حصرية",
+      subtitle: "أفضل الأسعار لخدمات إنستغرام، تيك توك، يوتيوب، وفيسبوك",
+      link: "/register",
+      buttonText: "إنشاء حساب مجاني",
+      badgeText: "عروض حصرية",
+      badgeIcon: "Flame",
+      isActive: true,
+      order: 3,
+      createdAt: new Date().toISOString()
+    }
+  ];
+
+  const getBannersFromStorage = async (): Promise<any[]> => {
+    try {
+      const setting = await storage.getSetting('banners');
+      if (setting && setting.value) {
+        const parsed = JSON.parse(setting.value);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((b: any, idx: number) => ({
+            ...b,
+            badgeText: b.badgeText !== undefined ? b.badgeText : (idx === 0 ? "TRNDK VIP" : idx === 1 ? "عروض حصرية" : "تنفيذ فوري"),
+            badgeIcon: b.badgeIcon || (idx === 0 ? "Sparkles" : idx === 1 ? "Flame" : "Zap"),
+          }));
+        }
+      }
+    } catch (e) {
+      console.error("Error parsing banners setting:", e);
+    }
+    return getDefaultBanners();
+  };
+
+  // Public: Get active banners
+  apiRouter.get('/banners', async (_req, res) => {
+    try {
+      const banners = await getBannersFromStorage();
+      const activeBanners = banners
+        .filter((b: any) => b.isActive !== false)
+        .sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+      res.json({ data: activeBanners });
+    } catch (error) {
+      console.error("Failed to fetch banners:", error);
+      res.status(500).json({ message: "Failed to fetch banners" });
+    }
+  });
+
+  // Admin: Get all banners
+  apiRouter.get('/admin/banners', adminMiddleware, async (_req, res) => {
+    try {
+      const banners = await getBannersFromStorage();
+      banners.sort((a: any, b: any) => (a.order || 0) - (b.order || 0));
+      res.json({ data: banners });
+    } catch (error) {
+      console.error("Failed to fetch admin banners:", error);
+      res.status(500).json({ message: "Failed to fetch banners" });
+    }
+  });
+
+  // Admin: Create banner
+  apiRouter.post('/admin/banners', adminMiddleware, bannerUpload.single('image'), async (req, res) => {
+    try {
+      let imageUrl = req.body.imageUrl || '';
+      if (req.file) {
+        imageUrl = `/uploads/banners/${req.file.filename}`;
+      }
+
+      if (!imageUrl) {
+        return res.status(400).json({ message: "Image is required" });
+      }
+
+      const banners = await getBannersFromStorage();
+      const newBanner = {
+        id: Date.now().toString(),
+        imageUrl,
+        title: req.body.title || '',
+        subtitle: req.body.subtitle || '',
+        link: req.body.link || '',
+        buttonText: req.body.buttonText || '',
+        badgeText: req.body.badgeText || '',
+        badgeIcon: req.body.badgeIcon || 'Sparkles',
+        isActive: req.body.isActive === 'true' || req.body.isActive === true || req.body.isActive === undefined,
+        order: Number(req.body.order) || (banners.length + 1),
+        createdAt: new Date().toISOString()
+      };
+
+      banners.push(newBanner);
+      await storage.updateSetting('banners', JSON.stringify(banners));
+      res.status(201).json({ success: true, data: newBanner });
+    } catch (error) {
+      console.error("Failed to create banner:", error);
+      res.status(500).json({ message: "Failed to create banner" });
+    }
+  });
+
+  // Admin: Update banner
+  apiRouter.put('/admin/banners/:id', adminMiddleware, bannerUpload.single('image'), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const banners = await getBannersFromStorage();
+      const index = banners.findIndex((b: any) => b.id.toString() === id.toString());
+
+      if (index === -1) {
+        return res.status(404).json({ message: "Banner not found" });
+      }
+
+      let imageUrl = banners[index].imageUrl;
+      if (req.file) {
+        imageUrl = `/uploads/banners/${req.file.filename}`;
+      } else if (req.body.imageUrl) {
+        imageUrl = req.body.imageUrl;
+      }
+
+      const updatedBanner = {
+        ...banners[index],
+        imageUrl,
+        title: req.body.title !== undefined ? req.body.title : banners[index].title,
+        subtitle: req.body.subtitle !== undefined ? req.body.subtitle : banners[index].subtitle,
+        link: req.body.link !== undefined ? req.body.link : banners[index].link,
+        buttonText: req.body.buttonText !== undefined ? req.body.buttonText : banners[index].buttonText,
+        badgeText: req.body.badgeText !== undefined ? req.body.badgeText : (banners[index].badgeText || ''),
+        badgeIcon: req.body.badgeIcon !== undefined ? req.body.badgeIcon : (banners[index].badgeIcon || 'Sparkles'),
+        isActive: req.body.isActive !== undefined ? (req.body.isActive === 'true' || req.body.isActive === true) : banners[index].isActive,
+        order: req.body.order !== undefined ? Number(req.body.order) : banners[index].order,
+        updatedAt: new Date().toISOString()
+      };
+
+      banners[index] = updatedBanner;
+      await storage.updateSetting('banners', JSON.stringify(banners));
+      res.json({ success: true, data: updatedBanner });
+    } catch (error) {
+      console.error("Failed to update banner:", error);
+      res.status(500).json({ message: "Failed to update banner" });
+    }
+  });
+
+  // Admin: Delete banner
+  apiRouter.delete('/admin/banners/:id', adminMiddleware, async (req, res) => {
+    try {
+      const { id } = req.params;
+      let banners = await getBannersFromStorage();
+      banners = banners.filter((b: any) => b.id.toString() !== id.toString());
+      await storage.updateSetting('banners', JSON.stringify(banners));
+      res.json({ success: true, message: "Banner deleted" });
+    } catch (error) {
+      console.error("Failed to delete banner:", error);
+      res.status(500).json({ message: "Failed to delete banner" });
+    }
+  });
+
+  // Admin: Reorder banners
+  apiRouter.put('/admin/banners-reorder', adminMiddleware, async (req, res) => {
+    try {
+      const { orderedIds } = req.body;
+      if (!Array.isArray(orderedIds)) {
+        return res.status(400).json({ message: "orderedIds must be an array" });
+      }
+
+      const banners = await getBannersFromStorage();
+      const updatedBanners = banners.map((banner: any) => {
+        const orderIndex = orderedIds.indexOf(banner.id.toString());
+        return {
+          ...banner,
+          order: orderIndex !== -1 ? orderIndex + 1 : banner.order
+        };
+      });
+
+      await storage.updateSetting('banners', JSON.stringify(updatedBanners));
+      res.json({ success: true, data: updatedBanners });
+    } catch (error) {
+      console.error("Failed to reorder banners:", error);
+      res.status(500).json({ message: "Failed to reorder banners" });
+    }
+  });
+
+  // --- Top Announcement Bar Management ---
+  const getDefaultAnnouncement = () => ({
+    isEnabled: true,
+    text: "🔥 خصم 20% على جميع باقات المتابعين والتفاعل لفترة محدودة! كود: TRNDK20  ✦  ⚡ تسليم فوري وضمان تعويض حقيقي 100% لجميع الحسابات  ✦  👑 خدمات VIP حصرية بأسعار الجملة المباشرة",
+    link: "/services",
+    linkText: "تصفح العروض",
+    badge: "عرض حصري",
+    icon: "Flame",
+    style: "dark",
+    speed: "normal",
+  });
+
+  const getAnnouncementFromStorage = async () => {
+    try {
+      const setting = await storage.getSetting('announcement_bar');
+      if (setting && setting.value) {
+        return JSON.parse(setting.value);
+      }
+    } catch (e) {
+      console.error("Error parsing announcement_bar setting:", e);
+    }
+    return getDefaultAnnouncement();
+  };
+
+  // Public: Get announcement config
+  apiRouter.get('/announcement', async (_req, res) => {
+    try {
+      const config = await getAnnouncementFromStorage();
+      res.json({ data: config });
+    } catch (error) {
+      console.error("Failed to fetch announcement:", error);
+      res.status(500).json({ message: "Failed to fetch announcement" });
+    }
+  });
+
+  // Admin: Update announcement config
+  apiRouter.put('/admin/announcement', adminMiddleware, async (req, res) => {
+    try {
+      const config = {
+        isEnabled: Boolean(req.body.isEnabled),
+        text: req.body.text || '',
+        link: req.body.link || '',
+        linkText: req.body.linkText || '',
+        badge: req.body.badge || '',
+        icon: req.body.icon || 'Flame',
+        style: req.body.style || 'dark',
+        speed: req.body.speed || 'normal',
+        updatedAt: new Date().toISOString()
+      };
+      await storage.updateSetting('announcement_bar', JSON.stringify(config));
+      res.json({ success: true, data: config });
+    } catch (error) {
+      console.error("Failed to update announcement:", error);
+      res.status(500).json({ message: "Failed to update announcement" });
+    }
   });
 
   apiRouter.use('/payments', paymentsRouter);

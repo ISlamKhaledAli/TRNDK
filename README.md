@@ -96,6 +96,16 @@ In the Hostinger Control Panel:
 - **Permissions**: Ensure the `uploads/` directory exists and has write permissions.
 - **SSL**: Enable SSL via Hostinger for secure HTTPS connections.
 
+### 6. PayPal Webhook Configuration
+To ensure server-side payment confirmation:
+1. Log in to your [PayPal Developer Dashboard](https://developer.paypal.com/dashboard/).
+2. Navigate to your App settings.
+3. Under **Webhooks**, click **Add Webhook**.
+4. **Webhook URL**: `https://your-domain.com/api/v1/webhooks/paypal`
+5. **Event types**: Select `Payment capture completed`.
+6. Save and copy the **Webhook ID**.
+7. Add `PAYPAL_WEBHOOK_ID=your_webhook_id` to your production `.env` file.
+
 ---
 
 ## 📜 Available Scripts

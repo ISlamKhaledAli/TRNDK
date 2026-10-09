@@ -231,3 +231,30 @@ export type AuthResponse = {
   user: User;
   token: string;
 };
+
+export interface Banner {
+  id: string;
+  imageUrl: string;
+  title?: string;
+  subtitle?: string;
+  link?: string;
+  buttonText?: string;
+  badgeText?: string;
+  badgeIcon?: string;
+  isActive: boolean;
+  order: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AnnouncementBarConfig {
+  isEnabled: boolean;
+  text: string;
+  link?: string;
+  linkText?: string;
+  badge?: string;
+  icon?: string;
+  style?: "dark" | "gradient" | "neon" | "primary";
+  speed?: "slow" | "normal" | "fast";
+}
+

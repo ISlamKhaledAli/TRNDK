@@ -8,6 +8,7 @@ import {
   LogOut,
   Megaphone,
   DollarSign,
+  Image as ImageIcon,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Brand from "./Brand";
@@ -33,6 +34,7 @@ const AdminSidebar = ({ compact = false }: AdminSidebarProps) => {
     },
     { icon: ClipboardList, label: t("sidebar.orders"), href: "/admin/orders" },
     { icon: Package, label: t("sidebar.services"), href: "/admin/services" },
+    { icon: ImageIcon, label: t("sidebar.banners"), href: "/admin/banners" },
     { icon: Users, label: t("sidebar.users"), href: "/admin/users" },
     {
       icon: Megaphone,

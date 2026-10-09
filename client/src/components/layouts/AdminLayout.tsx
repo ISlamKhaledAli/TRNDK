@@ -9,13 +9,13 @@ interface AdminLayoutProps {
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   return (
-    <div className="min-h-screen flex w-full">
+    <div className="min-h-screen flex w-full max-w-full overflow-x-hidden">
       <ResponsiveSidebar isAdmin>
         <AdminSidebar />
       </ResponsiveSidebar>
-      <div className="flex-1 flex flex-col bg-background">
+      <div className="flex-1 min-w-0 flex flex-col bg-background max-w-full overflow-x-hidden">
         <DashboardTopbar isAdmin />
-        <main className="flex-1 p-6 overflow-auto">{children}</main>
+        <main className="flex-1 p-6 overflow-y-auto overflow-x-hidden max-w-full">{children}</main>
       </div>
     </div>
   );

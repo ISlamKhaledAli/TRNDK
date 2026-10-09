@@ -92,9 +92,12 @@
     @apply border-border;
   }
 
+  html,
   body {
     @apply bg-background text-foreground antialiased;
     font-family: "Cairo", sans-serif;
+    overflow-x: hidden;
+    max-width: 100vw;
   }
 
   html[dir="rtl"] {
@@ -273,3 +276,41 @@
     @apply bg-card rounded-xl overflow-hidden card-shadow border border-border hover:card-shadow-lg transition-all duration-300;
   }
 }
+
+/* Marquee / Ticker tape animation for Announcement Bar */
+@keyframes trndk-marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-marquee-slow {
+  display: flex;
+  width: max-content;
+  animation: trndk-marquee 40s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-normal {
+  display: flex;
+  width: max-content;
+  animation: trndk-marquee 25s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee-fast {
+  display: flex;
+  width: max-content;
+  animation: trndk-marquee 15s linear infinite;
+  will-change: transform;
+}
+
+.pause-on-hover:hover .animate-marquee-slow,
+.pause-on-hover:hover .animate-marquee-normal,
+.pause-on-hover:hover .animate-marquee-fast {
+  animation-play-state: paused !important;
+}
+

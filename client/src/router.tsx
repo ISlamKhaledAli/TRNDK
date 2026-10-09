@@ -29,6 +29,7 @@ import ClientProfile from "@/pages/client/ClientProfile";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminOrders from "@/pages/admin/AdminOrders";
 import AdminServices from "@/pages/admin/AdminServices";
+import AdminBanners from "@/pages/admin/AdminBanners";
 import AdminUsers from "@/pages/admin/AdminUsers";
 import AdminPayments from "@/pages/admin/AdminPayments";
 import AdminProfile from "@/pages/admin/AdminProfile";
@@ -54,10 +55,15 @@ export const router = createBrowserRouter([
         HydrateFallback: RootFallback,
         loader: async () => {
           try {
-            const res = await apiClient.getServices();
-            return { services: res.data || res };
+            const [servicesRes, bannersRes] = await Promise.allSettled([
+              apiClient.getServices(),
+              apiClient.getBanners(),
+            ]);
+            const services = servicesRes.status === "fulfilled" ? (servicesRes.value.data || servicesRes.value) : [];
+            const banners = bannersRes.status === "fulfilled" ? (bannersRes.value.data || bannersRes.value) : [];
+            return { services, banners };
           } catch (e) {
-            throw new Response("Failed to load services", { status: 500 });
+            return { services: [], banners: [] };
           }
         }
       },
@@ -223,6 +229,18 @@ export const router = createBrowserRouter([
                 return { services: res.data || res };
               } catch (e) {
                 throw new Response("Failed to load services", { status: 500 });
+              }
+            }
+          },
+          {
+            path: "/admin/banners",
+            element: <AdminBanners />,
+            loader: async () => {
+              try {
+                const res = await apiClient.getAdminBanners();
+                return { banners: res.data || res };
+              } catch (e) {
+                return { banners: [] };
               }
             }
           },

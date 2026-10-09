@@ -1,8 +1,9 @@
 import PublicLayout from "@/components/layouts/PublicLayout";
 import ServiceCard from "@/components/common/ServiceCard";
+import BannerSlider from "@/components/common/BannerSlider";
 import { Link, useLoaderData } from "react-router-dom";
 import { ArrowLeft, Shield, Zap, Headphones, Youtube, Instagram, Music, Facebook } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { apiClient } from "@/services/api";
 import { toast } from "sonner";
 
@@ -10,10 +11,24 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 
 const HomePage = () => {
-  const { services } = useLoaderData() as { services: any[] };
+  const { services, banners } = useLoaderData() as { services: any[]; banners?: any[] };
   const { t, i18n } = useTranslation("home");
   const { user } = useAuth();
   const isRtl = i18n.language === "ar";
+  const [homeBanners, setHomeBanners] = useState<any[]>(banners || []);
+
+  useEffect(() => {
+    if (!banners || banners.length === 0) {
+      apiClient
+        .getBanners()
+        .then((res) => {
+          if (res?.data) setHomeBanners(res.data);
+        })
+        .catch(() => {});
+    } else {
+      setHomeBanners(banners);
+    }
+  }, [banners]);
   
   const featuresList = [
     { icon: Shield, title: t("features.secure.title"), description: t("features.secure.description") },
@@ -40,33 +55,10 @@ const HomePage = () => {
 
   return (
     <PublicLayout>
-      {/* Hero Section */}
-      <section className="bg-gradient-to-b from-card to-background py-16 md:py-24">
-        <div className="container text-center">
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
-            {t("hero.title")}
-            <span className="text-primary block mt-2">{t("hero.subtitle")}</span>
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-            {t("hero.description")}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              to="/services"
-              className="px-8 py-4 rounded-lg font-semibold text-lg inline-flex items-center justify-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-            >
-              {t("hero.browseServices")}
-              <ArrowLeft className={`w-5 h-5 ${isRtl ? "" : "rotate-180"}`} />
-            </Link>
-            {!user && (
-              <Link
-                to="/register"
-                className="px-8 py-4 rounded-lg font-semibold text-lg border border-primary text-primary hover:bg-primary/10 transition-colors"
-              >
-                {t("hero.createAccount")}
-              </Link>
-            )}
-          </div>
+      {/* Hero Banner Slider Section */}
+      <section className="pt-4 pb-8 sm:py-8 lg:py-10 bg-gradient-to-b from-card/80 via-card/40 to-background">
+        <div className="container">
+          <BannerSlider banners={homeBanners} />
         </div>
       </section>
 
