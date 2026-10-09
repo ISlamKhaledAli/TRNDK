@@ -554,4 +554,53 @@ export const apiClient = {
     }
     return res.json();
   },
+
+  // Service Requests API (اطلب خدمة)
+  async submitServiceRequest(data: any) {
+    const res = await fetch(`${API_BASE}/service-requests`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(result.message || 'Failed to submit service request');
+    }
+    return result;
+  },
+
+  async getAdminServiceRequests(status?: string) {
+    const query = status && status !== 'all' ? `?status=${encodeURIComponent(status)}` : '';
+    const res = await fetch(`${API_BASE}/admin/service-requests${query}`);
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(result.message || 'Failed to fetch service requests');
+    }
+    return result;
+  },
+
+  async updateAdminServiceRequest(id: number | string, data: { status: string; adminNotes?: string }) {
+    const res = await fetch(`${API_BASE}/admin/service-requests/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(result.message || 'Failed to update service request');
+    }
+    return result;
+  },
+
+  async deleteAdminServiceRequest(id: number | string) {
+    const res = await fetch(`${API_BASE}/admin/service-requests/${id}`, {
+      method: 'DELETE',
+    });
+    const result = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(result.message || 'Failed to delete service request');
+    }
+    return result;
+  },
 };
+

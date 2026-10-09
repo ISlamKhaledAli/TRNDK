@@ -10,6 +10,7 @@ import {
   DollarSign,
   Image as ImageIcon,
   MessageCircle,
+  Inbox,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Brand from "./Brand";
@@ -34,6 +35,11 @@ const AdminSidebar = ({ compact = false }: AdminSidebarProps) => {
       href: "/admin/dashboard",
     },
     { icon: ClipboardList, label: t("sidebar.orders"), href: "/admin/orders" },
+    {
+      icon: Inbox,
+      label: t("sidebar.serviceRequests") || (i18n.language === "ar" ? "طلبات الخدمات" : "Service Requests"),
+      href: "/admin/service-requests",
+    },
     { icon: Package, label: t("sidebar.services"), href: "/admin/services" },
     { icon: ImageIcon, label: t("sidebar.banners"), href: "/admin/banners" },
     {

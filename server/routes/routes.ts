@@ -13,9 +13,9 @@ import { createServer, type Server } from "http";
 import { storage } from "../storage/storage";
 import { upload, bannerUpload } from "../middleware/upload";
 import { z } from "zod";
-import { insertUserSchema, insertServiceSchema, checkoutSchema, insertOrderSchema, insertPaymentSchema, insertNotificationSchema, insertReviewSchema, insertSettingSchema, insertAffiliateSchema, SERVICE_CATEGORIES, ContactButtonConfig, DEFAULT_CONTACT_BUTTON_CONFIG } from "@shared/schema";
+import { insertUserSchema, insertServiceSchema, checkoutSchema, insertOrderSchema, insertPaymentSchema, insertNotificationSchema, insertReviewSchema, insertSettingSchema, insertAffiliateSchema, insertServiceRequestSchema, SERVICE_CATEGORIES, ContactButtonConfig, DEFAULT_CONTACT_BUTTON_CONFIG } from "@shared/schema";
 import { Router } from "express";
-import { signToken, hashPassword, comparePassword, authMiddleware, adminMiddleware } from "../middleware/auth";
+import { signToken, hashPassword, comparePassword, authMiddleware, adminMiddleware, verifyToken } from "../middleware/auth";
 import { NotificationService } from "../services/notification.service";
 import { emitNewOrder, emitNewUser, emitNotification, emitOrderStatusUpdate, emitUserUpdate, emitPaymentUpdate, emitPayoutUpdate } from "../services/socket";
 import passport from "passport";
@@ -1269,6 +1269,156 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Failed to update contact button config:", error);
       res.status(500).json({ message: "Failed to update contact button config" });
+    }
+  });
+
+  // ==========================================
+  // SERVICE REQUESTS (اطلب خدمة)
+  // ==========================================
+
+  // Public: Submit a new custom service request
+  apiRouter.post('/service-requests', async (req, res) => {
+    try {
+      const parsed = insertServiceRequestSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({
+          success: false,
+          message: "بيانات الطلب غير مكتملة أو غير صحيحة",
+          errors: parsed.error.format(),
+        });
+      }
+
+      // Check if user is logged in via token
+      let userId = parsed.data.userId;
+      if (!userId && req.cookies?.token) {
+        const decoded = verifyToken(req.cookies.token);
+        if (decoded?.id) {
+          userId = decoded.id;
+        }
+      }
+
+      const result = await storage.createServiceRequest({
+        ...parsed.data,
+        userId: userId || undefined,
+      });
+
+      if (!result.success || !result.data) {
+        return res.status(500).json({
+          success: false,
+          message: result.error || "حدث خطأ أثناء حفظ طلب الخدمة",
+        });
+      }
+
+      // Realtime notification to admin
+      try {
+        emitNotification(1, {
+          title: "طلب خدمة مخصص جديد",
+          message: `وصل طلب خدمة جديد من ${result.data.fullName} (${result.data.serviceType})`,
+          orderId: undefined,
+        });
+      } catch (err) {
+        console.warn("Could not emit socket notification for service request:", err);
+      }
+
+      res.status(201).json({
+        success: true,
+        data: result.data,
+        message: "تم استلام طلبك بنجاح! سيتواصل معك فريقنا في أقرب وقت عبر الواتساب.",
+      });
+    } catch (error: any) {
+      console.error("Failed to submit service request:", error);
+      res.status(500).json({
+        success: false,
+        message: "حدث خطأ في الخادم أثناء إرسال الطلب",
+      });
+    }
+  });
+
+  // Admin: Get all service requests with statistics
+  apiRouter.get('/admin/service-requests', adminMiddleware, async (req, res) => {
+    try {
+      const status = req.query.status as string | undefined;
+      const requests = await storage.getServiceRequests({ status });
+      const allRequests = status && status !== 'all' ? await storage.getServiceRequests() : requests;
+
+      const stats = {
+        total: allRequests.length,
+        pending: allRequests.filter(r => r.status === 'pending').length,
+        contacted: allRequests.filter(r => r.status === 'contacted').length,
+        in_progress: allRequests.filter(r => r.status === 'in_progress').length,
+        completed: allRequests.filter(r => r.status === 'completed').length,
+        cancelled: allRequests.filter(r => r.status === 'cancelled').length,
+      };
+
+      res.json({
+        success: true,
+        data: requests,
+        stats,
+      });
+    } catch (error) {
+      console.error("Failed to fetch service requests for admin:", error);
+      res.status(500).json({
+        success: false,
+        message: "فشل تحميل طلبات الخدمات",
+      });
+    }
+  });
+
+  // Admin: Update service request status and admin notes
+  apiRouter.patch('/admin/service-requests/:id', adminMiddleware, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ success: false, message: "معرف الطلب غير صالح" });
+      }
+
+      const { status, adminNotes } = req.body;
+      if (!status) {
+        return res.status(400).json({ success: false, message: "يرجى تحديد حالة الطلب" });
+      }
+
+      const result = await storage.updateServiceRequestStatus(id, status, adminNotes);
+      if (!result.success) {
+        return res.status(404).json({ success: false, message: result.error || "الطلب غير موجود" });
+      }
+
+      res.json({
+        success: true,
+        data: result.data,
+        message: "تم تحديث حالة الطلب بنجاح",
+      });
+    } catch (error) {
+      console.error("Failed to update service request:", error);
+      res.status(500).json({
+        success: false,
+        message: "فشل تحديث حالة الطلب",
+      });
+    }
+  });
+
+  // Admin: Delete a service request
+  apiRouter.delete('/admin/service-requests/:id', adminMiddleware, async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ success: false, message: "معرف الطلب غير صالح" });
+      }
+
+      const result = await storage.deleteServiceRequest(id);
+      if (!result.success) {
+        return res.status(500).json({ success: false, message: result.error || "فشل حذف الطلب" });
+      }
+
+      res.json({
+        success: true,
+        message: "تم حذف الطلب بنجاح",
+      });
+    } catch (error) {
+      console.error("Failed to delete service request:", error);
+      res.status(500).json({
+        success: false,
+        message: "فشل حذف الطلب",
+      });
     }
   });
 

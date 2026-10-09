@@ -37,6 +37,8 @@ import AdminProfile from "@/pages/admin/AdminProfile";
 import AdminPayouts from "@/pages/admin/AdminPayouts";
 import AffiliateDashboard from "./pages/affiliate/AffiliateDashboard";
 import AdminAffiliates from "./pages/admin/AdminAffiliates";
+import AdminServiceRequests from "@/pages/admin/AdminServiceRequests";
+import RequestServicePage from "@/pages/services/RequestServicePage";
 import ReferralTracker from "@/components/common/ReferralTracker";
 
 
@@ -91,6 +93,10 @@ export const router = createBrowserRouter([
             throw new Response("Failed to load other services", { status: 500 });
           }
         },
+      },
+      {
+        path: "/request-service",
+        element: <RequestServicePage />,
       },
       {
         path: "/services/:id",
@@ -252,6 +258,10 @@ export const router = createBrowserRouter([
           {
             path: "/admin/contact-button",
             element: <Navigate to="/admin/contact" replace />
+          },
+          {
+            path: "/admin/service-requests",
+            element: <AdminServiceRequests />
           },
           {
             path: "/admin/users",

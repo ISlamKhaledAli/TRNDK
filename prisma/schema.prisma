@@ -24,6 +24,7 @@ model User {
   notifications Notification[]
   reviews       Review[]
   affiliate     Affiliate?
+  serviceRequests ServiceRequest[]
 
   @@map("users")
 }
@@ -38,6 +39,8 @@ model Service {
   imagePath   String?  @map("image_path")
   category    String
   duration    String?
+  downloadPath String? @map("download_path")
+  platform    String?
   isActive    Boolean  @default(true) @map("is_active")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
@@ -166,5 +169,26 @@ model Setting {
   updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
 
   @@map("settings")
+}
+
+model ServiceRequest {
+  id          Int      @id @default(autoincrement())
+  fullName    String   @map("full_name")
+  phone       String
+  email       String?
+  serviceType String   @map("service_type")
+  serviceId   Int?     @map("service_id")
+  title       String?
+  details     String   @db.Text
+  budget      String?
+  targetUrl   String?  @map("target_url")
+  status      String   @default("pending") // 'pending', 'contacted', 'in_progress', 'completed', 'cancelled'
+  adminNotes  String?  @map("admin_notes") @db.Text
+  userId      Int?     @map("user_id")
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("service_requests")
 }
 

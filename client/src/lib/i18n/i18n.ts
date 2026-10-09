@@ -16,6 +16,7 @@ const resources = {
         instagramServices: "Instagram Services",
         tiktokServices: "TikTok Services",
         otherServices: "Other Services",
+        requestService: "Request Service",
         login: "Login",
       },
       search: {
@@ -161,6 +162,7 @@ const resources = {
         affiliates: "Affiliates",
         payoutRequests: "Payout Requests",
         banners: "Banners",
+        serviceRequests: "Service Requests",
         management: "Management",
         logout: "Logout",
       },
@@ -769,6 +771,7 @@ const resources = {
         instagramServices: "خدمات انستقرام",
         tiktokServices: "خدمات تيك توك",
         otherServices: "خدمات أخرى",
+        requestService: "اطلب خدمة",
         login: "تسجيل الدخول",
       },
       search: {
@@ -914,6 +917,7 @@ const resources = {
         affiliates: "المسوقين",
         payoutRequests: "طلبات السحب",
         banners: "البانرات الإعلانية",
+        serviceRequests: "طلبات الخدمات",
         management: "الإدارة",
         logout: "تسجيل الخروج",
       },

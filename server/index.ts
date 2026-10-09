@@ -7,6 +7,7 @@
  * - WebSocket support for real-time notifications
  * - Database connection and admin initialization
  * - Vite dev server (development) or static file serving (production)
+ * - Service Requests CRM module
  */
 
 import "dotenv/config";

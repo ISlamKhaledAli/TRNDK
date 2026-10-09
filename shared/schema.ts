@@ -297,3 +297,48 @@ export const DEFAULT_CONTACT_BUTTON_CONFIG: ContactButtonConfig = {
   glowEffect: true,
 };
 
+// === SERVICE REQUESTS (اطلب خدمة) ===
+export const SERVICE_REQUEST_STATUS = {
+  PENDING: "pending",
+  CONTACTED: "contacted",
+  IN_PROGRESS: "in_progress",
+  COMPLETED: "completed",
+  CANCELLED: "cancelled",
+} as const;
+
+export type ServiceRequestStatus = (typeof SERVICE_REQUEST_STATUS)[keyof typeof SERVICE_REQUEST_STATUS];
+
+export interface ServiceRequest {
+  id: number;
+  fullName: string;
+  phone: string;
+  email?: string | null;
+  serviceType: string;
+  serviceId?: number | null;
+  title?: string | null;
+  details: string;
+  budget?: string | null;
+  targetUrl?: string | null;
+  status: string;
+  adminNotes?: string | null;
+  userId?: number | null;
+  createdAt?: Date | string | null;
+  updatedAt?: Date | string | null;
+  user?: User | null;
+}
+
+export const insertServiceRequestSchema = z.object({
+  fullName: z.string().min(2, "الاسم يجب أن يكون حرفين على الأقل"),
+  phone: z.string().min(6, "يرجى كتابة رقم هاتف / واتساب صالح"),
+  email: z.string().email("البريد الإلكتروني غير صالح").optional().or(z.literal("")),
+  serviceType: z.string().min(1, "يرجى اختيار نوع الخدمة"),
+  serviceId: z.number().optional().nullable(),
+  title: z.string().optional().nullable(),
+  details: z.string().min(5, "يرجى كتابة تفاصيل الخدمة المطلوبة"),
+  budget: z.string().optional().nullable(),
+  targetUrl: z.string().optional().nullable(),
+  userId: z.number().optional().nullable(),
+});
+
+export type InsertServiceRequest = z.infer<typeof insertServiceRequestSchema>;
+

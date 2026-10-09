@@ -7,7 +7,7 @@
  * Provides unified interface for users, services, orders, payments, notifications, reviews, and settings.
  */
 
-import { type User, type InsertUser, type Service, type InsertService, type Order, type InsertOrder, type Payment, type InsertPayment, type Notification, type InsertNotification, type Review, type InsertReview, type Setting, type InsertSetting, type Affiliate, type InsertAffiliate } from "@shared/schema";
+import { type User, type InsertUser, type Service, type InsertService, type Order, type InsertOrder, type Payment, type InsertPayment, type Notification, type InsertNotification, type Review, type InsertReview, type Setting, type InsertSetting, type Affiliate, type InsertAffiliate, type ServiceRequest, type InsertServiceRequest } from "@shared/schema";
 import { hashSync } from "bcryptjs";
 import { db } from "../config/db";
 import { Prisma } from "@prisma/client";
@@ -113,6 +113,13 @@ export interface IStorage {
   requestPayout(affiliateId: number): Promise<StorageResult<void>>;
   payoutAffiliate(affiliateId: number): Promise<StorageResult<void>>;
   getPayoutRequests(): Promise<(Affiliate & { user: User; stats: { requestedEarnings: number } })[]>;
+
+  // Service Requests (اطلب خدمة)
+  createServiceRequest(data: InsertServiceRequest): Promise<StorageResult<ServiceRequest>>;
+  getServiceRequests(filter?: { status?: string }): Promise<(ServiceRequest & { user?: User | null })[]>;
+  getServiceRequest(id: number): Promise<(ServiceRequest & { user?: User | null }) | undefined>;
+  updateServiceRequestStatus(id: number, status: string, adminNotes?: string): Promise<StorageResult<ServiceRequest>>;
+  deleteServiceRequest(id: number): Promise<StorageResult<void>>;
 }
 
 export class MemStorage implements IStorage {
@@ -901,6 +908,60 @@ export class MemStorage implements IStorage {
     this.affiliates.set(id, updated);
     return { success: true, data: updated };
   }
+
+  // Service Requests (MemStorage)
+  private serviceRequests: Map<number, ServiceRequest> = new Map();
+  private currentServiceRequestId: number = 1;
+
+  async createServiceRequest(data: InsertServiceRequest): Promise<StorageResult<ServiceRequest>> {
+    const id = this.currentServiceRequestId++;
+    const req: ServiceRequest = {
+      id,
+      fullName: data.fullName,
+      phone: data.phone,
+      email: data.email || null,
+      serviceType: data.serviceType,
+      serviceId: data.serviceId || null,
+      title: data.title || null,
+      details: data.details,
+      budget: data.budget || null,
+      targetUrl: data.targetUrl || null,
+      status: "pending",
+      adminNotes: null,
+      userId: data.userId || null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.serviceRequests.set(id, req);
+    return { success: true, data: req };
+  }
+
+  async getServiceRequests(filter?: { status?: string }): Promise<(ServiceRequest & { user?: User | null })[]> {
+    let list = Array.from(this.serviceRequests.values());
+    if (filter?.status && filter.status !== 'all') {
+      list = list.filter(r => r.status === filter.status);
+    }
+    return list.sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
+  }
+
+  async getServiceRequest(id: number): Promise<(ServiceRequest & { user?: User | null }) | undefined> {
+    return this.serviceRequests.get(id);
+  }
+
+  async updateServiceRequestStatus(id: number, status: string, adminNotes?: string): Promise<StorageResult<ServiceRequest>> {
+    const req = this.serviceRequests.get(id);
+    if (!req) return { success: false, error: "Not found" };
+    req.status = status;
+    if (adminNotes !== undefined) req.adminNotes = adminNotes;
+    req.updatedAt = new Date();
+    this.serviceRequests.set(id, req);
+    return { success: true, data: req };
+  }
+
+  async deleteServiceRequest(id: number): Promise<StorageResult<void>> {
+    this.serviceRequests.delete(id);
+    return { success: true };
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1668,6 +1729,94 @@ export class DatabaseStorage implements IStorage {
       return { success: false, error: e.message };
     }
   }
+
+  // Service Requests (DatabaseStorage)
+  async createServiceRequest(data: InsertServiceRequest): Promise<StorageResult<ServiceRequest>> {
+    try {
+      const request = await db.serviceRequest.create({
+        data: {
+          fullName: data.fullName,
+          phone: data.phone,
+          email: data.email || null,
+          serviceType: data.serviceType,
+          serviceId: data.serviceId || null,
+          title: data.title || null,
+          details: data.details,
+          budget: data.budget || null,
+          targetUrl: data.targetUrl || null,
+          userId: data.userId || null,
+          status: "pending",
+        },
+        include: { user: true },
+      });
+      return { success: true, data: request as any };
+    } catch (e: any) {
+      console.error("Error creating service request:", e);
+      return { success: false, error: e.message };
+    }
+  }
+
+  async getServiceRequests(filter?: { status?: string }): Promise<(ServiceRequest & { user?: User | null })[]> {
+    try {
+      const where: any = {};
+      if (filter?.status && filter.status !== "all") {
+        where.status = filter.status;
+      }
+      const requests = await db.serviceRequest.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        include: { user: true },
+      });
+      return requests as any;
+    } catch (e) {
+      console.error("Error fetching service requests:", e);
+      return [];
+    }
+  }
+
+  async getServiceRequest(id: number): Promise<(ServiceRequest & { user?: User | null }) | undefined> {
+    try {
+      const request = await db.serviceRequest.findUnique({
+        where: { id },
+        include: { user: true },
+      });
+      return (request as any) ?? undefined;
+    } catch (e) {
+      console.error("Error fetching service request:", e);
+      return undefined;
+    }
+  }
+
+  async updateServiceRequestStatus(id: number, status: string, adminNotes?: string): Promise<StorageResult<ServiceRequest>> {
+    try {
+      const updateData: any = { status };
+      if (adminNotes !== undefined) {
+        updateData.adminNotes = adminNotes;
+      }
+      const request = await db.serviceRequest.update({
+        where: { id },
+        data: updateData,
+        include: { user: true },
+      });
+      return { success: true, data: request as any };
+    } catch (e: any) {
+      console.error("Error updating service request status:", e);
+      return { success: false, error: e.message };
+    }
+  }
+
+  async deleteServiceRequest(id: number): Promise<StorageResult<void>> {
+    try {
+      await db.serviceRequest.delete({
+        where: { id },
+      });
+      return { success: true };
+    } catch (e: any) {
+      console.error("Error deleting service request:", e);
+      return { success: false, error: e.message };
+    }
+  }
 }
 
 export const storage = new DatabaseStorage();
+

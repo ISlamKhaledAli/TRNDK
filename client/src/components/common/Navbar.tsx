@@ -1,5 +1,5 @@
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { ShoppingCart, User, Globe, Menu, X, Sun, Moon, LogOut, LayoutDashboard } from "lucide-react";
+import { ShoppingCart, User, Globe, Menu, X, Sun, Moon, LogOut, LayoutDashboard, Sparkles } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useTranslation } from "react-i18next";
@@ -22,7 +22,7 @@ import CurrencySelector from "./CurrencySelector";
 
 const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
   const { theme, setTheme, resolvedTheme } = useTheme();
   const { totalItems } = useCart();
   const { user, logout } = useAuth();
@@ -44,6 +44,11 @@ const Navbar = () => {
     { href: "/", label: t("nav.home") },
     { href: "/services", label: t("nav.services") },
     { href: "/services/other", label: t("nav.otherServices") },
+    {
+      href: "/request-service",
+      label: t("nav.requestService") || (i18n.language === "ar" ? "اطلب خدمة" : "Request Service"),
+      isCta: true,
+    },
   ];
 
   return (
@@ -56,21 +61,28 @@ const Navbar = () => {
           </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-1">
+          <nav className="hidden lg:flex items-center gap-1.5">
             {navLinks.map((link) => (
               <NavLink
                 key={link.href}
                 to={link.href}
                 end={link.href === "/" || link.href === "/services"}
                 className={({ isActive }) =>
-                  `relative px-4 py-2 text-sm transition-all rounded-lg ${
-                    isActive
-                      ? "font-bold text-primary bg-primary/15 shadow-sm border-b-2 border-primary"
-                      : "font-medium text-foreground/70 hover:text-foreground hover:bg-accent/50"
-                  }`
+                  link.isCta
+                    ? `relative inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition-all shadow-xs border ${
+                        isActive
+                          ? "bg-primary text-primary-foreground border-primary shadow-sm ring-2 ring-primary/20"
+                          : "bg-primary/10 text-primary border-primary/25 hover:bg-primary hover:text-primary-foreground"
+                      }`
+                    : `relative px-4 py-2 text-sm transition-all rounded-lg ${
+                        isActive
+                          ? "font-bold text-primary bg-primary/15 shadow-sm border-b-2 border-primary"
+                          : "font-medium text-foreground/70 hover:text-foreground hover:bg-accent/50"
+                      }`
                 }
               >
-                {link.label}
+                {link.isCta && <Sparkles className="w-3.5 h-3.5 shrink-0" />}
+                <span>{link.label}</span>
               </NavLink>
             ))}
           </nav>
@@ -192,15 +204,29 @@ const Navbar = () => {
                 to={link.href}
                 end={link.href === "/" || link.href === "/services"}
                 className={({ isActive }) =>
-                  `relative block px-4 py-3 text-sm transition-all rounded-lg ${
-                    isActive
-                      ? "font-bold text-primary bg-primary/15 shadow-sm border-s-4 border-primary"
-                      : "font-medium text-foreground/70 hover:text-foreground hover:bg-accent/50"
-                  }`
+                  link.isCta
+                    ? `relative flex items-center justify-between px-4 py-3 text-sm font-bold transition-all rounded-lg my-1.5 ${
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-primary/10 text-primary border border-primary/20"
+                      }`
+                    : `relative block px-4 py-3 text-sm transition-all rounded-lg ${
+                        isActive
+                          ? "font-bold text-primary bg-primary/15 shadow-sm border-s-4 border-primary"
+                          : "font-medium text-foreground/70 hover:text-foreground hover:bg-accent/50"
+                      }`
                 }
                 onClick={() => setIsMobileMenuOpen(false)}
               >
-                {link.label}
+                <span className="flex items-center gap-2">
+                  {link.isCta && <Sparkles className="w-4 h-4 shrink-0" />}
+                  <span>{link.label}</span>
+                </span>
+                {link.isCta && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/20 font-bold">
+                    {i18n.language === "ar" ? "جديد" : "NEW"}
+                  </span>
+                )}
               </NavLink>
             ))}
             {user ? (
