@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { Banner, AnnouncementBarConfig } from "@shared/schema";
 import AnnouncementBar from "@/components/common/AnnouncementBar";
 
-
 import {
   Plus,
   Pencil,

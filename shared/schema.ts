@@ -265,3 +265,35 @@ export interface AnnouncementBarConfig {
   speed?: "slow" | "normal" | "fast";
 }
 
+export interface ContactButtonConfig {
+  enabled: boolean;
+  channel: "whatsapp" | "telegram" | "both";
+  whatsappNumber: string;
+  whatsappMessage?: string;
+  telegramUsername: string;
+  telegramLink?: string;
+  position: "right" | "left";
+  buttonText: string;
+  buttonTextEn?: string;
+  tooltipText?: string;
+  tooltipTextEn?: string;
+  showTooltip: boolean;
+  glowEffect: boolean;
+}
+
+export const DEFAULT_CONTACT_BUTTON_CONFIG: ContactButtonConfig = {
+  enabled: true,
+  channel: "both",
+  whatsappNumber: "+966597988788",
+  whatsappMessage: "مرحباً، أود الاستفسار عن خدمات متجر TRNDK",
+  telegramUsername: "trndk_support",
+  telegramLink: "https://t.me/trndk_support",
+  position: "right",
+  buttonText: "تواصل معنا",
+  buttonTextEn: "Contact Us",
+  tooltipText: "تواصل مع فريق الدعم الفني مباشرة",
+  tooltipTextEn: "Chat directly with our support team",
+  showTooltip: true,
+  glowEffect: true,
+};
+

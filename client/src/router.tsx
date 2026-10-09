@@ -30,6 +30,7 @@ import AdminDashboard from "@/pages/admin/AdminDashboard";
 import AdminOrders from "@/pages/admin/AdminOrders";
 import AdminServices from "@/pages/admin/AdminServices";
 import AdminBanners from "@/pages/admin/AdminBanners";
+import AdminContact from "@/pages/admin/AdminContact";
 import AdminUsers from "@/pages/admin/AdminUsers";
 import AdminPayments from "@/pages/admin/AdminPayments";
 import AdminProfile from "@/pages/admin/AdminProfile";
@@ -243,6 +244,14 @@ export const router = createBrowserRouter([
                 return { banners: [] };
               }
             }
+          },
+          {
+            path: "/admin/contact",
+            element: <AdminContact />
+          },
+          {
+            path: "/admin/contact-button",
+            element: <Navigate to="/admin/contact" replace />
           },
           {
             path: "/admin/users",

@@ -13,7 +13,7 @@ import { createServer, type Server } from "http";
 import { storage } from "../storage/storage";
 import { upload, bannerUpload } from "../middleware/upload";
 import { z } from "zod";
-import { insertUserSchema, insertServiceSchema, checkoutSchema, insertOrderSchema, insertPaymentSchema, insertNotificationSchema, insertReviewSchema, insertSettingSchema, insertAffiliateSchema, SERVICE_CATEGORIES } from "@shared/schema";
+import { insertUserSchema, insertServiceSchema, checkoutSchema, insertOrderSchema, insertPaymentSchema, insertNotificationSchema, insertReviewSchema, insertSettingSchema, insertAffiliateSchema, SERVICE_CATEGORIES, ContactButtonConfig, DEFAULT_CONTACT_BUTTON_CONFIG } from "@shared/schema";
 import { Router } from "express";
 import { signToken, hashPassword, comparePassword, authMiddleware, adminMiddleware } from "../middleware/auth";
 import { NotificationService } from "../services/notification.service";
@@ -1217,6 +1217,58 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Failed to update announcement:", error);
       res.status(500).json({ message: "Failed to update announcement" });
+    }
+  });
+
+  // --- Floating Contact Button Settings ---
+  const getContactButtonFromStorage = async (): Promise<ContactButtonConfig> => {
+    try {
+      const setting = await storage.getSetting('contact_button');
+      if (setting && setting.value) {
+        return { ...DEFAULT_CONTACT_BUTTON_CONFIG, ...JSON.parse(setting.value) };
+      }
+    } catch (e) {
+      console.error("Error parsing contact_button setting:", e);
+    }
+    return DEFAULT_CONTACT_BUTTON_CONFIG;
+  };
+
+  // Public: Get contact button config
+  apiRouter.get('/contact-button', async (_req, res) => {
+    try {
+      const config = await getContactButtonFromStorage();
+      res.json({ data: config });
+    } catch (error) {
+      console.error("Failed to fetch contact button config:", error);
+      res.status(500).json({ message: "Failed to fetch contact button config" });
+    }
+  });
+
+  // Admin: Update contact button config
+  apiRouter.put('/admin/contact-button', adminMiddleware, async (req, res) => {
+    try {
+      const current = await getContactButtonFromStorage();
+      const config: ContactButtonConfig = {
+        ...current,
+        enabled: req.body.enabled !== undefined ? Boolean(req.body.enabled) : current.enabled,
+        channel: ['whatsapp', 'telegram', 'both'].includes(req.body.channel) ? req.body.channel : current.channel,
+        whatsappNumber: req.body.whatsappNumber !== undefined ? String(req.body.whatsappNumber) : current.whatsappNumber,
+        whatsappMessage: req.body.whatsappMessage !== undefined ? String(req.body.whatsappMessage) : current.whatsappMessage,
+        telegramUsername: req.body.telegramUsername !== undefined ? String(req.body.telegramUsername).replace(/^@/, '') : current.telegramUsername,
+        telegramLink: req.body.telegramLink !== undefined ? String(req.body.telegramLink) : (req.body.telegramUsername ? `https://t.me/${String(req.body.telegramUsername).replace(/^@/, '')}` : current.telegramLink),
+        position: req.body.position === 'left' ? 'left' : 'right',
+        buttonText: req.body.buttonText !== undefined ? String(req.body.buttonText) : current.buttonText,
+        buttonTextEn: req.body.buttonTextEn !== undefined ? String(req.body.buttonTextEn) : current.buttonTextEn,
+        tooltipText: req.body.tooltipText !== undefined ? String(req.body.tooltipText) : current.tooltipText,
+        tooltipTextEn: req.body.tooltipTextEn !== undefined ? String(req.body.tooltipTextEn) : current.tooltipTextEn,
+        showTooltip: req.body.showTooltip !== undefined ? Boolean(req.body.showTooltip) : current.showTooltip,
+        glowEffect: req.body.glowEffect !== undefined ? Boolean(req.body.glowEffect) : current.glowEffect,
+      };
+      await storage.updateSetting('contact_button', JSON.stringify(config));
+      res.json({ success: true, data: config });
+    } catch (error) {
+      console.error("Failed to update contact button config:", error);
+      res.status(500).json({ message: "Failed to update contact button config" });
     }
   });
 

@@ -9,6 +9,7 @@ import {
   Megaphone,
   DollarSign,
   Image as ImageIcon,
+  MessageCircle,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import Brand from "./Brand";
@@ -22,7 +23,7 @@ interface AdminSidebarProps {
 
 const AdminSidebar = ({ compact = false }: AdminSidebarProps) => {
   const location = useLocation();
-  const { t } = useTranslation("admin");
+  const { t, i18n } = useTranslation("admin");
   const { logout } = useAuth();
   const { isMobile, closeSidebar } = useSidebar();
 
@@ -35,6 +36,11 @@ const AdminSidebar = ({ compact = false }: AdminSidebarProps) => {
     { icon: ClipboardList, label: t("sidebar.orders"), href: "/admin/orders" },
     { icon: Package, label: t("sidebar.services"), href: "/admin/services" },
     { icon: ImageIcon, label: t("sidebar.banners"), href: "/admin/banners" },
+    {
+      icon: MessageCircle,
+      label: i18n.language === "ar" ? "زر التواصل السريع" : "Contact Widget",
+      href: "/admin/contact",
+    },
     { icon: Users, label: t("sidebar.users"), href: "/admin/users" },
     {
       icon: Megaphone,

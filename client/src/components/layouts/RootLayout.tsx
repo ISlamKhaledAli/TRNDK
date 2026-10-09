@@ -1,5 +1,6 @@
 import { Outlet, useNavigation } from "react-router-dom";
 import ReferralTracker from "@/components/common/ReferralTracker";
+import FloatingContactWidget from "@/components/common/FloatingContactWidget";
 import { Loader2 } from "lucide-react";
 
 export default function RootLayout() {
@@ -17,6 +18,7 @@ export default function RootLayout() {
       )}
       
       <Outlet />
+      <FloatingContactWidget />
     </>
   );
 }

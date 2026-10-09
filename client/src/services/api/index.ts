@@ -534,4 +534,24 @@ export const apiClient = {
     }
     return res.json();
   },
+
+  // Floating Contact Button API
+  async getContactButton() {
+    const res = await fetch(`${API_BASE}/contact-button`);
+    if (!res.ok) throw new Error('Failed to fetch contact button configuration');
+    return res.json();
+  },
+
+  async updateContactButton(data: any) {
+    const res = await fetch(`${API_BASE}/admin/contact-button`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'Failed to update contact button configuration');
+    }
+    return res.json();
+  },
 };
