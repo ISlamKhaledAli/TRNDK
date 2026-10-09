@@ -75,10 +75,14 @@ export const ANNOUNCEMENT_ICONS = [
 interface BannerFormData {
   id?: string;
   title: string;
+  titleEn: string;
   subtitle: string;
+  subtitleEn: string;
   link: string;
   buttonText: string;
+  buttonTextEn: string;
   badgeText: string;
+  badgeTextEn: string;
   badgeIcon: string;
   isActive: boolean;
   order: number;
@@ -87,17 +91,17 @@ interface BannerFormData {
 }
 
 const LINK_OPTIONS = [
-  { label: "جميع الخدمات (/services)", labelEn: "All Services (/services)", value: "/services", defaultBtn: "تصفح الخدمات" },
-  { label: "خدمات إنستغرام (Instagram)", labelEn: "Instagram Services", value: "/services?category=Instagram", defaultBtn: "خدمات إنستغرام" },
-  { label: "خدمات تيك توك (TikTok)", labelEn: "TikTok Services", value: "/services?category=TikTok", defaultBtn: "خدمات تيك توك" },
-  { label: "خدمات يوتيوب (YouTube)", labelEn: "YouTube Services", value: "/services?category=YouTube", defaultBtn: "خدمات يوتيوب" },
-  { label: "خدمات فيسبوك (Facebook)", labelEn: "Facebook Services", value: "/services?category=Facebook", defaultBtn: "خدمات فيسبوك" },
-  { label: "خدمات أخرى (/services/other)", labelEn: "Other Services", value: "/services/other", defaultBtn: "خدمات أخرى" },
-  { label: "صفحة إنشاء حساب جديد (/register)", labelEn: "Register Page (/register)", value: "/register", defaultBtn: "إنشاء حساب مجاني" },
-  { label: "صفحة تسجيل الدخول (/login)", labelEn: "Login Page (/login)", value: "/login", defaultBtn: "تسجيل الدخول" },
-  { label: "برنامج التسويق بالعمولة (/affiliate)", labelEn: "Affiliate Page (/affiliate)", value: "/affiliate", defaultBtn: "انضم الآن" },
-  { label: "بدون رابط (صورة للعرض فقط)", labelEn: "No link (display only)", value: "", defaultBtn: "" },
-  { label: "رابط مخصص أو خارجي...", labelEn: "Custom / External URL...", value: "custom", defaultBtn: "" },
+  { label: "جميع الخدمات (/services)", labelEn: "All Services (/services)", value: "/services", defaultBtn: "تصفح الخدمات", defaultBtnEn: "Browse Services" },
+  { label: "خدمات إنستغرام (Instagram)", labelEn: "Instagram Services", value: "/services?category=Instagram", defaultBtn: "خدمات إنستغرام", defaultBtnEn: "Instagram Services" },
+  { label: "خدمات تيك توك (TikTok)", labelEn: "TikTok Services", value: "/services?category=TikTok", defaultBtn: "خدمات تيك توك", defaultBtnEn: "TikTok Services" },
+  { label: "خدمات يوتيوب (YouTube)", labelEn: "YouTube Services", value: "/services?category=YouTube", defaultBtn: "خدمات يوتيوب", defaultBtnEn: "YouTube Services" },
+  { label: "خدمات فيسبوك (Facebook)", labelEn: "Facebook Services", value: "/services?category=Facebook", defaultBtn: "خدمات فيسبوك", defaultBtnEn: "Facebook Services" },
+  { label: "خدمات أخرى (/services/other)", labelEn: "Other Services", value: "/services/other", defaultBtn: "خدمات أخرى", defaultBtnEn: "Other Services" },
+  { label: "صفحة إنشاء حساب جديد (/register)", labelEn: "Register Page (/register)", value: "/register", defaultBtn: "إنشاء حساب مجاني", defaultBtnEn: "Create Free Account" },
+  { label: "صفحة تسجيل الدخول (/login)", labelEn: "Login Page (/login)", value: "/login", defaultBtn: "تسجيل الدخول", defaultBtnEn: "Sign In" },
+  { label: "برنامج التسويق بالعمولة (/affiliate)", labelEn: "Affiliate Page (/affiliate)", value: "/affiliate", defaultBtn: "انضم الآن", defaultBtnEn: "Join Now" },
+  { label: "بدون رابط (صورة للعرض فقط)", labelEn: "No link (display only)", value: "", defaultBtn: "", defaultBtnEn: "" },
+  { label: "رابط مخصص أو خارجي...", labelEn: "Custom / External URL...", value: "custom", defaultBtn: "", defaultBtnEn: "" },
 ];
 
 const AdminBanners = () => {
@@ -121,12 +125,18 @@ const AdminBanners = () => {
   };
 
   // Announcement Bar State
+  const [previewLang, setPreviewLang] = useState<"ar" | "en">("ar");
+  const [previewThemeMode, setPreviewThemeMode] = useState<"light" | "dark">("light");
+
   const [announcementConfig, setAnnouncementConfig] = useState<AnnouncementBarConfig>({
     isEnabled: true,
     text: "🔥 خصم 20% على جميع باقات المتابعين والتفاعل لفترة محدودة! كود: TRNDK20  ✦  ⚡ تسليم فوري وضمان تعويض حقيقي 100% لجميع الحسابات  ✦  👑 خدمات VIP حصرية بأسعار الجملة المباشرة",
+    textEn: "🔥 20% OFF on all followers & engagement packages! Code: TRNDK20  ✦  ⚡ Instant Delivery & 100% Real Refill Warranty  ✦  👑 Exclusive VIP Services at Direct Wholesale Rates",
     link: "/services",
     linkText: "تصفح العروض",
+    linkTextEn: "Shop Offers",
     badge: "عرض حصري",
+    badgeEn: "Special Offer",
     icon: "Flame",
     style: "dark",
     speed: "normal",
@@ -138,10 +148,14 @@ const AdminBanners = () => {
 
   const [formData, setFormData] = useState<BannerFormData>({
     title: "",
+    titleEn: "",
     subtitle: "",
+    subtitleEn: "",
     link: "",
     buttonText: "",
+    buttonTextEn: "",
     badgeText: "TRNDK VIP",
+    badgeTextEn: "TRNDK VIP",
     badgeIcon: "Sparkles",
     isActive: true,
     order: 1,
@@ -205,10 +219,14 @@ const AdminBanners = () => {
     setSelectedLinkType("/services");
     setFormData({
       title: "",
+      titleEn: "",
       subtitle: "",
+      subtitleEn: "",
       link: "/services",
       buttonText: "تصفح الخدمات",
+      buttonTextEn: "Browse Services",
       badgeText: "TRNDK VIP",
+      badgeTextEn: "TRNDK VIP",
       badgeIcon: "Sparkles",
       isActive: true,
       order: (banners?.length || 0) + 1,
@@ -234,10 +252,14 @@ const AdminBanners = () => {
     setFormData({
       id: banner.id,
       title: banner.title || "",
+      titleEn: banner.titleEn || "",
       subtitle: banner.subtitle || "",
+      subtitleEn: banner.subtitleEn || "",
       link: bannerLink,
       buttonText: banner.buttonText || "",
+      buttonTextEn: banner.buttonTextEn || "",
       badgeText: banner.badgeText || "",
+      badgeTextEn: banner.badgeTextEn || "",
       badgeIcon: banner.badgeIcon || "Sparkles",
       isActive: banner.isActive !== false,
       order: banner.order || 1,
@@ -263,6 +285,7 @@ const AdminBanners = () => {
         ...prev,
         link: val,
         buttonText: matched?.defaultBtn || prev.buttonText,
+        buttonTextEn: matched?.defaultBtnEn || prev.buttonTextEn,
       }));
     }
   };
@@ -299,10 +322,14 @@ const AdminBanners = () => {
         data.append("imageUrl", formData.imageUrl);
       }
       data.append("title", formData.title);
+      data.append("titleEn", formData.titleEn);
       data.append("subtitle", formData.subtitle);
+      data.append("subtitleEn", formData.subtitleEn);
       data.append("link", formData.link);
       data.append("buttonText", formData.buttonText);
+      data.append("buttonTextEn", formData.buttonTextEn);
       data.append("badgeText", formData.badgeText);
+      data.append("badgeTextEn", formData.badgeTextEn);
       data.append("badgeIcon", formData.badgeIcon);
       data.append("isActive", String(formData.isActive));
       data.append("order", String(formData.order));
@@ -455,27 +482,112 @@ const AdminBanners = () => {
         <div className="space-y-6 animate-in fade-in max-w-full overflow-hidden">
           {/* Live Preview Card */}
           <div className="bg-card rounded-2xl border border-border p-6 shadow-sm max-w-full overflow-hidden">
-            <h2 className="text-base font-bold text-foreground mb-3 flex items-center gap-2">
-              <Eye className="w-4 h-4 text-primary" />
-              <span>{isRtl ? "معاينة حية للشريط الإعلاني (Live Preview)" : "Live Announcement Bar Preview"}</span>
-            </h2>
-            <p className="text-xs text-muted-foreground mb-4">
-              {isRtl
-                ? "معاينة حية وفورية: هكذا يظهر الشريط الإخباري المتحرك اللانهائي (Marquee) للزوار في أعلى المتجر:"
-                : "Live Preview: this is how the infinite smooth marquee ticker appears at the top of your store:"}
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+                  <Eye className="w-4 h-4 text-primary" />
+                  <span>{isRtl ? "معاينة حية للشريط الإعلاني (Live Preview)" : "Live Announcement Bar Preview"}</span>
+                </h2>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {isRtl
+                    ? "معاينة فورية تفاعلية: اختبر المظهر بالعربية والإنجليزية، وفي وضع النهار والوضع الليلي:"
+                    : "Interactive Live Preview: test in Arabic & English, and across Light & Dark modes:"}
+                </p>
+              </div>
+
+              {/* Preview Controls: Language + Light/Dark mode */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Language Switch */}
+                <div className="inline-flex p-1 rounded-xl bg-muted/70 border border-border text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewLang("ar")}
+                    className={`px-3 py-1 rounded-lg font-bold transition-all ${
+                      previewLang === "ar"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    🇸🇦 العربية
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewLang("en")}
+                    className={`px-3 py-1 rounded-lg font-bold transition-all ${
+                      previewLang === "en"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    🇬🇧 English
+                  </button>
+                </div>
+
+                {/* Theme Mode Switch */}
+                <div className="inline-flex p-1 rounded-xl bg-muted/70 border border-border text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewThemeMode("light")}
+                    className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition-all ${
+                      previewThemeMode === "light"
+                        ? "bg-background text-foreground shadow-sm border border-border"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    title="معاينة في وضع النهار (Light Mode)"
+                  >
+                    <span>☀️</span>
+                    <span className="hidden sm:inline">Light</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPreviewThemeMode("dark")}
+                    className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition-all ${
+                      previewThemeMode === "dark"
+                        ? "bg-zinc-900 text-white shadow-sm border border-zinc-700"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    title="معاينة في الوضع الليلي (Dark Mode)"
+                  >
+                    <span>🌙</span>
+                    <span className="hidden sm:inline">Dark</span>
+                  </button>
+                </div>
+              </div>
+            </div>
 
             {announcementConfig.isEnabled ? (
-              <div className="rounded-xl overflow-hidden border border-border/80 shadow-md max-w-full">
+              <div
+                className={`rounded-xl overflow-hidden border transition-all ${
+                  previewThemeMode === "light"
+                    ? "bg-white border-zinc-200 text-zinc-900"
+                    : "bg-[#0b0e14] border-primary/20 text-white"
+                } ${previewThemeMode}`}
+              >
                 <AnnouncementBar
-                  key={JSON.stringify(announcementConfig)}
-                  initialConfig={announcementConfig}
+                  key={`${JSON.stringify(announcementConfig)}-${previewLang}-${previewThemeMode}`}
+                  initialConfig={{
+                    ...announcementConfig,
+                    text:
+                      previewLang === "ar"
+                        ? announcementConfig.text
+                        : (announcementConfig.textEn || announcementConfig.text),
+                    badge:
+                      previewLang === "ar"
+                        ? announcementConfig.badge
+                        : (announcementConfig.badgeEn || announcementConfig.badge),
+                    linkText:
+                      previewLang === "ar"
+                        ? announcementConfig.linkText
+                        : (announcementConfig.linkTextEn || announcementConfig.linkText),
+                  }}
                   isPreview={true}
                 />
               </div>
             ) : (
               <div className="p-4 rounded-xl border border-dashed border-border bg-muted/30 text-center text-sm text-muted-foreground">
-                {isRtl ? "الشريط الإعلاني معطل حالياً (لن يظهر في واجهة الموقع)" : "Announcement bar is currently disabled (hidden on store)"}
+                {isRtl
+                  ? "الشريط الإعلاني معطل حالياً (لن يظهر في واجهة الموقع)"
+                  : "Announcement bar is currently disabled (hidden on store)"}
               </div>
             )}
           </div>
@@ -485,12 +597,14 @@ const AdminBanners = () => {
             <Sparkles className="w-4 h-4 text-primary shrink-0 mt-0.5" />
             <div className="space-y-1 min-w-0 flex-1 overflow-hidden">
               <p className="font-bold text-foreground">
-                {isRtl ? "شريط إخباري متحرك لانهائي انسيابي (Infinite Marquee Ticker):" : "Smooth Infinite Marquee Ticker:"}
+                {isRtl
+                  ? "شريط إخباري متحرك لانهائي انسيابي يدعم اللغتين (Bilingual Infinite Marquee Ticker):"
+                  : "Smooth Bilingual Infinite Marquee Ticker:"}
               </p>
               <p className="text-muted-foreground leading-relaxed break-words">
                 {isRtl
-                  ? "يتحرك الشريط بشكل سلس ومستمر 24/7 دون أي فراغات، ويتكرر بانسيابية تامة. يمكنك إدخال أكثر من إعلان أو عرض تفصل بينهم بعلامة ( | ) أو ( ✦ ) وسيتم تدويرها تلقائياً. كما يتوقف الشريط لحظياً عند وضع مؤشر الفأرة عليه (Hover) لسهولة القراءة والضغط."
-                  : "Continuous 60fps loop without gaps. You can input multiple announcements separated by ( | ) or ( ✦ ) and they will rotate smoothly. Hovering pauses the animation instantly."}
+                  ? "يدعم الشريط عرض المحتوى بالعربية والإنجليزية تلقائياً وفقاً للغة التي يختارها العميل. يمكنك إدخال عدة إعلانات تفصل بينها بعلامة ( | ) أو ( ✦ ) وسيتم تدويرها بشكل سلس 24/7 دون أي توقف، مع التوقف اللحظي عند وضع مؤشر الفأرة (Hover)."
+                  : "Automatically serves Arabic or English according to visitor's selected language. You can input multiple offers separated by ( | ) or ( ✦ ) and they will rotate smoothly. Hovering pauses the animation instantly."}
               </p>
             </div>
           </div>
@@ -522,44 +636,141 @@ const AdminBanners = () => {
               </label>
             </div>
 
-            {/* Announcement Text */}
-            <div>
-              <label className="block text-sm font-semibold text-foreground mb-1.5">
-                {isRtl ? "نص الإعلان (يمكنك كتابة عدة عروض مفصولة بـ | أو ✦) *" : "Announcement Text (Separate multiple with | or ✦) *"}
-              </label>
-              <input
-                type="text"
-                required
-                value={announcementConfig.text}
-                onChange={(e) =>
-                  setAnnouncementConfig((prev) => ({ ...prev, text: e.target.value }))
-                }
-                placeholder={isRtl ? "مثال: خصم 20% لفترة محدودة! كود: TRNDK20 | تسليم فوري وضمان حقيقي | خدمات VIP حصرية" : "e.g. 20% OFF! Code: TRNDK20 | Instant Delivery & Warranty | Exclusive VIP Services"}
-                className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-              />
-            </div>
+            {/* BILINGUAL SECTION 1: ARABIC (🇸🇦 المحتوى بالعربية) */}
+            <div className="p-5 rounded-2xl bg-background border border-border/80 space-y-4">
+              <div className="flex items-center gap-2 border-b border-border/60 pb-3">
+                <span className="text-base">🇸🇦</span>
+                <h3 className="font-bold text-sm text-foreground">
+                  {isRtl ? "المحتوى باللغة العربية (Arabic Version)" : "Arabic Content (🇸🇦)"}
+                </h3>
+              </div>
 
-            {/* Badge, Style, Speed */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Arabic Announcement Text */}
               <div>
-                <label className="block text-sm font-semibold text-foreground mb-1.5">
-                  {isRtl ? "نص الشارة (Badge) (اختياري)" : "Badge Text (Optional)"}
+                <label className="block text-xs font-semibold text-foreground mb-1.5">
+                  {isRtl ? "نص الإعلان بالعربية (افصل بين العروض بـ | أو ✦) *" : "Arabic Announcement Text *"}
                 </label>
                 <input
                   type="text"
-                  value={announcementConfig.badge || ""}
+                  required
+                  value={announcementConfig.text}
                   onChange={(e) =>
-                    setAnnouncementConfig((prev) => ({ ...prev, badge: e.target.value }))
+                    setAnnouncementConfig((prev) => ({ ...prev, text: e.target.value }))
                   }
-                  placeholder={isRtl ? "مثال: عرض حصري أو تنبيه هام" : "e.g. Special Offer"}
-                  className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  placeholder="مثال: خصم 20% لفترة محدودة! كود: TRNDK20 | تسليم فوري وضمان حقيقي | خدمات VIP حصرية"
+                  className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  dir="rtl"
                 />
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Arabic Badge */}
+                <div>
+                  <label className="block text-xs font-semibold text-foreground mb-1.5">
+                    {isRtl ? "نص الشارة بالعربية (Badge)" : "Arabic Badge Text"}
+                  </label>
+                  <input
+                    type="text"
+                    value={announcementConfig.badge || ""}
+                    onChange={(e) =>
+                      setAnnouncementConfig((prev) => ({ ...prev, badge: e.target.value }))
+                    }
+                    placeholder="مثال: عرض حصري"
+                    className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    dir="rtl"
+                  />
+                </div>
+
+                {/* Arabic Button Text */}
+                <div>
+                  <label className="block text-xs font-semibold text-foreground mb-1.5">
+                    {isRtl ? "نص الزر بالعربية (Button Text)" : "Arabic Button Text"}
+                  </label>
+                  <input
+                    type="text"
+                    value={announcementConfig.linkText || ""}
+                    onChange={(e) =>
+                      setAnnouncementConfig((prev) => ({ ...prev, linkText: e.target.value }))
+                    }
+                    placeholder="مثال: تصفح العروض"
+                    className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    dir="rtl"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* BILINGUAL SECTION 2: ENGLISH (🇬🇧 المحتوى بالإنجليزية) */}
+            <div className="p-5 rounded-2xl bg-background border border-border/80 space-y-4">
+              <div className="flex items-center gap-2 border-b border-border/60 pb-3">
+                <span className="text-base">🇬🇧</span>
+                <h3 className="font-bold text-sm text-foreground">
+                  {isRtl ? "المحتوى باللغة الإنجليزية (English Version)" : "English Content (🇬🇧)"}
+                </h3>
+              </div>
+
+              {/* English Announcement Text */}
+              <div>
+                <label className="block text-xs font-semibold text-foreground mb-1.5">
+                  {isRtl
+                    ? "نص الإعلان بالإنجليزية (English Announcement Text) (Separate with | or ✦)"
+                    : "English Announcement Text (Separate offers with | or ✦)"}
+                </label>
+                <input
+                  type="text"
+                  value={announcementConfig.textEn || ""}
+                  onChange={(e) =>
+                    setAnnouncementConfig((prev) => ({ ...prev, textEn: e.target.value }))
+                  }
+                  placeholder="e.g. 🔥 20% OFF on all packages! Code: TRNDK20 | ⚡ Instant Delivery & 100% Real Refill | 👑 Exclusive VIP Services"
+                  className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-sans"
+                  dir="ltr"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* English Badge */}
+                <div>
+                  <label className="block text-xs font-semibold text-foreground mb-1.5">
+                    {isRtl ? "نص الشارة بالإنجليزية (English Badge)" : "English Badge Text"}
+                  </label>
+                  <input
+                    type="text"
+                    value={announcementConfig.badgeEn || ""}
+                    onChange={(e) =>
+                      setAnnouncementConfig((prev) => ({ ...prev, badgeEn: e.target.value }))
+                    }
+                    placeholder="e.g. Special Offer"
+                    className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-sans"
+                    dir="ltr"
+                  />
+                </div>
+
+                {/* English Button Text */}
+                <div>
+                  <label className="block text-xs font-semibold text-foreground mb-1.5">
+                    {isRtl ? "نص الزر بالإنجليزية (English Button Text)" : "English Button Text"}
+                  </label>
+                  <input
+                    type="text"
+                    value={announcementConfig.linkTextEn || ""}
+                    onChange={(e) =>
+                      setAnnouncementConfig((prev) => ({ ...prev, linkTextEn: e.target.value }))
+                    }
+                    placeholder="e.g. Shop Offers"
+                    className="w-full px-4 py-2.5 rounded-xl bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-sans"
+                    dir="ltr"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* STYLE & SPEED CONTROLS */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Style Selector */}
               <div>
                 <label className="block text-sm font-semibold text-foreground mb-1.5">
-                  {isRtl ? "النمط اللوني للشريط" : "Visual Theme / Style"}
+                  {isRtl ? "النمط اللوني للشريط (متوافق مع اللايت والدارك)" : "Visual Theme / Style (Light & Dark Compatible)"}
                 </label>
                 <select
                   value={announcementConfig.style || "dark"}
@@ -572,10 +783,10 @@ const AdminBanners = () => {
                   className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
                 >
                   <option value="dark">
-                    {isRtl ? "الوضع الداكن الفاخر (Cyber Luxury Black) [مستحسن]" : "Cyber Luxury Dark"}
+                    {isRtl ? "الوضع الذكي الفاخر (Cyber Luxury - متكيف لايت ودارك) [مستحسن]" : "Cyber Luxury (Adaptive Light & Dark)"}
                   </option>
                   <option value="neon">
-                    {isRtl ? "التوهج النيوني الكهربائي (Electric Neon Red)" : "Electric Neon Red"}
+                    {isRtl ? "التوهج النيوني الأحمر (Electric Neon Red)" : "Electric Neon Red"}
                   </option>
                   <option value="gradient">
                     {isRtl ? "التدرج المخملي الملكي (Velvet Fire Gradient)" : "Velvet Fire Gradient"}
@@ -644,53 +855,37 @@ const AdminBanners = () => {
               </div>
             </div>
 
-            {/* Link & Link Text */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-1.5">
-                  {isRtl ? "رابط التوجيه (اختياري)" : "Target Link (Optional)"}
-                </label>
-                <select
-                  value={announcementLinkType}
-                  onChange={(e) => handleAnnouncementLinkChange(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
-                >
-                  {LINK_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {isRtl ? opt.label : opt.labelEn}
-                    </option>
-                  ))}
-                </select>
+            {/* Link & Link Custom */}
+            <div>
+              <label className="block text-sm font-semibold text-foreground mb-1.5">
+                {isRtl ? "رابط التوجيه المشترك (Target Link)" : "Target Link (Optional)"}
+              </label>
+              <select
+                value={announcementLinkType}
+                onChange={(e) => handleAnnouncementLinkChange(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+              >
+                {LINK_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {isRtl ? opt.label : opt.labelEn}
+                  </option>
+                ))}
+              </select>
 
-                {announcementLinkType === "custom" && (
-                  <div className="mt-2">
-                    <input
-                      type="text"
-                      value={announcementConfig.link || ""}
-                      onChange={(e) =>
-                        setAnnouncementConfig((prev) => ({ ...prev, link: e.target.value }))
-                      }
-                      placeholder={isRtl ? "مثال: /services أو https://..." : "e.g. /services or https://..."}
-                      className="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-1.5">
-                  {isRtl ? "نص الزر / الرابط (اختياري)" : "Button / Link Text (Optional)"}
-                </label>
-                <input
-                  type="text"
-                  value={announcementConfig.linkText || ""}
-                  onChange={(e) =>
-                    setAnnouncementConfig((prev) => ({ ...prev, linkText: e.target.value }))
-                  }
-                  placeholder={isRtl ? "مثال: تصفح العروض أو اطلب الآن" : "e.g. Shop Now"}
-                  className="w-full px-4 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                />
-              </div>
+              {announcementLinkType === "custom" && (
+                <div className="mt-2">
+                  <input
+                    type="text"
+                    value={announcementConfig.link || ""}
+                    onChange={(e) =>
+                      setAnnouncementConfig((prev) => ({ ...prev, link: e.target.value }))
+                    }
+                    placeholder={isRtl ? "مثال: /services أو https://..." : "e.g. /services or https://..."}
+                    className="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-sans"
+                    dir="ltr"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Submit Button */}
@@ -858,17 +1053,25 @@ const AdminBanners = () => {
 
                   {/* Banner Content Details */}
                   <div className="flex-1 min-w-0 w-full text-start">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <h3 className="text-base font-bold text-foreground truncate">
+                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                      <h3 className="text-base font-bold text-foreground">
                         {banner.title || (isRtl ? "بانر بدون عنوان" : "Untitled Banner")}
                       </h3>
-                      {banner.badgeText && (
+                      {banner.titleEn && (
+                        <span className="text-xs px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-sans border border-border/60">
+                          🇬🇧 {banner.titleEn}
+                        </span>
+                      )}
+                      {(banner.badgeText || banner.badgeTextEn) && (
                         <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-semibold inline-flex items-center gap-1">
                           {(() => {
                             const MatchedIcon = BADGE_ICONS.find((b) => b.id === banner.badgeIcon)?.icon || Sparkles;
                             return <MatchedIcon className="w-3 h-3 shrink-0" />;
                           })()}
-                          <span>{banner.badgeText}</span>
+                          <span>{banner.badgeText || banner.badgeTextEn}</span>
+                          {banner.badgeText && banner.badgeTextEn && (
+                            <span className="text-[10px] opacity-70">({banner.badgeTextEn})</span>
+                          )}
                         </span>
                       )}
                       <button
@@ -893,23 +1096,35 @@ const AdminBanners = () => {
                       </button>
                     </div>
 
-                    {banner.subtitle && (
-                      <p className="text-xs text-muted-foreground line-clamp-2 mb-2">
-                        {banner.subtitle}
-                      </p>
+                    {(banner.subtitle || banner.subtitleEn) && (
+                      <div className="space-y-0.5 mb-2">
+                        {banner.subtitle && (
+                          <p className="text-xs text-muted-foreground line-clamp-1">
+                            {banner.subtitle}
+                          </p>
+                        )}
+                        {banner.subtitleEn && (
+                          <p className="text-xs text-muted-foreground/80 line-clamp-1 font-sans">
+                            🇬🇧 {banner.subtitleEn}
+                          </p>
+                        )}
+                      </div>
                     )}
 
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground mt-2">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mt-2">
                       {banner.link && (
                         <span className="flex items-center gap-1 bg-muted px-2 py-1 rounded-md">
                           <LinkIcon className="w-3 h-3" />
                           <span className="truncate max-w-[200px]">{banner.link}</span>
                         </span>
                       )}
-                      {banner.buttonText && (
-                        <span className="bg-primary/10 text-primary px-2 py-1 rounded-md font-medium">
-                          {isRtl ? "نص الزر: " : "Button: "}
-                          {banner.buttonText}
+                      {(banner.buttonText || banner.buttonTextEn) && (
+                        <span className="bg-primary/10 text-primary px-2 py-1 rounded-md font-medium inline-flex items-center gap-1.5">
+                          <span>{isRtl ? "الزر: " : "Button: "}</span>
+                          <span>{banner.buttonText || banner.buttonTextEn}</span>
+                          {banner.buttonText && banner.buttonTextEn && (
+                            <span className="text-[10px] opacity-70">({banner.buttonTextEn})</span>
+                          )}
                         </span>
                       )}
                     </div>
@@ -944,7 +1159,7 @@ const AdminBanners = () => {
       {/* Add / Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-card w-full max-w-2xl rounded-2xl border border-border shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
+          <div className="bg-card w-full max-w-3xl rounded-2xl border border-border shadow-2xl p-6 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-4 border-b border-border mb-6">
               <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                 <ImageIcon className="w-5 h-5 text-primary" />
@@ -1032,28 +1247,49 @@ const AdminBanners = () => {
                     <Tag className="w-4 h-4 text-primary" />
                     <span>{isRtl ? "الشارة العلوية المميزة (Badge)" : "Top Highlight Badge"}</span>
                   </label>
-                  {formData.badgeText && (
+                  {(formData.badgeText || formData.badgeTextEn) && (
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/20 border border-primary/40 backdrop-blur-md text-primary text-xs font-semibold">
                       {(() => {
                         const MatchedIcon = BADGE_ICONS.find((b) => b.id === formData.badgeIcon)?.icon || Sparkles;
                         return <MatchedIcon className="w-3.5 h-3.5 shrink-0" />;
                       })()}
-                      <span>{formData.badgeText}</span>
+                      <span>{isRtl ? (formData.badgeText || formData.badgeTextEn) : (formData.badgeTextEn || formData.badgeText)}</span>
                     </div>
                   )}
                 </div>
 
-                <div>
-                  <input
-                    type="text"
-                    value={formData.badgeText}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, badgeText: e.target.value }))}
-                    placeholder={isRtl ? "مثال: TRNDK VIP أو تنفيذ فوري أو عرض خاص (اتركه فارغاً لإخفائها)" : "e.g. TRNDK VIP or Special Offer (leave blank to hide)"}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                  <span className="text-[11px] text-muted-foreground mt-1 block">
-                    {isRtl ? "النص الذي يظهر في الفقاعة العلوية للبانر (اتركه فارغاً إذا أردت بدون شارة)" : "The text displayed inside the top badge pill"}
-                  </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Arabic Badge */}
+                  <div>
+                    <label className="flex items-center gap-1.5 text-xs font-semibold text-foreground mb-1.5">
+                      <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">عربي</span>
+                      <span>{isRtl ? "نص الشارة بالعربية (اختياري)" : "Arabic Badge Text (Optional)"}</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.badgeText}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, badgeText: e.target.value }))}
+                      placeholder={isRtl ? "مثال: TRNDK VIP أو عرض خاص" : "e.g. TRNDK VIP"}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      dir="rtl"
+                    />
+                  </div>
+
+                  {/* English Badge */}
+                  <div>
+                    <label className="flex items-center gap-1.5 text-xs font-semibold text-foreground mb-1.5">
+                      <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20 font-sans">EN</span>
+                      <span>{isRtl ? "نص الشارة بالإنجليزية (اختياري)" : "English Badge Text (Optional)"}</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.badgeTextEn}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, badgeTextEn: e.target.value }))}
+                      placeholder="e.g. TRNDK VIP or Special Offer"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-sans"
+                      dir="ltr"
+                    />
+                  </div>
                 </div>
 
                 {/* Badge Icon Grid Picker */}
@@ -1085,82 +1321,148 @@ const AdminBanners = () => {
                 </div>
               </div>
 
-              {/* Title & Subtitle */}
-              <div className="grid grid-cols-1 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-1.5">
-                    {isRtl ? "العنوان الرئيسي (اختياري)" : "Main Title (Optional)"}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.title}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
-                    placeholder={isRtl ? "مثال: دعم حسابات التواصل الاجتماعي" : "e.g. Elevate Your Social Presence"}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
+              {/* BILINGUAL SECTION 1: ARABIC (المحتوى باللغة العربية) */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-background/50 border border-border/80 space-y-4">
+                <div className="flex items-center gap-2 border-b border-border/60 pb-3">
+                  <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    🇸🇦 العربية
+                  </span>
+                  <h3 className="font-bold text-sm text-foreground">
+                    {isRtl ? "المحتوى باللغة العربية (Arabic Version)" : "Arabic Content"}
+                  </h3>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-1.5">
-                    {isRtl ? "النص الفرعي / الوصف (اختياري)" : "Subtitle / Description (Optional)"}
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={formData.subtitle}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, subtitle: e.target.value }))}
-                    placeholder={isRtl ? "مثال: خدمات احترافية بجودة عالية وضمان حقيقي لجميع المنصات" : "e.g. Real growth and premium delivery for all platforms"}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
+                <div className="grid grid-cols-1 gap-3.5">
+                  <div>
+                    <label className="block text-xs font-semibold text-foreground mb-1.5">
+                      {isRtl ? "العنوان الرئيسي بالعربية (اختياري)" : "Arabic Main Title (Optional)"}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.title}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, title: e.target.value }))}
+                      placeholder="مثال: دعم حسابات التواصل الاجتماعي"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      dir="rtl"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-foreground mb-1.5">
+                      {isRtl ? "النص الفرعي / الوصف بالعربية (اختياري)" : "Arabic Subtitle / Description (Optional)"}
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={formData.subtitle}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, subtitle: e.target.value }))}
+                      placeholder="مثال: بجودة عالية وضمان حقيقي - زيادة المتابعين والمشاهدات والتفاعل على جميع المنصات"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      dir="rtl"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-foreground mb-1.5">
+                      {isRtl ? "نص الزر بالعربية (اختياري)" : "Arabic Button Text (Optional)"}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.buttonText}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, buttonText: e.target.value }))}
+                      placeholder="مثال: تصفح الخدمات"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                      dir="rtl"
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Link Selection & Button Text */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-1.5">
-                    {isRtl ? "صفحة / رابط التوجيه (اختياري)" : "Target Link / Page (Optional)"}
-                  </label>
-                  <select
-                    value={selectedLinkType}
-                    onChange={(e) => handleLinkSelectChange(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
-                  >
-                    {LINK_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {isRtl ? opt.label : opt.labelEn}
-                      </option>
-                    ))}
-                  </select>
-
-                  {/* Show custom URL text input only if 'custom' is selected */}
-                  {selectedLinkType === "custom" && (
-                    <div className="mt-2 animate-in fade-in slide-in-from-top-1">
-                      <input
-                        type="text"
-                        value={formData.link}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, link: e.target.value }))}
-                        placeholder={isRtl ? "أدخل الرابط، مثلاً: /services/1 أو رابط خارجي https://..." : "Enter URL e.g. /services/1 or https://..."}
-                        className="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      />
-                    </div>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-1.5">
-                    {isRtl ? "نص الزر (اختياري)" : "Button Text (Optional)"}
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.buttonText}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, buttonText: e.target.value }))}
-                    placeholder={isRtl ? "تصفح الخدمات" : "Browse Services"}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                  <span className="text-[11px] text-muted-foreground mt-1 block">
-                    {isRtl ? "اتركه فارغاً إذا أردت أن يكون البانر بدون زر ظاهري" : "Leave blank if you don't want a button overlay"}
+              {/* BILINGUAL SECTION 2: ENGLISH (المحتوى باللغة الإنجليزية) */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-background/50 border border-border/80 space-y-4">
+                <div className="flex items-center gap-2 border-b border-border/60 pb-3">
+                  <span className="px-2 py-0.5 rounded-md text-xs font-bold bg-sky-500/10 text-sky-400 border border-sky-500/20 font-sans">
+                    🇬🇧 English
                   </span>
+                  <h3 className="font-bold text-sm text-foreground">
+                    {isRtl ? "المحتوى باللغة الإنجليزية (English Version)" : "English Content"}
+                  </h3>
                 </div>
+
+                <div className="grid grid-cols-1 gap-3.5">
+                  <div>
+                    <label className="block text-xs font-semibold text-foreground mb-1.5">
+                      {isRtl ? "العنوان الرئيسي بالإنجليزية (Main Title) (اختياري)" : "English Main Title (Optional)"}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.titleEn}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, titleEn: e.target.value }))}
+                      placeholder="e.g. Elevate Your Social Presence"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-sans"
+                      dir="ltr"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-foreground mb-1.5">
+                      {isRtl ? "النص الفرعي / الوصف بالإنجليزية (Subtitle) (اختياري)" : "English Subtitle / Description (Optional)"}
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={formData.subtitleEn}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, subtitleEn: e.target.value }))}
+                      placeholder="e.g. Premium quality & guaranteed refill - boost followers, views and engagement"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-sans"
+                      dir="ltr"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-foreground mb-1.5">
+                      {isRtl ? "نص الزر بالإنجليزية (Button Text) (اختياري)" : "English Button Text (Optional)"}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.buttonTextEn}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, buttonTextEn: e.target.value }))}
+                      placeholder="e.g. Browse Services"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-card border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-sans"
+                      dir="ltr"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Link Selection */}
+              <div className="p-4 rounded-xl bg-card border border-border space-y-3">
+                <label className="block text-sm font-semibold text-foreground">
+                  {isRtl ? "صفحة / رابط التوجيه (اختياري)" : "Target Link / Page (Optional)"}
+                </label>
+                <select
+                  value={selectedLinkType}
+                  onChange={(e) => handleLinkSelectChange(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 cursor-pointer"
+                >
+                  {LINK_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {isRtl ? opt.label : opt.labelEn}
+                    </option>
+                  ))}
+                </select>
+
+                {/* Show custom URL text input only if 'custom' is selected */}
+                {selectedLinkType === "custom" && (
+                  <div className="animate-in fade-in slide-in-from-top-1">
+                    <input
+                      type="text"
+                      value={formData.link}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, link: e.target.value }))}
+                      placeholder={isRtl ? "أدخل الرابط، مثلاً: /services/1 أو رابط خارجي https://..." : "Enter URL e.g. /services/1 or https://..."}
+                      className="w-full px-3.5 py-2 rounded-xl bg-background border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 font-sans"
+                      dir="ltr"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Active Toggle & Order */}

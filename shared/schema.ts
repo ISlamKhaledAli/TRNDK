@@ -236,10 +236,14 @@ export interface Banner {
   id: string;
   imageUrl: string;
   title?: string;
+  titleEn?: string;
   subtitle?: string;
+  subtitleEn?: string;
   link?: string;
   buttonText?: string;
+  buttonTextEn?: string;
   badgeText?: string;
+  badgeTextEn?: string;
   badgeIcon?: string;
   isActive: boolean;
   order: number;
@@ -250,9 +254,12 @@ export interface Banner {
 export interface AnnouncementBarConfig {
   isEnabled: boolean;
   text: string;
+  textEn?: string;
   link?: string;
   linkText?: string;
+  linkTextEn?: string;
   badge?: string;
+  badgeEn?: string;
   icon?: string;
   style?: "dark" | "gradient" | "neon" | "primary";
   speed?: "slow" | "normal" | "fast";

@@ -37,7 +37,7 @@ interface AnnouncementBarProps {
 
 export default function AnnouncementBar({ initialConfig, isPreview = false }: AnnouncementBarProps) {
   const { i18n } = useTranslation();
-  const isRtl = i18n.language === "ar";
+  const isAr = i18n.language === "ar";
 
   const [config, setConfig] = useState<AnnouncementBarConfig | null>(initialConfig || null);
   const [isDismissed, setIsDismissed] = useState(false);
@@ -70,16 +70,23 @@ export default function AnnouncementBar({ initialConfig, isPreview = false }: An
     sessionStorage.setItem("trndk_announcement_dismissed", "true");
   };
 
+  // Resolved text based on active store language
+  const activeText = (isAr ? config?.text : (config?.textEn || config?.text)) || "";
+  const activeBadge = (isAr ? config?.badge : (config?.badgeEn || config?.badge)) || "";
+  const activeLinkText = (isAr
+    ? (config?.linkText || "تصفح العروض")
+    : (config?.linkTextEn || config?.linkText || "Shop Offers"));
+
   // Parse messages (splits by | or ✦ if provided, otherwise single message)
   const messageItems = useMemo(() => {
-    if (!config?.text) return [];
+    if (!activeText) return [];
     let parts: string[] = [];
-    if (config.text.includes("|")) {
-      parts = config.text.split("|").map((s) => s.trim()).filter(Boolean);
-    } else if (config.text.includes("✦")) {
-      parts = config.text.split("✦").map((s) => s.trim()).filter(Boolean);
+    if (activeText.includes("|")) {
+      parts = activeText.split("|").map((s) => s.trim()).filter(Boolean);
+    } else if (activeText.includes("✦")) {
+      parts = activeText.split("✦").map((s) => s.trim()).filter(Boolean);
     } else {
-      parts = [config.text.trim()];
+      parts = [activeText.trim()];
     }
 
     // Multiply to guarantee seamless looping across wide displays
@@ -89,9 +96,9 @@ export default function AnnouncementBar({ initialConfig, isPreview = false }: An
       list.push(...parts);
     }
     return list;
-  }, [config?.text]);
+  }, [activeText]);
 
-  if ((!isPreview && isDismissed) || !config || !config.isEnabled || !config.text) {
+  if ((!isPreview && isDismissed) || !config || !config.isEnabled || !activeText) {
     return null;
   }
 
@@ -110,45 +117,57 @@ export default function AnnouncementBar({ initialConfig, isPreview = false }: An
     }
   };
 
-  // Color theme styling
+  // Color theme styling - seamless Light Mode & Dark Mode harmony with TRNDK branding
   const getThemeStyles = () => {
     switch (config.style) {
       case "neon":
         return {
-          wrapper: "bg-[#090b10] border-b border-primary/30 text-white shadow-[0_2px_15px_rgba(239,68,68,0.15)]",
-          fadeLeft: "from-[#090b10]",
-          fadeRight: "to-[#090b10]",
-          badge: "bg-primary/20 text-primary border border-primary/40 shadow-[0_0_12px_rgba(239,68,68,0.3)]",
-          btn: "bg-primary hover:bg-primary/90 text-white shadow-[0_0_10px_rgba(239,68,68,0.4)]",
-          iconColor: "text-red-400",
+          wrapper: "bg-white/95 dark:bg-[#07090e]/95 border-b border-primary/30 text-zinc-900 dark:text-white shadow-sm dark:shadow-[0_2px_15px_rgba(239,68,68,0.2)] backdrop-blur-md",
+          fadeLeft: "from-white dark:from-[#07090e]",
+          fadeRight: "to-white dark:to-[#07090e]",
+          badge: "bg-primary/10 dark:bg-primary/20 text-primary dark:text-red-400 border border-primary/30 dark:border-primary/50 shadow-sm",
+          btn: "bg-primary hover:bg-primary/90 text-white shadow-sm shadow-primary/25",
+          iconColor: "text-primary dark:text-red-400",
+          textColor: "text-zinc-900 dark:text-zinc-100",
+          sparkleColor: "text-primary",
+          dismissBtn: "bg-zinc-200/80 hover:bg-zinc-300 dark:bg-white/10 dark:hover:bg-white/20 text-zinc-700 dark:text-white/80 border border-zinc-300/60 dark:border-white/10",
         };
       case "gradient":
         return {
-          wrapper: "bg-gradient-to-r from-[#1e0709] via-primary/90 to-[#290a0d] border-b border-white/10 text-white shadow-md",
-          fadeLeft: "from-[#1e0709]",
-          fadeRight: "to-[#290a0d]",
-          badge: "bg-black/30 text-amber-300 border border-white/20",
-          btn: "bg-white/20 hover:bg-white/30 text-white border border-white/25",
+          wrapper: "bg-gradient-to-r from-red-600 via-rose-600 to-orange-600 dark:from-[#1e0709] dark:via-primary/90 dark:to-[#290a0d] border-b border-white/15 text-white shadow-md",
+          fadeLeft: "from-red-600 dark:from-[#1e0709]",
+          fadeRight: "to-orange-600 dark:to-[#290a0d]",
+          badge: "bg-black/25 text-amber-300 border border-white/20",
+          btn: "bg-white/25 hover:bg-white/35 text-white border border-white/30 backdrop-blur-sm",
           iconColor: "text-amber-300",
+          textColor: "text-white",
+          sparkleColor: "text-amber-300",
+          dismissBtn: "bg-black/25 hover:bg-black/40 text-white/90 border border-white/20",
         };
       case "primary":
         return {
-          wrapper: "bg-primary border-b border-primary-foreground/10 text-primary-foreground shadow-md",
+          wrapper: "bg-primary border-b border-primary-foreground/15 text-primary-foreground shadow-md",
           fadeLeft: "from-primary",
           fadeRight: "to-primary",
-          badge: "bg-black/25 text-white border border-white/20",
-          btn: "bg-black/20 hover:bg-black/30 text-white border border-white/20",
+          badge: "bg-black/20 text-white border border-white/20",
+          btn: "bg-black/25 hover:bg-black/40 text-white border border-white/20",
           iconColor: "text-amber-300",
+          textColor: "text-white",
+          sparkleColor: "text-amber-300",
+          dismissBtn: "bg-black/20 hover:bg-black/35 text-white border border-white/20",
         };
       case "dark":
       default:
         return {
-          wrapper: "bg-[#0c1017]/95 border-b border-primary/25 text-zinc-100 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.35)]",
-          fadeLeft: "from-[#0c1017]",
-          fadeRight: "to-[#0c1017]",
-          badge: "bg-primary/15 text-primary border border-primary/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]",
-          btn: "bg-primary/20 hover:bg-primary/35 text-white border border-primary/40",
-          iconColor: "text-amber-400",
+          wrapper: "bg-zinc-50/95 dark:bg-[#0c1017]/95 border-b border-primary/20 dark:border-primary/25 text-zinc-900 dark:text-zinc-100 backdrop-blur-md shadow-sm dark:shadow-[0_4px_20px_rgba(0,0,0,0.35)]",
+          fadeLeft: "from-zinc-50 dark:from-[#0c1017]",
+          fadeRight: "to-zinc-50 dark:to-[#0c1017]",
+          badge: "bg-primary/10 dark:bg-primary/15 text-primary border border-primary/25 dark:border-primary/30 shadow-sm",
+          btn: "bg-primary hover:bg-primary/90 text-white shadow-sm shadow-primary/20",
+          iconColor: "text-amber-500 dark:text-amber-400",
+          textColor: "text-zinc-900 dark:text-zinc-100",
+          sparkleColor: "text-primary",
+          dismissBtn: "bg-zinc-200/80 hover:bg-zinc-300 dark:bg-white/10 dark:hover:bg-white/20 text-zinc-700 dark:text-white/80 border border-zinc-300/60 dark:border-white/10",
         };
     }
   };
@@ -160,21 +179,21 @@ export default function AnnouncementBar({ initialConfig, isPreview = false }: An
   const renderTickerItem = (text: string, idx: string | number) => (
     <div
       key={idx}
-      dir={isRtl ? "rtl" : "ltr"}
+      dir={isAr ? "rtl" : "ltr"}
       className="inline-flex items-center gap-2.5 sm:gap-3.5 px-3 sm:px-5 shrink-0 select-none"
     >
       {/* Badge with Icon */}
-      {config.badge && (
+      {activeBadge && (
         <span
           className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-bold shrink-0 transition-transform ${theme.badge}`}
         >
           <IconComponent className={`w-3.5 h-3.5 animate-pulse shrink-0 ${theme.iconColor}`} />
-          <span>{config.badge}</span>
+          <span>{activeBadge}</span>
         </span>
       )}
 
       {/* Main Text */}
-      <span className="font-semibold text-xs sm:text-sm tracking-wide text-zinc-100 whitespace-nowrap drop-shadow-sm">
+      <span className={`font-semibold text-xs sm:text-sm tracking-wide whitespace-nowrap drop-shadow-sm ${theme.textColor}`}>
         {text}
       </span>
 
@@ -182,10 +201,10 @@ export default function AnnouncementBar({ initialConfig, isPreview = false }: An
       {config.link && (
         <Link
           to={config.link}
-          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-bold transition-all shrink-0 ${theme.btn}`}
+          className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[11px] sm:text-xs font-bold transition-all shrink-0 ${theme.btn}`}
         >
-          <span>{config.linkText || (isRtl ? "اطلب الآن" : "Shop Now")}</span>
-          {isRtl ? (
+          <span>{activeLinkText}</span>
+          {isAr ? (
             <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
           ) : (
             <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
@@ -194,7 +213,7 @@ export default function AnnouncementBar({ initialConfig, isPreview = false }: An
       )}
 
       {/* Sparkle separator */}
-      <span className="text-primary font-bold text-xs sm:text-sm select-none opacity-80 px-1">
+      <span className={`font-bold text-xs sm:text-sm select-none opacity-80 px-1 ${theme.sparkleColor}`}>
         ✦
       </span>
     </div>
@@ -235,9 +254,9 @@ export default function AnnouncementBar({ initialConfig, isPreview = false }: An
         <div className="shrink-0 z-20 px-2 sm:px-3">
           <button
             onClick={handleDismiss}
-            className="p-1 rounded-full bg-black/30 hover:bg-black/60 border border-white/10 text-white/80 hover:text-white transition-all shadow-sm"
-            aria-label={isRtl ? "إغلاق الشريط الإعلاني" : "Dismiss announcement"}
-            title={isRtl ? "إغلاق" : "Close"}
+            className={`p-1 rounded-full transition-all shadow-sm ${theme.dismissBtn}`}
+            aria-label={isAr ? "إغلاق الشريط الإعلاني" : "Dismiss announcement"}
+            title={isAr ? "إغلاق" : "Close"}
           >
             <X className="w-3.5 h-3.5" />
           </button>

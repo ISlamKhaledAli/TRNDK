@@ -155,8 +155,13 @@ export default function BannerSlider({
             ? banner.imageUrl
             : `/${banner.imageUrl}`;
 
+          const displayTitle = isRtl ? banner.title : (banner.titleEn || banner.title);
+          const displaySubtitle = isRtl ? banner.subtitle : (banner.subtitleEn || banner.subtitle);
+          const displayButtonText = isRtl ? banner.buttonText : (banner.buttonTextEn || banner.buttonText);
+          const displayBadgeText = isRtl ? banner.badgeText : (banner.badgeTextEn || banner.badgeText);
+
           const hasTextContent = Boolean(
-            banner.title || banner.subtitle || banner.buttonText || banner.badgeText
+            displayTitle || displaySubtitle || displayButtonText || displayBadgeText
           );
 
           return (
@@ -171,7 +176,7 @@ export default function BannerSlider({
               {/* Background Image */}
               <img
                 src={imgUrl}
-                alt={banner.title || "Banner"}
+                alt={displayTitle || "Banner"}
                 className="w-full h-full object-cover object-center transform transition-transform duration-1000 ease-out group-hover:scale-[1.02]"
                 loading={index === 0 ? "eager" : "lazy"}
               />
@@ -188,11 +193,11 @@ export default function BannerSlider({
               )}
 
               {/* Optional Link Wrapping entire slide if no explicit button */}
-              {banner.link && !banner.buttonText && (
+              {banner.link && !displayButtonText && (
                 <Link
                   to={banner.link}
                   className="absolute inset-0 z-20"
-                  aria-label={banner.title || "Banner link"}
+                  aria-label={displayTitle || "Banner link"}
                 />
               )}
 
@@ -200,38 +205,38 @@ export default function BannerSlider({
               {hasTextContent && (
                 <div className="absolute inset-0 z-20 flex flex-col justify-end sm:justify-center px-16 sm:px-20 md:px-24 py-8 sm:py-10 md:py-14 max-w-2xl text-white">
                   {/* Dynamic Badge */}
-                  {banner.badgeText && (
+                  {displayBadgeText && (
                     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/20 border border-primary/40 backdrop-blur-md text-primary text-xs font-semibold mb-3 w-fit animate-in fade-in duration-500">
                       {(() => {
                         const BadgeIconComp = ICON_MAP[banner.badgeIcon || "Sparkles"] || Sparkles;
                         return <BadgeIconComp className="w-3.5 h-3.5 shrink-0" />;
                       })()}
-                      <span>{banner.badgeText}</span>
+                      <span>{displayBadgeText}</span>
                     </div>
                   )}
 
                   {/* Title */}
-                  {banner.title && (
+                  {displayTitle && (
                     <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black mb-3 leading-tight tracking-tight drop-shadow-md animate-in fade-in slide-in-from-bottom-2 duration-500">
-                      {banner.title}
+                      {displayTitle}
                     </h2>
                   )}
 
                   {/* Subtitle */}
-                  {banner.subtitle && (
+                  {displaySubtitle && (
                     <p className="text-sm sm:text-base md:text-lg text-slate-200/90 max-w-xl mb-6 line-clamp-2 sm:line-clamp-3 leading-relaxed drop-shadow animate-in fade-in slide-in-from-bottom-3 duration-500 delay-100">
-                      {banner.subtitle}
+                      {displaySubtitle}
                     </p>
                   )}
 
                   {/* Action Button */}
-                  {banner.buttonText && banner.link && (
+                  {displayButtonText && banner.link && (
                     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-150">
                       <Link
                         to={banner.link}
                         className="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-3.5 rounded-xl font-bold text-sm sm:text-base bg-primary text-primary-foreground hover:bg-primary/90 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-primary/30"
                       >
-                        <span>{banner.buttonText}</span>
+                        <span>{displayButtonText}</span>
                         {isRtl ? (
                           <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
                         ) : (
