@@ -2,7 +2,7 @@ services:
   - type: web
     name: trndk
     runtime: node
-    buildCommand: npm ci && npx prisma generate && npm run build
+    buildCommand: npm ci && npx prisma generate && npx prisma db push && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
