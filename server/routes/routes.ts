@@ -24,6 +24,7 @@ import paymentsRouter from "./payments";
 import webhooksRouter from "./webhooks";
 import { normalizePrice, validatePrice } from "../utils/price";
 import { PayoneerGateway } from "../services/payments/payoneer-gateway";
+import { storeUploadedImage } from "../services/media";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -636,7 +637,7 @@ export async function registerRoutes(
       
       // Handle file upload
       if (req.file) {
-        rawData.imagePath = `uploads/services/${req.file.filename}`;
+        rawData.imagePath = await storeUploadedImage(req.file, "services");
       }
 
       // Convert number/boolean fields from string (FormData)
@@ -670,7 +671,7 @@ export async function registerRoutes(
 
       // Handle file upload
       if (req.file) {
-        rawData.imagePath = `uploads/services/${req.file.filename}`;
+        rawData.imagePath = await storeUploadedImage(req.file, "services");
       }
 
       // Convert number/boolean fields from string (FormData)
@@ -1038,7 +1039,7 @@ export async function registerRoutes(
     try {
       let imageUrl = req.body.imageUrl || '';
       if (req.file) {
-        imageUrl = `/uploads/banners/${req.file.filename}`;
+        imageUrl = await storeUploadedImage(req.file, "banners");
       }
 
       if (!imageUrl) {
@@ -1086,7 +1087,7 @@ export async function registerRoutes(
 
       let imageUrl = banners[index].imageUrl;
       if (req.file) {
-        imageUrl = `/uploads/banners/${req.file.filename}`;
+        imageUrl = await storeUploadedImage(req.file, "banners");
       } else if (req.body.imageUrl) {
         imageUrl = req.body.imageUrl;
       }

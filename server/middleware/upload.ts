@@ -1,23 +1,5 @@
 import multer from "multer";
-import path from "path";
-import fs from "fs";
 import { Request } from "express";
-
-// Ensure upload directory exists
-const uploadDir = path.join(process.cwd(), "uploads", "services");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
-});
 
 const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
@@ -28,6 +10,10 @@ const fileFilter = (req: Request, file: Express.Multer.File, cb: multer.FileFilt
   }
 };
 
+// Keep uploads in memory until the route stores them. This lets the same code
+// use Cloudinary in production and the local uploads folder during development.
+const storage = multer.memoryStorage();
+
 export const upload = multer({
   storage: storage,
   fileFilter: fileFilter,
@@ -36,24 +22,8 @@ export const upload = multer({
   },
 });
 
-// Banner upload storage
-const bannerUploadDir = path.join(process.cwd(), "uploads", "banners");
-if (!fs.existsSync(bannerUploadDir)) {
-  fs.mkdirSync(bannerUploadDir, { recursive: true });
-}
-
-const bannerStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, bannerUploadDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, "banner-" + uniqueSuffix + path.extname(file.originalname));
-  },
-});
-
 export const bannerUpload = multer({
-  storage: bannerStorage,
+  storage,
   fileFilter: fileFilter,
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
